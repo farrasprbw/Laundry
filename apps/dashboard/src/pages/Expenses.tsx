@@ -1,4 +1,8 @@
+import { useState } from 'react';
+import { Modal } from '../components/ui/Modal';
+
 export function Expenses() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <div className="pt-24 pb-24 md:pt-24 md:pb-10 px-container-padding-mobile md:px-container-padding-desktop max-w-[1440px] w-full flex-1">
       {/* Header Section */}
@@ -7,7 +11,10 @@ export function Expenses() {
           <h2 className="text-headline-lg font-headline-lg md:text-display-lg md:font-display-lg text-on-surface">Expenses</h2>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">Track and manage facility operational costs.</p>
         </div>
-        <button className="w-full md:w-auto bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container transition-all active:scale-[0.98] py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md h-[48px] md:h-[56px]">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="w-full md:w-auto bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container transition-all active:scale-[0.98] py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md h-[48px] md:h-[56px]"
+        >
           <span className="material-symbols-outlined fill-icon">add</span>
           <span className="font-label-md text-label-md font-semibold">Add Expense</span>
         </button>
@@ -187,6 +194,61 @@ export function Expenses() {
           </div>
         </div>
       </div>
+
+      {/* Add Expense Modal */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Add New Expense"
+        onSubmit={() => {
+          // Handle submit logic here
+          setIsModalOpen(false);
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Date</label>
+            <input 
+              type="date" 
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            />
+          </div>
+          
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Category</label>
+            <select className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer">
+              <option value="detergent">Detergent & Supplies</option>
+              <option value="electricity">Electricity</option>
+              <option value="water">Water</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="rent">Rent</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Amount</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">$</span>
+              <input 
+                type="number" 
+                placeholder="0.00" 
+                step="0.01"
+                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-10 pr-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+              />
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Description</label>
+            <textarea 
+              placeholder="Enter expense details" 
+              rows={3}
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none"
+            ></textarea>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

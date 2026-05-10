@@ -1,6 +1,9 @@
 import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { AddOrderModal } from '../ui/AddOrderModal';
 
 export function SideNavBar() {
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const getNavLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive
       ? "bg-primary-container text-on-primary-container rounded-xl mx-2 my-1 flex items-center gap-3 px-4 py-3 text-label-md font-label-md cursor-pointer font-bold shadow-sm"
@@ -12,7 +15,7 @@ export function SideNavBar() {
         <h1 className="text-headline-md font-headline-md text-primary tracking-tight">LaundroFlow Admin</h1>
         <p className="text-label-md font-label-md text-on-surface-variant">Manage Facility</p>
       </div>
-      
+
       <nav className="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
         <NavLink to="/dashboard" className={getNavLinkClass}>
           {({ isActive }) => (
@@ -54,6 +57,14 @@ export function SideNavBar() {
             </>
           )}
         </NavLink>
+        <NavLink to="/payment-methods" className={getNavLinkClass}>
+          {({ isActive }) => (
+            <>
+              <span className={`material-symbols-outlined text-[20px] ${isActive ? 'fill-icon' : 'group-hover:text-primary transition-colors'}`}>account_balance_wallet</span>
+              Payment Methods
+            </>
+          )}
+        </NavLink>
         <NavLink to="/reports" className={getNavLinkClass}>
           {({ isActive }) => (
             <>
@@ -66,11 +77,16 @@ export function SideNavBar() {
 
       {/* CTA Action */}
       <div className="px-6 mb-6 mt-4">
-        <button className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl hover:shadow-lg hover:bg-primary/90 transition-all active:scale-95 text-label-md font-label-md">
+        <button
+          onClick={() => setIsOrderModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl hover:shadow-lg hover:bg-primary/90 transition-all active:scale-95 text-label-md font-label-md"
+        >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          New Order
+          Order Baru
         </button>
       </div>
+
+      <AddOrderModal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} />
     </aside>
   );
 }

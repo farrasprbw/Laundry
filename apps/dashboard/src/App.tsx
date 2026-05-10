@@ -1,12 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { Dashboard } from './components/Dashboard';
-import { Orders } from './components/Orders';
-import { Customers } from './components/Customers';
-import { Categories } from './components/Categories';
-import { Expenses } from './components/Expenses';
-import { Reports } from './components/Reports';
-import { Login } from './components/Login';
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { Dashboard } from './pages/Dashboard';
+import { Orders } from './pages/Orders';
+import { Customers } from './pages/Customers';
+import { Categories } from './pages/Categories';
+import { Expenses } from './pages/Expenses';
+import { Reports } from './pages/Reports';
+import { Login } from './pages/Login';
+import { PaymentMethods } from './pages/PaymentMethods';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/expenses" element={<Expenses />} />
+          <Route path="/payment-methods" element={<PaymentMethods />} />
           <Route path="/reports" element={<Reports />} />
         </Route>
 

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { authClient } from '../lib/auth-client';
+import { authClient } from '../../lib/auth-client';
 
 export function TopAppBar() {
   const navigate = useNavigate();
@@ -20,11 +20,11 @@ export function TopAppBar() {
         <span className="text-headline-md font-headline-md text-primary md:hidden">LaundroFlow</span>
         <div className="hidden md:flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full border border-outline-variant/30">
           <span className="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
-          <input className="bg-transparent border-none focus:ring-0 text-label-md font-label-md text-on-surface p-0 w-48 placeholder-on-surface-variant/50" placeholder="Search..." type="text"/>
+          <input className="bg-transparent border-none focus:ring-0 text-label-md font-label-md text-on-surface p-0 w-48 placeholder-on-surface-variant/50" placeholder="Search..." type="text" />
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center justify-center text-error hover:bg-error/10 transition-colors px-4 py-2 rounded-lg active:scale-95 gap-2 text-label-md font-label-md font-bold"
         >

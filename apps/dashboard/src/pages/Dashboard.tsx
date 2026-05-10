@@ -1,4 +1,8 @@
+import { useState } from 'react';
+import { AddOrderModal } from '../components/ui/AddOrderModal';
+
 export function Dashboard() {
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   return (
     <main className="flex-1 pt-24 px-container-padding-desktop pb-container-padding-desktop max-w-[1440px] w-full">
       {/* Page Header */}
@@ -10,7 +14,10 @@ export function Dashboard() {
           </h2>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">10 Mei 2026</p>
         </div>
-        <button className="bg-primary text-on-primary px-6 py-3 rounded-lg text-label-md font-label-md shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
+        <button 
+          onClick={() => setIsOrderModalOpen(true)}
+          className="bg-primary text-on-primary px-6 py-3 rounded-lg text-label-md font-label-md shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2"
+        >
           <span className="material-symbols-outlined text-[18px]">add</span>
           Order Baru
         </button>
@@ -249,6 +256,8 @@ export function Dashboard() {
           <button className="text-primary text-label-md font-label-md hover:underline font-medium">View All Orders</button>
         </div>
       </div>
+
+      <AddOrderModal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} />
     </main>
   );
 }

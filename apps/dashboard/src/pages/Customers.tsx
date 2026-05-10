@@ -1,4 +1,8 @@
+import { useState } from 'react';
+import { Modal } from '../components/ui/Modal';
+
 export function Customers() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <div className="flex-1 p-6 md:p-10 max-w-[1440px] mt-16 w-full flex flex-col gap-8">
       {/* Page Header: Title & Primary Action */}
@@ -9,7 +13,10 @@ export function Customers() {
           </h2>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">Kelola data pelanggan dan riwayat transaksi.</p>
         </div>
-        <button className="bg-primary text-on-primary px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-primary/90 hover:shadow-lg transition-all active:scale-95 text-label-md font-label-md whitespace-nowrap self-start sm:self-auto">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-primary text-on-primary px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-primary/90 hover:shadow-lg transition-all active:scale-95 text-label-md font-label-md whitespace-nowrap self-start sm:self-auto"
+        >
           <span className="material-symbols-outlined text-[20px]">add</span>
           Tambah Pelanggan
         </button>
@@ -78,7 +85,7 @@ export function Customers() {
                   </span>
                 </td>
                 <td className="px-6 py-5 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-end gap-2">
                     <button className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors" title="Edit">
                       <span className="material-symbols-outlined text-[20px]">edit</span>
                     </button>
@@ -119,7 +126,7 @@ export function Customers() {
                   </span>
                 </td>
                 <td className="px-6 py-5 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-end gap-2">
                     <button className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors" title="Edit">
                       <span className="material-symbols-outlined text-[20px]">edit</span>
                     </button>
@@ -160,6 +167,44 @@ export function Customers() {
           </div>
         </div>
       </div>
+
+      {/* Add Customer Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Tambah Pelanggan Baru"
+        onSubmit={() => {
+          // Handle submit logic here
+          setIsModalOpen(false);
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Nama Lengkap</label>
+            <input
+              type="text"
+              placeholder="Masukkan nama pelanggan"
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Nomor Telepon</label>
+            <input
+              type="tel"
+              placeholder="Contoh: 08123456789"
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Alamat Lengkap</label>
+            <textarea
+              placeholder="Masukkan alamat pelanggan"
+              rows={3}
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none"
+            ></textarea>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,4 +1,8 @@
+import { useState } from 'react';
+import { Modal } from '../components/ui/Modal';
+
 export function Categories() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <div className="pt-24 px-6 md:px-10 pb-24 md:pb-10 max-w-[1440px] w-full flex-1">
       {/* Page Header */}
@@ -10,7 +14,10 @@ export function Categories() {
           </h2>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">Kelola jenis layanan dan harga dasar per kilogram.</p>
         </div>
-        <button className="bg-primary text-on-primary rounded-xl py-3 px-5 flex items-center gap-2 hover:bg-surface-tint active:scale-95 transition-all shadow-md font-label-md text-label-md">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-primary text-on-primary rounded-xl py-3 px-5 flex items-center gap-2 hover:bg-surface-tint active:scale-95 transition-all shadow-md font-label-md text-label-md"
+        >
           <span className="material-symbols-outlined">add</span>
           Tambah Kategori
         </button>
@@ -147,6 +154,66 @@ export function Categories() {
         </div>
 
       </div>
+
+      {/* Add Category Modal */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Tambah Kategori Baru"
+        onSubmit={() => {
+          // Handle submit logic here
+          setIsModalOpen(false);
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Nama Kategori</label>
+            <input 
+              type="text" 
+              placeholder="Contoh: Cuci Kilat" 
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Deskripsi (Opsional)</label>
+            <input 
+              type="text" 
+              placeholder="Contoh: Layanan Cepat" 
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-label-md font-label-md text-on-surface">Harga</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">Rp</span>
+                <input 
+                  type="number" 
+                  placeholder="0" 
+                  className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-10 pr-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-label-md font-label-md text-on-surface">Satuan</label>
+              <select className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer">
+                <option value="kg">Per Kilogram (/kg)</option>
+                <option value="pc">Per Pcs (/pc)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Estimasi Waktu</label>
+            <select className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer">
+              <option value="6">6 Jam (Kilat)</option>
+              <option value="24">24 Jam (Standard)</option>
+              <option value="48">48 Jam (Lambat)</option>
+            </select>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

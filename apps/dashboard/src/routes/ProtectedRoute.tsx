@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useSession } from "../hooks/use-auth";
-import { Layout } from "./Layout";
+import { Layout } from "../components/layout/Layout";
 
 /**
  * Auth guard component.
