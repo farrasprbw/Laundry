@@ -1,4 +1,19 @@
+import { useNavigate } from 'react-router-dom';
+import { authClient } from '../lib/auth-client';
+
 export function TopAppBar() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          navigate('/login');
+        },
+      },
+    });
+  };
+
   return (
     <header className="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] z-40 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm flex justify-between items-center h-16 px-6 ml-auto">
       <div className="flex items-center gap-4">
@@ -9,14 +24,12 @@ export function TopAppBar() {
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <button className="hidden md:flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors w-10 h-10 rounded-full active:scale-95 transition-transform">
-          <span className="material-symbols-outlined">notifications</span>
-        </button>
-        <button className="flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors w-10 h-10 rounded-full active:scale-95 transition-transform">
-          <span className="material-symbols-outlined">account_circle</span>
-        </button>
-        <button className="bg-primary text-on-primary px-4 py-2 rounded-lg text-label-md font-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm active:scale-95 transition-transform ml-2">
-          New Order
+        <button 
+          onClick={handleLogout}
+          className="flex items-center justify-center text-error hover:bg-error/10 transition-colors px-4 py-2 rounded-lg active:scale-95 gap-2 text-label-md font-label-md font-bold"
+        >
+          <span className="material-symbols-outlined text-[20px]">logout</span>
+          <span className="hidden md:inline">Logout</span>
         </button>
       </div>
     </header>

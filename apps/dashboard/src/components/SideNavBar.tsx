@@ -71,25 +71,6 @@ export function SideNavBar() {
           New Order
         </button>
       </div>
-
-      <div className="flex flex-col gap-1 px-2 pt-4 border-t border-outline-variant/20">
-        <NavLink to="/settings" className={getNavLinkClass}>
-          {({ isActive }) => (
-            <>
-              <span className={`material-symbols-outlined text-[20px] ${isActive ? 'fill-icon' : 'group-hover:text-tertiary transition-colors'}`}>settings</span>
-              Settings
-            </>
-          )}
-        </NavLink>
-        <NavLink to="/support" className={getNavLinkClass}>
-          {({ isActive }) => (
-            <>
-              <span className={`material-symbols-outlined text-[20px] ${isActive ? 'fill-icon' : 'group-hover:text-tertiary transition-colors'}`}>help</span>
-              Support
-            </>
-          )}
-        </NavLink>
-      </div>
     </aside>
   );
 }

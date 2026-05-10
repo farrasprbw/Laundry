@@ -1,6 +1,6 @@
 export function Dashboard() {
   return (
-    <main className="flex-1 pt-24 px-container-padding-desktop pb-container-padding-desktop max-w-[1440px] mx-auto w-full">
+    <main className="flex-1 pt-24 px-container-padding-desktop pb-container-padding-desktop max-w-[1440px] w-full">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-gutter gap-4">
         <div>
@@ -115,7 +115,7 @@ export function Dashboard() {
               <span className="material-symbols-outlined">more_vert</span>
             </button>
           </div>
-          
+
           <div className="flex-1 min-h-[300px] relative w-full bg-surface-bright rounded-lg overflow-hidden border border-outline-variant/10">
             <svg className="absolute bottom-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
               <line stroke="#e6eeff" strokeWidth="0.5" x1="0" x2="100" y1="25" y2="25"></line>
@@ -132,7 +132,7 @@ export function Dashboard() {
                 </linearGradient>
               </defs>
             </svg>
-            
+
             <div className="absolute left-[60%] top-[20%] bg-surface-container-lowest border border-outline-variant/30 shadow-md rounded px-3 py-2 -translate-x-1/2 -translate-y-full">
               <p className="text-label-sm font-label-sm text-on-surface-variant">May 8</p>
               <p className="text-label-md font-label-md text-primary font-semibold">Rp 1.2M</p>

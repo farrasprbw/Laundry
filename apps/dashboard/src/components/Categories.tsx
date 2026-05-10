@@ -1,6 +1,6 @@
 export function Categories() {
   return (
-    <div className="pt-24 px-6 md:px-10 pb-24 md:pb-10 max-w-[1440px] mx-auto w-full flex-1">
+    <div className="pt-24 px-6 md:px-10 pb-24 md:pb-10 max-w-[1440px] w-full flex-1">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>

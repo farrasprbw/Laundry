@@ -1,6 +1,6 @@
 export function Expenses() {
   return (
-    <div className="pt-24 pb-24 md:pt-24 md:pb-10 px-container-padding-mobile md:px-container-padding-desktop max-w-[1440px] w-full flex-1 mx-auto">
+    <div className="pt-24 pb-24 md:pt-24 md:pb-10 px-container-padding-mobile md:px-container-padding-desktop max-w-[1440px] w-full flex-1">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
