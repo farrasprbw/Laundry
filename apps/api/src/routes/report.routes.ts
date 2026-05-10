@@ -1,0 +1,72 @@
+import { Router } from "express";
+import { requireAuth, requireRole, type AuthRequest } from "../auth/middleware.js";
+import { reportService } from "../services/report.service.js";
+import type { Response } from "express";
+
+const router = Router();
+router.use(requireAuth);
+
+// Dashboard endpoints — any authenticated user
+router.get("/dashboard-stats", async (_req: AuthRequest, res: Response) => {
+  try {
+    const stats = await reportService.getDashboardStats();
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get dashboard stats" });
+  }
+});
+
+router.get("/financial-trend", async (req: AuthRequest, res: Response) => {
+  try {
+    const period = req.query.period ? parseInt(req.query.period as string) : 7;
+    const trend = await reportService.getFinancialTrend(period);
+    res.json(trend);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get financial trend" });
+  }
+});
+
+router.get("/recent-orders", async (_req: AuthRequest, res: Response) => {
+  try {
+    const orders = await reportService.getRecentOrders();
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get recent orders" });
+  }
+});
+
+router.get("/pending-pickups", async (_req: AuthRequest, res: Response) => {
+  try {
+    const pickups = await reportService.getPendingPickups();
+    res.json(pickups);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get pending pickups" });
+  }
+});
+
+// Report endpoints — super_admin only
+router.get("/summary", requireRole("super_admin"), async (req: AuthRequest, res: Response) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    if (!dateFrom || !dateTo) { res.status(400).json({ error: "dateFrom and dateTo are required" }); return; }
+    const summary = await reportService.getSummary(dateFrom as string, dateTo as string);
+    res.json(summary);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get report summary" });
+  }
+});
+
+router.get("/export", requireRole("super_admin"), async (req: AuthRequest, res: Response) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    if (!dateFrom || !dateTo) { res.status(400).json({ error: "dateFrom and dateTo are required" }); return; }
+    const buffer = await reportService.exportExcel(dateFrom as string, dateTo as string);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=report_${dateFrom}_${dateTo}.xlsx`);
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to export report" });
+  }
+});
+
+export default router;
