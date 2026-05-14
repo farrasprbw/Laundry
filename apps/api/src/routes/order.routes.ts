@@ -33,11 +33,11 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
 
 router.post("/", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
-    const { customerId, categoryId, quantity, notes } = req.body;
+    const { customerId, categoryId, quantity, notes, paymentMethodId, paymentStatus } = req.body;
     if (!customerId || !categoryId || !quantity) {
       res.status(400).json({ error: "customerId, categoryId, and quantity are required" }); return;
     }
-    const order = await orderService.create({ customerId, categoryId, quantity: Number(quantity), notes }, req.user!.id);
+    const order = await orderService.create({ customerId, categoryId, quantity: Number(quantity), notes, paymentMethodId, paymentStatus }, req.user!.id);
     res.status(201).json(order);
   } catch (err: any) {
     res.status(400).json({ error: err.message || "Failed to create order" });

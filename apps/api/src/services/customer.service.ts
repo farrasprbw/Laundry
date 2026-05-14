@@ -34,7 +34,16 @@ export const customerService = {
 
     const [data, countResult] = await Promise.all([
       db
-        .select()
+        .select({
+          id: customers.id,
+          name: customers.name,
+          phone: customers.phone,
+          address: customers.address,
+          createdAt: customers.createdAt,
+          updatedAt: customers.updatedAt,
+          deletedAt: customers.deletedAt,
+          orderCount: sql<number>`(SELECT count(*)::int FROM ${orders} WHERE ${orders.customerId} = ${customers.id} AND ${orders.deletedAt} IS NULL)`,
+        })
         .from(customers)
         .where(where)
         .orderBy(sort === "asc" ? asc(customers.createdAt) : desc(customers.createdAt))

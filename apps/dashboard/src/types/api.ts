@@ -164,6 +164,8 @@ export interface CreateOrderInput {
   categoryId: string;
   quantity: number;
   notes?: string;
+  paymentMethodId?: string;
+  paymentStatus?: "UNPAID" | "PAID";
 }
 
 export interface CreateExpenseInput {
@@ -171,6 +173,68 @@ export interface CreateExpenseInput {
   description?: string;
   amount: number;
   expenseDate: string;
+}
+
+// ── Payment Method Types ──
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface CreatePaymentMethodInput {
+  name: string;
+}
+
+export interface UpdatePaymentMethodInput {
+  name?: string;
+  isActive?: boolean;
+}
+
+// ── User Management Types ──
+
+export type UserRole = "super_admin" | "admin" | "worker";
+
+export interface UserInfo {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  image: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+}
+
+// ── Dashboard Types ──
+
+export interface DashboardRecentOrder {
+  id: string;
+  invoiceNumber: string;
+  quantity: string;
+  totalPrice: number;
+  status: string;
+  createdAt: string;
+  customer: {
+    id: string;
+    name: string;
+    phone: string;
+  } | null;
+  category: {
+    id: string;
+    name: string;
+    unit: string;
+  } | null;
 }
 
 // ── API Error ──

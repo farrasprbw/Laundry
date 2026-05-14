@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useSession } from "../hooks/use-auth";
 import { Layout } from "../components/layout/Layout";
+import type { UserRole } from "../types/api";
 
 /**
  * Auth guard component.
@@ -29,6 +30,36 @@ export function ProtectedRoute() {
   return (
     <Layout />
   );
+}
+
+/**
+ * Role-based guard — wraps individual routes.
+ * Redirects to /dashboard if user lacks the required role.
+ */
+export function RoleProtectedRoute({
+  children,
+  roles,
+}: {
+  children: React.ReactNode;
+  roles: UserRole[];
+}) {
+  const { data: session, isPending } = useSession();
+
+  if (isPending) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const userRole = ((session?.user as any)?.role as UserRole) || "worker";
+
+  if (!roles.includes(userRole)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 /**

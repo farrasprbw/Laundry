@@ -108,6 +108,9 @@ export const orders = pgTable("orders", {
   quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
   totalPrice: integer("total_price").notNull(), // in Rupiah
   status: text("status").notNull().default("PROCESS"), // PROCESS | FINISHED | TAKEN
+  paymentMethodId: uuid("payment_method_id")
+    .references(() => paymentMethods.id),
+  paymentStatus: text("payment_status").notNull().default("UNPAID"), // UNPAID | PAID
   notes: text("notes"),
   finishedAt: timestamp("finished_at"),
   takenAt: timestamp("taken_at"),
@@ -131,6 +134,15 @@ export const expenses = pgTable("expenses", {
   deletedAt: timestamp("deleted_at"),
 });
 
+export const paymentMethods = pgTable("payment_methods", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+});
+
 // ============================================================
 // Type exports for use in services
 // ============================================================
@@ -140,3 +152,4 @@ export type Customer = typeof customers.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
+export type PaymentMethod = typeof paymentMethods.$inferSelect;

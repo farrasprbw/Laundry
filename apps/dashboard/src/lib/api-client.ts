@@ -1,7 +1,7 @@
 import axios from "axios";
 
 /**
- * Axios instance pre-configured for the LaundroFlow API.
+ * Axios instance pre-configured for the Laundry API.
  *
  * In development the Vite proxy forwards `/api/*` to `http://localhost:3001`,
  * so we only need a relative baseURL here.

@@ -8,9 +8,10 @@ interface ModalProps {
   onSubmit?: () => void;
   submitText?: string;
   cancelText?: string;
+  isSubmitDisabled?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, onSubmit, submitText = 'Simpan', cancelText = 'Batal' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, onSubmit, submitText = 'Simpan', cancelText = 'Batal', isSubmitDisabled }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -59,7 +60,8 @@ export function Modal({ isOpen, onClose, title, children, onSubmit, submitText =
           {onSubmit && (
             <button 
               onClick={onSubmit}
-              className="px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary/90 transition-colors shadow-sm font-label-md text-label-md"
+              disabled={isSubmitDisabled}
+              className={`px-5 py-2.5 rounded-xl transition-colors shadow-sm font-label-md text-label-md ${isSubmitDisabled ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70' : 'bg-primary text-on-primary hover:bg-primary/90'}`}
             >
               {submitText}
             </button>

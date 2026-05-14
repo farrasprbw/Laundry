@@ -1,4 +1,4 @@
-# 🧺 LaundroFlow — Laundry Management System
+# 🧺 Laundry — Laundry Management System
 
 Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST API**, dibangun menggunakan arsitektur monorepo.
 

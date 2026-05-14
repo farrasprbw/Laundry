@@ -19,6 +19,8 @@ interface CreateOrderInput {
   categoryId: string;
   quantity: number;
   notes?: string;
+  paymentMethodId?: string;
+  paymentStatus?: string;
 }
 
 interface ListOrdersParams {
@@ -150,6 +152,8 @@ export const orderService = {
         quantity: String(input.quantity),
         totalPrice,
         notes: input.notes ?? null,
+        paymentMethodId: input.paymentMethodId ?? null,
+        paymentStatus: input.paymentStatus ?? "UNPAID",
       })
       .returning();
 

@@ -1,27 +1,96 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import apiClient from '../lib/api-client';
+
+interface Transaction {
+  id: string;
+  invoiceNumber: string;
+  createdAt: string;
+  customer?: { name: string };
+  totalPrice: number;
+  paymentMethod?: { name: string };
+  paymentStatus: string;
+  status: string;
+}
 
 export function Reports() {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  // Initialize with today's date
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const todayDate = `${year}-${month}-${day}`;
 
-  const handleExportExcel = () => {
-    // Generate dummy CSV data matching the table structure
-    const csvContent = [
-      "No. Invoice,Tanggal,Customer,Amount,Payment Method,Category (Status)",
-      "#INV-08492,2023-10-24,Sarah J.,45000,QRIS,Revenue (Completed)",
-      "#INV-2023-091,2023-10-24,Vendor A,-120000,Transfer,Supplies (Paid)",
-      "#INV-08491,2023-10-23,Mike T.,85500,Tunai,Revenue (Pending)",
-      "#INV-2023-090,2023-10-22,Teknisi B,-250000,Transfer,Maintenance (Paid)"
-    ].join("\n");
+  const [startDate, setStartDate] = useState(todayDate);
+  const [endDate, setEndDate] = useState(todayDate);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `laundry_report_${startDate || 'all'}_to_${endDate || 'all'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [summary, setSummary] = useState({ totalIncome: 0, totalExpenses: 0, netProfit: 0 });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+
+  const fetchTransactions = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get('/reports/transactions', {
+        params: {
+          dateFrom: startDate || undefined,
+          dateTo: endDate || undefined,
+        }
+      });
+      setTransactions(response.data);
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchSummary = async () => {
+    if (!startDate || !endDate) return;
+    setIsLoadingSummary(true);
+    try {
+      const response = await apiClient.get('/reports/summary', {
+        params: { dateFrom: startDate, dateTo: endDate }
+      });
+      setSummary(response.data);
+    } catch (error) {
+      console.error('Failed to fetch summary:', error);
+    } finally {
+      setIsLoadingSummary(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchSummary();
+  }, [startDate, endDate]);
+
+  const handleExportExcel = async () => {
+    try {
+      if (!startDate || !endDate) {
+        alert("Pilih Start Date dan End Date untuk export.");
+        return;
+      }
+      const response = await apiClient.get('/reports/export', {
+        params: {
+          dateFrom: startDate,
+          dateTo: endDate,
+        },
+        responseType: 'blob', // Important for downloading files
+      });
+
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `laundry_report_${startDate}_to_${endDate}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to export report:', error);
+      alert('Gagal mengekspor laporan');
+    }
   };
   return (
     <div className="pt-24 pb-24 md:pt-24 md:pb-12 px-container-padding-mobile md:px-container-padding-desktop max-w-[1440px] w-full flex-1">
@@ -52,12 +121,11 @@ export function Reports() {
             </div>
             <h3 className="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Total Revenue</h3>
           </div>
-          <div className="text-display-lg font-display-lg text-on-surface mb-2">$12,450.00</div>
+          <div className="text-display-lg font-display-lg text-on-surface mb-2">
+            {isLoadingSummary ? '...' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalIncome)}
+          </div>
           <div className="flex items-center gap-2 text-label-sm font-label-sm">
-            <span className="text-secondary bg-secondary-container/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">arrow_upward</span> 14%
-            </span>
-            <span className="text-on-surface-variant">vs last month</span>
+            <span className="text-on-surface-variant">Periode yang dipilih</span>
           </div>
         </div>
 
@@ -72,12 +140,11 @@ export function Reports() {
             </div>
             <h3 className="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Total Expenses</h3>
           </div>
-          <div className="text-display-lg font-display-lg text-on-surface mb-2">$3,240.50</div>
+          <div className="text-display-lg font-display-lg text-on-surface mb-2">
+            {isLoadingSummary ? '...' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.totalExpenses)}
+          </div>
           <div className="flex items-center gap-2 text-label-sm font-label-sm">
-            <span className="text-error bg-error-container/50 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">arrow_upward</span> 5%
-            </span>
-            <span className="text-on-surface-variant">vs last month</span>
+            <span className="text-on-surface-variant">Periode yang dipilih</span>
           </div>
         </div>
 
@@ -90,12 +157,11 @@ export function Reports() {
             </div>
             <h3 className="text-label-md font-label-md text-primary-fixed-dim uppercase tracking-wider">Net Profit</h3>
           </div>
-          <div className="text-display-lg font-display-lg text-on-primary mb-2 relative z-10">$9,209.50</div>
+          <div className="text-display-lg font-display-lg text-on-primary mb-2 relative z-10">
+            {isLoadingSummary ? '...' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(summary.netProfit)}
+          </div>
           <div className="flex items-center gap-2 text-label-sm font-label-sm relative z-10">
-            <span className="text-secondary-fixed bg-on-primary/20 backdrop-blur-sm px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">arrow_upward</span> 18%
-            </span>
-            <span className="text-primary-fixed-dim">vs last month</span>
+            <span className="text-primary-fixed-dim">Periode yang dipilih</span>
           </div>
         </div>
       </div>
@@ -111,40 +177,45 @@ export function Reports() {
             <p className="text-body-md font-body-md text-on-surface-variant mt-1">Generate detailed spreadsheets for accounting.</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="w-full sm:w-auto">
-              <label className="block text-label-sm font-label-sm text-on-surface-variant mb-1 ml-1">Report Type</label>
-              <select className="bg-surface-container-lowest border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors">
-                <option>Daily Summary</option>
-                <option>Weekly Overview</option>
-                <option>Monthly Detail</option>
-                <option>Tax Preparation</option>
-              </select>
-            </div>
             <div className="w-full sm:w-auto flex gap-2">
               <div className="w-1/2 sm:w-auto">
                 <label className="block text-label-sm font-label-sm text-on-surface-variant mb-1 ml-1">Start Date</label>
                 <div className="relative">
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="bg-surface-container-lowest border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors" 
+                    max={endDate || undefined}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setStartDate(val);
+                      if (endDate && val > endDate) {
+                        setEndDate(val);
+                      }
+                    }}
+                    className="bg-surface-container-lowest border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors"
                   />
                 </div>
               </div>
               <div className="w-1/2 sm:w-auto">
                 <label className="block text-label-sm font-label-sm text-on-surface-variant mb-1 ml-1">End Date</label>
                 <div className="relative">
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="bg-surface-container-lowest border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors" 
+                    min={startDate || undefined}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEndDate(val);
+                      if (startDate && val < startDate) {
+                        setStartDate(val);
+                      }
+                    }}
+                    className="bg-surface-container-lowest border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors"
                   />
                 </div>
               </div>
             </div>
-            <button 
+            <button
               onClick={handleExportExcel}
               className="w-full sm:w-auto bg-primary text-on-primary hover:bg-primary-container transition-colors px-6 py-2.5 rounded-lg text-label-md font-label-md flex items-center justify-center gap-2 shadow-sm font-semibold h-[42px]"
             >
@@ -159,74 +230,56 @@ export function Reports() {
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden">
         <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface/30">
           <h3 className="text-headline-md font-headline-md text-on-surface">Recent Transactions Preview</h3>
-          <button className="text-primary text-label-md font-label-md hover:underline font-semibold">View All</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low/50 text-on-surface-variant text-label-sm font-label-sm uppercase tracking-wider border-b border-outline-variant/20">
-                <th className="px-6 py-4 font-semibold">No. Invoice</th>
-                <th className="px-6 py-4 font-semibold">Tanggal</th>
-                <th className="px-6 py-4 font-semibold">Customer</th>
-                <th className="px-6 py-4 font-semibold text-right">Amount</th>
-                <th className="px-6 py-4 font-semibold text-center">Payment Method</th>
-                <th className="px-6 py-4 font-semibold text-center">Category (Status)</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">No. Invoice</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Tanggal</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Amount</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-center">Payment Method</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-center">Category (Status)</th>
               </tr>
             </thead>
             <tbody className="text-body-md font-body-md text-on-surface divide-y divide-outline-variant/10">
-              <tr className="hover:bg-surface-container-low/30 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-on-surface text-label-md font-label-md font-medium">#INV-08492</td>
-                <td className="px-6 py-4 whitespace-nowrap text-on-surface-variant text-body-md">Oct 24, 2023</td>
-                <td className="px-6 py-4 text-on-surface text-body-md">Sarah J.</td>
-                <td className="px-6 py-4 text-right font-medium text-primary">Rp 45.000</td>
-                <td className="px-6 py-4 text-center text-on-surface-variant text-body-md">QRIS</td>
-                <td className="px-6 py-4 text-center">
-                  <span className="inline-flex items-center gap-1 bg-secondary-container/30 text-secondary px-2.5 py-1 rounded-full text-label-sm font-label-sm">
-                    <span className="material-symbols-outlined text-[14px]">check_circle</span> Revenue (Completed)
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-surface-container-low/30 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-on-surface text-label-md font-label-md font-medium">#INV-2023-091</td>
-                <td className="px-6 py-4 whitespace-nowrap text-on-surface-variant text-body-md">Oct 24, 2023</td>
-                <td className="px-6 py-4 text-on-surface text-body-md">Vendor A</td>
-                <td className="px-6 py-4 text-right font-medium text-error">-Rp 120.000</td>
-                <td className="px-6 py-4 text-center text-on-surface-variant text-body-md">Transfer</td>
-                <td className="px-6 py-4 text-center">
-                  <span className="inline-flex items-center gap-1 bg-error-container/30 text-error px-2.5 py-1 rounded-full text-label-sm font-label-sm">
-                    <span className="material-symbols-outlined text-[14px]">shopping_cart</span> Supplies (Paid)
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-surface-container-low/30 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-on-surface text-label-md font-label-md font-medium">#INV-08491</td>
-                <td className="px-6 py-4 whitespace-nowrap text-on-surface-variant text-body-md">Oct 23, 2023</td>
-                <td className="px-6 py-4 text-on-surface text-body-md">Mike T.</td>
-                <td className="px-6 py-4 text-right font-medium text-primary">Rp 85.500</td>
-                <td className="px-6 py-4 text-center text-on-surface-variant text-body-md">Tunai</td>
-                <td className="px-6 py-4 text-center">
-                  <span className="inline-flex items-center gap-1 bg-surface-container-highest text-on-surface-variant px-2.5 py-1 rounded-full text-label-sm font-label-sm border border-outline-variant/30">
-                    <span className="material-symbols-outlined text-[14px]">pending</span> Revenue (Pending)
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-surface-container-low/30 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-on-surface text-label-md font-label-md font-medium">#INV-2023-090</td>
-                <td className="px-6 py-4 whitespace-nowrap text-on-surface-variant text-body-md">Oct 22, 2023</td>
-                <td className="px-6 py-4 text-on-surface text-body-md">Teknisi B</td>
-                <td className="px-6 py-4 text-right font-medium text-error">-Rp 250.000</td>
-                <td className="px-6 py-4 text-center text-on-surface-variant text-body-md">Transfer</td>
-                <td className="px-6 py-4 text-center">
-                  <span className="inline-flex items-center gap-1 bg-error-container/30 text-error px-2.5 py-1 rounded-full text-label-sm font-label-sm">
-                    <span className="material-symbols-outlined text-[14px]">build</span> Maintenance (Paid)
-                  </span>
-                </td>
-              </tr>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">Memuat data...</td>
+                </tr>
+              ) : transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">Tidak ada transaksi ditemukan pada rentang tanggal ini.</td>
+                </tr>
+              ) : (
+                transactions.slice(0, 10).map((trx) => (
+                  <tr key={trx.id} className="hover:bg-surface-container-low/30 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-on-surface text-label-md font-label-md font-medium">{trx.invoiceNumber}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-on-surface-variant text-body-md">
+                      {new Date(trx.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </td>
+                    <td className="px-6 py-4 text-on-surface text-body-md">{trx.customer?.name ?? '-'}</td>
+                    <td className="px-6 py-4 text-right font-medium text-primary">
+                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(trx.totalPrice)}
+                    </td>
+                    <td className="px-6 py-4 text-center text-on-surface-variant text-body-md">{trx.paymentMethod?.name ?? '-'}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm ${trx.paymentStatus === 'PAID' ? 'bg-secondary-container/30 text-secondary' : 'bg-error-container/30 text-error'}`}>
+                        <span className="material-symbols-outlined text-[14px]">
+                          {trx.paymentStatus === 'PAID' ? 'check_circle' : 'pending'}
+                        </span>
+                        {trx.paymentStatus === 'PAID' ? 'Lunas' : 'Belum Lunas'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
         <div className="px-6 py-4 border-t border-outline-variant/20 bg-surface/30 text-center">
-          <p className="text-label-sm font-label-sm text-on-surface-variant">Showing 4 of 1,204 transactions</p>
+          <p className="text-label-sm font-label-sm text-on-surface-variant">Showing {Math.min(transactions.length, 10)} of {transactions.length} transactions</p>
         </div>
       </div>
     </div>

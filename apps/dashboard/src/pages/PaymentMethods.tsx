@@ -1,37 +1,44 @@
 import { useState } from 'react';
 import { Modal } from '../components/ui/Modal';
+import { usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from '../hooks/use-payment-methods';
 
 export function PaymentMethods() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newMethodName, setNewMethodName] = useState('');
 
-  // Dummy data
-  const [methods, setMethods] = useState([
-    { id: 1, name: 'QRIS', active: true },
-    { id: 2, name: 'Transfer', active: true },
-    { id: 3, name: 'Tunai', active: true },
-    { id: 4, name: 'Belum Bayar', active: true },
-  ]);
+  const { data: methods = [], isLoading, error } = usePaymentMethods();
+  const createMutation = useCreatePaymentMethod();
+  const updateMutation = useUpdatePaymentMethod();
+  const deleteMutation = useDeletePaymentMethod();
 
-  const handleAddMethod = () => {
+  const handleAddMethod = async () => {
     if (newMethodName.trim()) {
-      setMethods([
-        ...methods,
-        {
-          id: Date.now(),
-          name: newMethodName,
-          active: true
-        }
-      ]);
-      setNewMethodName('');
-      setIsModalOpen(false);
+      try {
+        await createMutation.mutateAsync({ name: newMethodName.trim() });
+        setNewMethodName('');
+        setIsModalOpen(false);
+      } catch (err: any) {
+        alert(err?.response?.data?.error || 'Gagal menambahkan metode pembayaran');
+      }
     }
   };
 
-  const toggleMethodStatus = (id: number) => {
-    setMethods(methods.map(m =>
-      m.id === id ? { ...m, active: !m.active } : m
-    ));
+  const toggleMethodStatus = async (id: string, currentActive: boolean) => {
+    try {
+      await updateMutation.mutateAsync({ id, isActive: !currentActive });
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Gagal mengubah status');
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (confirm(`Hapus metode pembayaran "${name}"?`)) {
+      try {
+        await deleteMutation.mutateAsync(id);
+      } catch (err: any) {
+        alert(err?.response?.data?.error || 'Gagal menghapus metode pembayaran');
+      }
+    }
   };
 
   return (
@@ -54,57 +61,78 @@ export function PaymentMethods() {
         </button>
       </div>
 
-      {/* Data Table */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
-                <th className="px-6 py-4 font-semibold">Nama Metode</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md text-on-surface">
-              {methods.map((method) => (
-                <tr key={method.id} className="hover:bg-surface-container-lowest transition-colors group">
-                  <td className="px-6 py-5 font-medium text-on-background">
-                    {method.name}
-                  </td>
-                  <td className="px-6 py-5">
-                    <button
-                      onClick={() => toggleMethodStatus(method.id)}
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-label-sm font-label-sm font-bold border transition-colors ${method.active
-                        ? 'bg-primary-container/30 text-primary border-primary/30 hover:bg-primary-container'
-                        : 'bg-surface-variant/50 text-on-surface-variant border-outline-variant/30 hover:bg-surface-variant'
-                        }`}
-                    >
-                      {method.active ? 'Active' : 'Inactive'}
-                    </button>
-                  </td>
-                  <td className="px-6 py-5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors" title="Delete">
-                        <span className="material-symbols-outlined text-[20px]">delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {methods.length === 0 && (
-                <tr className="hover:bg-surface-container-lowest transition-colors cursor-pointer group border-t-2 border-dashed border-outline-variant/30">
-                  <td className="px-6 py-8 text-center" colSpan={3}>
-                    <div className="flex flex-col items-center justify-center gap-2 text-on-surface-variant">
-                      <span className="material-symbols-outlined text-[32px] opacity-70">account_balance_wallet</span>
-                      <p className="text-body-md font-body-md font-medium">Belum ada metode pembayaran.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* Loading / Error states */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
         </div>
-      </div>
+      )}
+
+      {error && (
+        <div className="bg-error-container/30 border border-error/30 rounded-xl p-6 text-center">
+          <p className="text-error font-label-md">Gagal memuat data payment methods</p>
+        </div>
+      )}
+
+      {/* Data Table */}
+      {!isLoading && !error && (
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Nama Metode</th>
+                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md text-on-surface">
+                {methods.map((method) => (
+                  <tr key={method.id} className="hover:bg-surface-container-lowest transition-colors group">
+                    <td className="px-6 py-5 font-medium text-on-background">
+                      {method.name}
+                    </td>
+                    <td className="px-6 py-5">
+                      <button
+                        onClick={() => toggleMethodStatus(method.id, method.isActive)}
+                        disabled={updateMutation.isPending}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-label-sm font-label-sm font-bold border transition-colors ${method.isActive
+                          ? 'bg-primary-container/30 text-primary border-primary/30 hover:bg-primary-container'
+                          : 'bg-surface-variant/50 text-on-surface-variant border-outline-variant/30 hover:bg-surface-variant'
+                          }`}
+                      >
+                        {method.isActive ? 'Active' : 'Inactive'}
+                      </button>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleDelete(method.id, method.name)}
+                          disabled={deleteMutation.isPending}
+                          className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {methods.length === 0 && (
+                  <tr className="hover:bg-surface-container-lowest transition-colors cursor-pointer group border-t-2 border-dashed border-outline-variant/30">
+                    <td className="px-6 py-8 text-center" colSpan={3}>
+                      <div className="flex flex-col items-center justify-center gap-2 text-on-surface-variant">
+                        <span className="material-symbols-outlined text-[32px] opacity-70">account_balance_wallet</span>
+                        <p className="text-body-md font-body-md font-medium">Belum ada metode pembayaran.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Add Payment Method Modal */}
       <Modal

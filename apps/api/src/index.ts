@@ -9,6 +9,9 @@ import categoryRoutes from "./routes/category.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import expenseRoutes from "./routes/expense.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import paymentMethodRoutes from "./routes/payment-method.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
 const app = express();
 
@@ -33,9 +36,12 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/payment-methods", paymentMethodRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/users", userRoutes);
 
 // ── Start server ──
 app.listen(env.PORT, () => {
-  console.log(`🚀 LaundroFlow API running on http://localhost:${env.PORT}`);
+  console.log(`🚀 Laundry API running on http://localhost:${env.PORT}`);
   console.log(`   Health: http://localhost:${env.PORT}/api/health`);
 });

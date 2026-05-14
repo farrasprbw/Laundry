@@ -1,5 +1,5 @@
 import { db } from "../db/index.js";
-import { orders, expenses, customers, categories } from "../db/schema.js";
+import { orders, expenses, customers, categories, paymentMethods } from "../db/schema.js";
 import { sql, eq, isNull, and, gte, lt, lte, desc } from "drizzle-orm";
 import { generateExcelReport } from "../lib/excel.js";
 
@@ -75,10 +75,35 @@ export const reportService = {
       .then(rows => rows.map(r => ({ ...r.order, customer: r.customer })));
   },
 
+  async getTransactions(dateFrom?: string, dateTo?: string) {
+    let filter = isNull(orders.deletedAt);
+    if (dateFrom && dateTo) {
+      filter = and(
+        isNull(orders.deletedAt),
+        gte(orders.createdAt, new Date(dateFrom)),
+        lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`))
+      ) as any;
+    }
+
+    return db.select({
+      order: orders,
+      customer: { id: customers.id, name: customers.name, phone: customers.phone },
+      category: { id: categories.id, name: categories.name, unit: categories.unit },
+      paymentMethod: { id: paymentMethods.id, name: paymentMethods.name }
+    })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .leftJoin(categories, eq(orders.categoryId, categories.id))
+      .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
+      .where(filter)
+      .orderBy(desc(orders.createdAt))
+      .then(rows => rows.map(r => ({ ...r.order, customer: r.customer, category: r.category, paymentMethod: r.paymentMethod })));
+  },
+
   async getSummary(dateFrom: string, dateTo: string) {
     const [income, exp] = await Promise.all([
       db.select({ total: sql<number>`coalesce(sum(${orders.totalPrice}), 0)::int` }).from(orders)
-        .where(and(isNull(orders.deletedAt), gte(orders.createdAt, new Date(dateFrom)), lte(orders.createdAt, new Date(dateTo)))),
+        .where(and(isNull(orders.deletedAt), gte(orders.createdAt, new Date(dateFrom)), lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`)))),
       db.select({ total: sql<number>`coalesce(sum(${expenses.amount}), 0)::int` }).from(expenses)
         .where(and(isNull(expenses.deletedAt), gte(expenses.expenseDate, dateFrom), lte(expenses.expenseDate, dateTo))),
     ]);
@@ -89,11 +114,13 @@ export const reportService = {
 
   async exportExcel(dateFrom: string, dateTo: string) {
     const [ordersData, expensesData, summary] = await Promise.all([
-      db.select({ order: orders, customer: customers, category: categories }).from(orders)
-        .leftJoin(customers, eq(orders.customerId, customers.id)).leftJoin(categories, eq(orders.categoryId, categories.id))
-        .where(and(isNull(orders.deletedAt), gte(orders.createdAt, new Date(dateFrom)), lte(orders.createdAt, new Date(dateTo))))
+      db.select({ order: orders, customer: customers, category: categories, paymentMethod: paymentMethods }).from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .leftJoin(categories, eq(orders.categoryId, categories.id))
+        .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
+        .where(and(isNull(orders.deletedAt), gte(orders.createdAt, new Date(dateFrom)), lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`))))
         .orderBy(desc(orders.createdAt))
-        .then(rows => rows.map(r => ({ ...r.order, customer: r.customer!, category: r.category! }))),
+        .then(rows => rows.map(r => ({ ...r.order, customer: r.customer!, category: r.category!, paymentMethod: r.paymentMethod }))),
       db.select().from(expenses)
         .where(and(isNull(expenses.deletedAt), gte(expenses.expenseDate, dateFrom), lte(expenses.expenseDate, dateTo)))
         .orderBy(desc(expenses.expenseDate)),

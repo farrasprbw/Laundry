@@ -45,6 +45,16 @@ router.get("/pending-pickups", async (_req: AuthRequest, res: Response) => {
 });
 
 // Report endpoints — super_admin only
+router.get("/transactions", requireRole("super_admin"), async (req: AuthRequest, res: Response) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    const transactions = await reportService.getTransactions(dateFrom as string | undefined, dateTo as string | undefined);
+    res.json(transactions);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get transactions" });
+  }
+});
+
 router.get("/summary", requireRole("super_admin"), async (req: AuthRequest, res: Response) => {
   try {
     const { dateFrom, dateTo } = req.query;
