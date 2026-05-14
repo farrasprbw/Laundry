@@ -296,7 +296,7 @@ export function Dashboard() {
                     <td className="py-4 px-6 text-label-md font-label-md text-primary">{order.invoiceNumber}</td>
                     <td className="py-4 px-6">{order.customer?.name ?? '-'}</td>
                     <td className="py-4 px-6">{order.category?.name ?? '-'}</td>
-                    <td className="py-4 px-6 text-on-surface-variant">{order.quantity} {order.category?.unit ?? ''}</td>
+                    <td className="py-4 px-6 text-on-surface-variant">{parseFloat(order.quantity)} {order.category?.unit ?? ''}</td>
                     <td className="py-4 px-6">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[order.status] ?? 'bg-surface-variant text-on-surface-variant'}`}>
                         {order.status}

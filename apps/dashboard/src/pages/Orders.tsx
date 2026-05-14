@@ -1,53 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import apiClient from '../lib/api-client';
-
-interface Order {
-  id: string;
-  invoiceNumber: string;
-  customer?: { id: string; name: string; phone: string };
-  category?: { id: string; name: string; unit: string };
-  quantity: string;
-  totalPrice: number;
-  status: 'PROCESS' | 'FINISHED' | 'TAKEN';
-  createdAt: string;
-}
+import { useOrders, useUpdateOrderStatus, useDeleteOrder } from '../hooks/use-orders';
 
 export function Orders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
 
-  const fetchOrders = async () => {
-    setIsLoading(true);
-    try {
-      const response = await apiClient.get('/orders', {
-        params: {
-          status: statusFilter || undefined,
-          page,
-          limit: 10,
-        },
-      });
-      setOrders(response.data.data);
-      setTotalPages(response.data.pagination.totalPages);
-      setTotalItems(response.data.pagination.total);
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data, isLoading } = useOrders({
+    status: statusFilter || undefined,
+    page,
+    limit: 10,
+  });
 
-  useEffect(() => {
-    fetchOrders();
-  }, [statusFilter, page]);
+  const orders = data?.data || [];
+  const totalPages = data?.pagination.totalPages || 1;
+  const totalItems = data?.pagination.total || 0;
+
+  const updateStatus = useUpdateOrderStatus();
+  const deleteOrder = useDeleteOrder();
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      await apiClient.patch(`/orders/${id}/status`, { status: newStatus });
-      fetchOrders();
+      await updateStatus.mutateAsync({ id, status: newStatus });
     } catch (error: any) {
       alert(error.response?.data?.error || 'Gagal mengubah status');
     }
@@ -56,8 +30,7 @@ export function Orders() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Yakin ingin menghapus order ini?')) return;
     try {
-      await apiClient.delete(`/orders/${id}`);
-      fetchOrders();
+      await deleteOrder.mutateAsync(id);
     } catch (error: any) {
       alert(error.response?.data?.error || 'Gagal menghapus order');
     }
@@ -145,7 +118,7 @@ export function Orders() {
                   <td colSpan={8} className="px-6 py-8 text-center text-on-surface-variant">Tidak ada order ditemukan.</td>
                 </tr>
               ) : (
-                orders.map((order, index) => (
+                orders.map((order: any, index: number) => (
                   <tr key={order.id} className="bg-surface hover:bg-surface-container-low transition-colors group">
                     <td className="px-6 py-4 text-label-md font-label-md text-primary">{order.invoiceNumber}</td>
                     <td className="px-6 py-4">
@@ -157,7 +130,7 @@ export function Orders() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-body-md font-body-md text-on-surface-variant">{order.category?.name || '-'}</td>
-                    <td className="px-6 py-4 text-body-md font-body-md text-on-surface">{Number(order.quantity)} {order.category?.unit || 'kg'}</td>
+                    <td className="px-6 py-4 text-body-md font-body-md text-on-surface">{parseFloat(order.quantity)} {order.category?.unit || 'kg'}</td>
                     <td className="px-6 py-4 text-body-md font-body-md text-on-surface">{formatCurrency(order.totalPrice)}</td>
                     <td className="px-6 py-4 text-body-md font-body-md text-on-surface-variant">{formatDate(order.createdAt)}</td>
                     <td className="px-6 py-4">
@@ -188,6 +161,7 @@ export function Orders() {
                             onClick={() => handleUpdateStatus(order.id, 'FINISHED')}
                             className="p-2 text-outline hover:text-secondary hover:bg-secondary-container/30 rounded-lg transition-colors"
                             title="Tandai Selesai"
+                            disabled={updateStatus.isPending}
                           >
                             <span className="material-symbols-outlined text-[20px]">check_circle</span>
                           </button>
@@ -197,6 +171,7 @@ export function Orders() {
                             onClick={() => handleUpdateStatus(order.id, 'TAKEN')}
                             className="p-2 text-outline hover:text-secondary hover:bg-secondary-container/30 rounded-lg transition-colors"
                             title="Tandai Diambil"
+                            disabled={updateStatus.isPending}
                           >
                             <span className="material-symbols-outlined text-[20px]">inventory_2</span>
                           </button>
@@ -214,6 +189,7 @@ export function Orders() {
                           onClick={() => handleDelete(order.id)}
                           className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors"
                           title="Hapus"
+                          disabled={deleteOrder.isPending}
                         >
                           <span className="material-symbols-outlined text-[20px]">delete</span>
                         </button>
@@ -250,4 +226,3 @@ export function Orders() {
     </div>
   );
 }
-

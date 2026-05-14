@@ -1,5 +1,5 @@
 import { db } from "../db/index.js";
-import { user, account } from "../db/schema.js";
+import { user, account, session } from "../db/schema.js";
 import { eq, sql, ne } from "drizzle-orm";
 import { auth } from "../auth/auth.js";
 
@@ -135,7 +135,10 @@ export const userService = {
    * Delete a user and their associated accounts/sessions.
    */
   async deleteUser(id: string) {
-    // Delete associated accounts first
+    // Delete associated sessions first
+    await db.delete(session).where(eq(session.userId, id));
+
+    // Delete associated accounts
     await db.delete(account).where(eq(account.userId, id));
 
     // Delete the user

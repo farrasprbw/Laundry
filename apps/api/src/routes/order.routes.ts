@@ -31,7 +31,7 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.post("/", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
+router.post("/", async (req: AuthRequest, res: Response) => {
   try {
     const { customerId, categoryId, quantity, notes, paymentMethodId, paymentStatus } = req.body;
     if (!customerId || !categoryId || !quantity) {

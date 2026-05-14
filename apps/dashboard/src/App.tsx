@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute, RoleProtectedRoute } from './routes/ProtectedRoute';
+import { ProtectedRoute, RoleProtectedRoute, PublicOnlyRoute } from './routes/ProtectedRoute';
 import { Dashboard } from './pages/Dashboard';
 import { Orders } from './pages/Orders';
 import { Customers } from './pages/Customers';
@@ -15,16 +15,16 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public route */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
 
         {/* Protected routes — redirect to /login if not authenticated */}
         <Route element={<ProtectedRoute />}>
           {/* All authenticated users */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/orders" element={<Orders />} />
-          <Route path="/customers" element={<Customers />} />
 
           {/* Admin & Super Admin only */}
+          <Route path="/customers" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Customers /></RoleProtectedRoute>} />
           <Route path="/categories" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Categories /></RoleProtectedRoute>} />
           <Route path="/expenses" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Expenses /></RoleProtectedRoute>} />
           <Route path="/payment-methods" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><PaymentMethods /></RoleProtectedRoute>} />

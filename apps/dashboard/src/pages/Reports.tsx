@@ -100,11 +100,6 @@ export function Reports() {
           <p className="text-body-md font-body-md text-on-surface-variant mt-2">Overview of revenue, expenses, and profitability.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="bg-surface-container-high text-on-surface hover:bg-surface-variant transition-colors px-4 py-2 rounded-lg text-label-md font-label-md flex items-center gap-2 shadow-sm border border-outline-variant/20 hover:-translate-y-0.5 transform duration-200">
-            <span className="material-symbols-outlined text-tertiary">calendar_month</span>
-            This Month
-            <span className="material-symbols-outlined text-tertiary text-sm">expand_more</span>
-          </button>
         </div>
       </header>
 

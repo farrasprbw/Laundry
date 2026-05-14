@@ -44,8 +44,8 @@ router.get("/pending-pickups", async (_req: AuthRequest, res: Response) => {
   }
 });
 
-// Report endpoints — super_admin only
-router.get("/transactions", requireRole("super_admin"), async (req: AuthRequest, res: Response) => {
+// Report endpoints — admin & super_admin
+router.get("/transactions", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
     const { dateFrom, dateTo } = req.query;
     const transactions = await reportService.getTransactions(dateFrom as string | undefined, dateTo as string | undefined);
@@ -55,7 +55,7 @@ router.get("/transactions", requireRole("super_admin"), async (req: AuthRequest,
   }
 });
 
-router.get("/summary", requireRole("super_admin"), async (req: AuthRequest, res: Response) => {
+router.get("/summary", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
     const { dateFrom, dateTo } = req.query;
     if (!dateFrom || !dateTo) { res.status(400).json({ error: "dateFrom and dateTo are required" }); return; }
@@ -66,7 +66,7 @@ router.get("/summary", requireRole("super_admin"), async (req: AuthRequest, res:
   }
 });
 
-router.get("/export", requireRole("super_admin"), async (req: AuthRequest, res: Response) => {
+router.get("/export", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
     const { dateFrom, dateTo } = req.query;
     if (!dateFrom || !dateTo) { res.status(400).json({ error: "dateFrom and dateTo are required" }); return; }
