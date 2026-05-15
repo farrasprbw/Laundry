@@ -252,7 +252,7 @@ export function Reports() {
                   <tr key={trx.id} className="hover:bg-surface-container-low/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-on-surface text-label-md font-label-md font-medium">{trx.invoiceNumber}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-on-surface-variant text-body-md">
-                      {new Date(trx.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(trx.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
                     </td>
                     <td className="px-6 py-4 text-on-surface text-body-md">{trx.customer?.name ?? '-'}</td>
                     <td className="px-6 py-4 text-right font-medium text-primary">

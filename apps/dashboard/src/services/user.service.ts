@@ -30,7 +30,7 @@ export const userService = {
   },
 
   /** Update user profile. */
-  async update(id: string, input: { name?: string; email?: string }): Promise<UserInfo> {
+  async update(id: string, input: { name?: string; email?: string; username?: string }): Promise<UserInfo> {
     const { data } = await apiClient.put<UserInfo>(`/users/${id}`, input);
     return data;
   },

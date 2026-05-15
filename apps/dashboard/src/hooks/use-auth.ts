@@ -1,21 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import { useSession, signIn, signUp, signOut } from "../lib/auth-client";
+import type { UserRole } from "../types/api";
 
 export { useSession };
 
 /**
- * Hook for logging in with email + password.
+ * Hook for logging in with username + password.
  * Returns a handler function + loading / error state.
  */
 export function useLogin() {
   const navigate = useNavigate();
 
-  const login = async (email: string, password: string) => {
-    const { error } = await signIn.email({ email, password });
+  const login = async (username: string, password: string) => {
+    const { data, error } = await signIn.username({ username, password });
     if (error) {
       throw new Error(error.message ?? "Login failed");
     }
-    navigate("/dashboard");
+    if ((data?.user as { role?: UserRole })?.role === "worker") {
+      navigate("/orders");
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   return { login };
@@ -28,19 +33,24 @@ export function useSignUp() {
   const navigate = useNavigate();
 
   const register = async (
-    email: string,
+    username: string,
     password: string,
     name: string,
   ) => {
-    const { error } = await signUp.email({
-      email,
+    const { data, error } = await signUp.email({
+      email: `${username}@dummy.com`, // dummy email if email is still required
+      username,
       password,
       name,
     });
     if (error) {
       throw new Error(error.message ?? "Sign up failed");
     }
-    navigate("/dashboard");
+    if ((data?.user as { role?: UserRole })?.role === "worker") {
+      navigate("/orders");
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   return { register };

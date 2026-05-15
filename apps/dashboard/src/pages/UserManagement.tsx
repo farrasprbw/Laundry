@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal } from '../components/ui/Modal';
-import { useUsers, useCreateUser, useUpdateUserRole, useDeleteUser } from '../hooks/use-users';
+import { useUsers, useCreateUser, useUpdateUserRole, useUpdateUser, useDeleteUser } from '../hooks/use-users';
 import type { UserRole } from '../types/api';
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -23,31 +23,63 @@ export function UserManagement() {
 
   // Create form state
   const [formName, setFormName] = useState('');
-  const [formEmail, setFormEmail] = useState('');
+  const [formUsername, setFormUsername] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('worker');
+
+  // Edit form state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const { data: users = [], isLoading, error } = useUsers();
   const createMutation = useCreateUser();
   const updateRoleMutation = useUpdateUserRole();
+  const updateUserMutation = useUpdateUser();
   const deleteMutation = useDeleteUser();
 
   const handleCreateUser = async () => {
-    if (!formName.trim() || !formEmail.trim() || !formPassword.trim()) return;
+    if (!formName.trim() || !formUsername.trim() || !formPassword.trim()) return;
     try {
       await createMutation.mutateAsync({
         name: formName.trim(),
-        email: formEmail.trim(),
+        username: formUsername.trim(),
         password: formPassword,
         role: formRole,
       });
       setFormName('');
-      setFormEmail('');
+      setFormUsername('');
       setFormPassword('');
       setFormRole('worker');
       setIsCreateModalOpen(false);
     } catch (err: any) {
       alert(err?.response?.data?.error || 'Gagal membuat user');
+    }
+  };
+
+  const openEditModal = (user: any) => {
+    setEditUserId(user.id);
+    setEditName(user.name);
+    setEditUsername(user.username);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editUserId || !editName.trim() || !editUsername.trim()) return;
+    try {
+      await updateUserMutation.mutateAsync({
+        id: editUserId,
+        input: {
+          name: editName.trim(),
+          username: editUsername.trim(),
+        },
+      });
+      setIsEditModalOpen(false);
+      setEditUserId(null);
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Gagal memperbarui user');
     }
   };
 
@@ -147,7 +179,7 @@ export function UserManagement() {
               <thead>
                 <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
                   <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">User</th>
-                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Username</th>
                   <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Role</th>
                   <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Dibuat</th>
                   <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</th>
@@ -164,7 +196,7 @@ export function UserManagement() {
                         <span className="font-medium text-on-background">{u.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-on-surface-variant">{u.email}</td>
+                    <td className="px-6 py-5 text-on-surface-variant">{u.username}</td>
                     <td className="px-6 py-5">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-label-sm font-label-sm font-bold border ${ROLE_STYLES[u.role]}`}>
                         {ROLE_LABELS[u.role]}
@@ -172,13 +204,19 @@ export function UserManagement() {
                     </td>
                     <td className="px-6 py-5 text-on-surface-variant text-body-sm">
                       {new Date(u.createdAt).toLocaleDateString('id-ID', {
-                        day: 'numeric',
+                        day: '2-digit',
                         month: 'short',
-                        year: 'numeric',
                       })}
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openEditModal(u)}
+                          className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors"
+                          title="Edit User"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
                         <button
                           onClick={() => openRoleModal(u.id, u.role)}
                           className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors"
@@ -220,9 +258,10 @@ export function UserManagement() {
         onClose={() => {
           setIsCreateModalOpen(false);
           setFormName('');
-          setFormEmail('');
+          setFormUsername('');
           setFormPassword('');
           setFormRole('worker');
+          setShowPassword(false);
         }}
         title="Tambah User Baru"
         onSubmit={handleCreateUser}
@@ -240,24 +279,35 @@ export function UserManagement() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Email</label>
+            <label className="text-label-md font-label-md text-on-surface">Username</label>
             <input
-              type="email"
-              value={formEmail}
-              onChange={(e) => setFormEmail(e.target.value)}
-              placeholder="email@example.com"
+              type="text"
+              value={formUsername}
+              onChange={(e) => setFormUsername(e.target.value)}
+              placeholder="username"
               className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-label-md font-label-md text-on-surface">Password</label>
-            <input
-              type="password"
-              value={formPassword}
-              onChange={(e) => setFormPassword(e.target.value)}
-              placeholder="Minimal 8 karakter"
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={formPassword}
+                onChange={(e) => setFormPassword(e.target.value)}
+                placeholder="Minimal 8 karakter"
+                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-4 pr-12 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-on-surface-variant hover:text-primary transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-label-md font-label-md text-on-surface">Role</label>
@@ -308,6 +358,40 @@ export function UserManagement() {
             {selectedRole === 'worker' && (
               <p className="text-body-sm text-on-surface">Dashboard, Orders, dan Customers</p>
             )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditUserId(null);
+        }}
+        title="Edit User"
+        onSubmit={handleUpdateUser}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Nama</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Nama lengkap"
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Username</label>
+            <input
+              type="text"
+              value={editUsername}
+              onChange={(e) => setEditUsername(e.target.value)}
+              placeholder="Username login"
+              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            />
           </div>
         </div>
       </Modal>

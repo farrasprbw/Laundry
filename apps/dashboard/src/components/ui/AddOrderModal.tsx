@@ -123,7 +123,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-label-md font-label-md text-on-surface">Berat / Jumlah {selectedCategory ? `(${selectedCategory.unit})` : ''}</label>
             <div className="relative">
@@ -152,7 +152,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-label-md font-label-md text-on-surface">Metode Pembayaran</label>
             <select

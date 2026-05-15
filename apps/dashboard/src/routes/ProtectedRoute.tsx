@@ -14,7 +14,7 @@ export function ProtectedRoute() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="w-full min-h-screen flex items-center justify-center bg-surface">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
           <p className="text-body-md text-on-surface-variant">Loading...</p>
@@ -53,9 +53,13 @@ export function RoleProtectedRoute({
     );
   }
 
-  const userRole = ((session?.user as any)?.role as UserRole) || "worker";
+  const userRole = ((session?.user as { role?: UserRole })?.role) || "worker";
 
   if (!roles.includes(userRole)) {
+    // If worker, they don't have dashboard access, so redirect to orders
+    if (userRole === "worker") {
+      return <Navigate to="/orders" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -71,7 +75,7 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
 
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="w-full min-h-screen flex items-center justify-center bg-surface">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
           <p className="text-body-md text-on-surface-variant">Loading...</p>
@@ -81,6 +85,10 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (session) {
+    const userRole = ((session?.user as { role?: UserRole })?.role) || "worker";
+    if (userRole === "worker") {
+      return <Navigate to="/orders" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 

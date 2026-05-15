@@ -1,5 +1,5 @@
 import { db } from "../db/index.js";
-import { orders, customers, categories } from "../db/schema.js";
+import { orders, customers, categories, paymentMethods } from "../db/schema.js";
 import {
   eq,
   isNull,
@@ -83,10 +83,15 @@ export const orderService = {
             name: categories.name,
             unit: categories.unit,
           },
+          paymentMethod: {
+            id: paymentMethods.id,
+            name: paymentMethods.name,
+          },
         })
         .from(orders)
         .leftJoin(customers, eq(orders.customerId, customers.id))
         .leftJoin(categories, eq(orders.categoryId, categories.id))
+        .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
         .where(where)
         .orderBy(desc(orders.createdAt))
         .limit(limit)
@@ -102,6 +107,7 @@ export const orderService = {
         ...row.order,
         customer: row.customer,
         category: row.category,
+        paymentMethod: row.paymentMethod,
       })),
       pagination: {
         page,
@@ -118,10 +124,12 @@ export const orderService = {
         order: orders,
         customer: customers,
         category: categories,
+        paymentMethod: paymentMethods,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .leftJoin(categories, eq(orders.categoryId, categories.id))
+      .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
       .where(and(eq(orders.id, id), isNull(orders.deletedAt)));
 
     if (!result) return null;
@@ -130,6 +138,7 @@ export const orderService = {
       ...result.order,
       customer: result.customer,
       category: result.category,
+      paymentMethod: result.paymentMethod,
     };
   },
 

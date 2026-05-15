@@ -201,8 +201,8 @@ export type UserRole = "super_admin" | "admin" | "worker";
 
 export interface UserInfo {
   id: string;
+  username: string;
   name: string;
-  email: string;
   role: UserRole;
   image: string | null;
   createdAt: string;
@@ -211,7 +211,7 @@ export interface UserInfo {
 
 export interface CreateUserInput {
   name: string;
-  email: string;
+  username: string;
   password: string;
   role: UserRole;
 }

@@ -20,7 +20,8 @@ function App() {
         {/* Protected routes — redirect to /login if not authenticated */}
         <Route element={<ProtectedRoute />}>
           {/* All authenticated users */}
-          <Route path="/dashboard" element={<Dashboard />} />
+          {/* Admin & Super Admin only */}
+          <Route path="/dashboard" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Dashboard /></RoleProtectedRoute>} />
           <Route path="/orders" element={<Orders />} />
 
           {/* Admin & Super Admin only */}

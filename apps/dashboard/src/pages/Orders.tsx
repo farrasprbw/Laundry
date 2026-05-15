@@ -54,8 +54,10 @@ export function Orders() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getDate()}/${date.getMonth() + 1}`;
+    return new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'short',
+    }).format(new Date(dateString));
   };
 
   const getInitials = (name: string) => {
@@ -104,6 +106,7 @@ export function Orders() {
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Qty</th>
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Total</th>
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Payment</th>
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</th>
               </tr>
@@ -111,11 +114,11 @@ export function Orders() {
             <tbody className="divide-y divide-outline-variant/10">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-on-surface-variant">Memuat data...</td>
+                  <td colSpan={9} className="px-6 py-8 text-center text-on-surface-variant">Memuat data...</td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-on-surface-variant">Tidak ada order ditemukan.</td>
+                  <td colSpan={9} className="px-6 py-8 text-center text-on-surface-variant">Tidak ada order ditemukan.</td>
                 </tr>
               ) : (
                 orders.map((order: any, index: number) => (
@@ -133,6 +136,14 @@ export function Orders() {
                     <td className="px-6 py-4 text-body-md font-body-md text-on-surface">{parseFloat(order.quantity)} {order.category?.unit || 'kg'}</td>
                     <td className="px-6 py-4 text-body-md font-body-md text-on-surface">{formatCurrency(order.totalPrice)}</td>
                     <td className="px-6 py-4 text-body-md font-body-md text-on-surface-variant">{formatDate(order.createdAt)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-body-md font-body-md text-on-surface">{order.paymentMethod?.name || '-'}</span>
+                        <span className={`text-[10px] font-bold ${order.paymentStatus === 'PAID' ? 'text-secondary' : 'text-error'}`}>
+                          {order.paymentStatus}
+                        </span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       {order.status === 'PROCESS' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-primary-fixed text-on-primary-fixed">

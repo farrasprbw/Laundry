@@ -28,7 +28,7 @@ const formatCurrency = (amount: number) => {
 const formatDate = (dateStr: string) => {
   const d = new Date(dateStr);
   return {
-    date: new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).format(d),
+    date: new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short' }).format(d),
     time: new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).format(d)
   };
 };

@@ -20,9 +20,12 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  username: text("username").unique(),
+  displayUsername: text("display_username"),
   role: text("role").notNull().default("worker"), // worker | admin | super_admin
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const session = pgTable("session", {

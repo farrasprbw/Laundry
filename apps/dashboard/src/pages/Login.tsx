@@ -5,6 +5,7 @@ export function Login() {
   const { login } = useLogin();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -12,11 +13,11 @@ export function Login() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
+    const username = formData.get('username') as string;
     const password = formData.get('password') as string;
 
     try {
-      await login(email, password);
+      await login(username, password);
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
@@ -59,17 +60,17 @@ export function Login() {
           {/* Login Form */}
           <form className="w-full flex flex-col gap-stack-md" onSubmit={handleLogin}>
 
-            {/* Email Field */}
+            {/* Username Field */}
             <div className="flex flex-col gap-stack-sm">
-              <label className="font-label-md text-label-md text-on-surface" htmlFor="email">Email</label>
+              <label className="font-label-md text-label-md text-on-surface" htmlFor="username">Username</label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">mail</span>
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">person</span>
                 <input
                   className="w-full bg-surface-container-low border-0 border-b-2 border-outline-variant/50 focus:border-primary focus:ring-0 rounded-t-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline transition-colors h-[48px]"
-                  id="email"
-                  name="email"
-                  placeholder="Enter your email"
-                  type="email"
+                  id="username"
+                  name="username"
+                  placeholder="Enter your username"
+                  type="text"
                   required
                   disabled={loading}
                 />
@@ -84,14 +85,24 @@ export function Login() {
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">lock</span>
                 <input
-                  className="w-full bg-surface-container-low border-0 border-b-2 border-outline-variant/50 focus:border-primary focus:ring-0 rounded-t-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline transition-colors h-[48px]"
+                  className="w-full bg-surface-container-low border-0 border-b-2 border-outline-variant/50 focus:border-primary focus:ring-0 rounded-t-lg pl-10 pr-12 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline transition-colors h-[48px]"
                   id="password"
                   name="password"
                   placeholder="Enter your password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   disabled={loading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors focus:outline-none"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
               </div>
             </div>
 

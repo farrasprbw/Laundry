@@ -31,6 +31,16 @@ export function useUpdateUserRole() {
   });
 }
 
+/** Update user profile. */
+export function useUpdateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { name?: string; username?: string } }) =>
+      userService.update(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
+  });
+}
+
 /** Delete a user. */
 export function useDeleteUser() {
   const qc = useQueryClient();

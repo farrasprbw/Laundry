@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { username } from "better-auth/plugins";
 import { db } from "../db/index.js";
 import { env } from "../env.js";
 import * as schema from "../db/schema.js";
@@ -29,4 +30,5 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // update session every 24 hours
   },
   trustedOrigins: [env.CORS_ORIGIN],
+  plugins: [username()],
 });

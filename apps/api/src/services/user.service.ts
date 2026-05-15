@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
 import { user, account, session } from "../db/schema.js";
-import { eq, sql, ne } from "drizzle-orm";
+import { eq, isNull, and } from "drizzle-orm";
 import { auth } from "../auth/auth.js";
 
 type UserRole = "super_admin" | "admin" | "worker";
@@ -15,6 +15,7 @@ export const userService = {
     const users = await db
       .select({
         id: user.id,
+        username: user.username,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -23,6 +24,7 @@ export const userService = {
         updatedAt: user.updatedAt,
       })
       .from(user)
+      .where(isNull(user.deletedAt))
       .orderBy(user.createdAt);
 
     return users;
@@ -35,6 +37,7 @@ export const userService = {
     const [result] = await db
       .select({
         id: user.id,
+        username: user.username,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -43,7 +46,7 @@ export const userService = {
         updatedAt: user.updatedAt,
       })
       .from(user)
-      .where(eq(user.id, id));
+      .where(and(eq(user.id, id), isNull(user.deletedAt)));
 
     return result ?? null;
   },
@@ -54,7 +57,8 @@ export const userService = {
    */
   async createUser(input: {
     name: string;
-    email: string;
+    email?: string;
+    username: string;
     password: string;
     role: UserRole;
   }) {
@@ -62,12 +66,16 @@ export const userService = {
       throw new Error(`Invalid role: ${input.role}. Must be one of: ${VALID_ROLES.join(", ")}`);
     }
 
+    // Since email is required by better-auth base config, fallback to a dummy if missing
+    const finalEmail = input.email || `${input.username.toLowerCase().replace(/\s+/g, '')}@laundry.local`;
+
     // Use Better Auth API to create user (handles password hashing)
     const result = await auth.api.signUpEmail({
       body: {
         name: input.name,
-        email: input.email,
+        email: finalEmail,
         password: input.password,
+        username: input.username,
         role: input.role,
       },
     });
@@ -78,6 +86,7 @@ export const userService = {
 
     return {
       id: result.user.id,
+      username: (result.user as any).username ?? input.username,
       name: result.user.name,
       email: result.user.email,
       role: (result.user as any).role ?? input.role,
@@ -99,6 +108,7 @@ export const userService = {
       .where(eq(user.id, id))
       .returning({
         id: user.id,
+        username: user.username,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -111,10 +121,11 @@ export const userService = {
   /**
    * Update a user's profile (name, email).
    */
-  async updateUser(id: string, input: { name?: string; email?: string }) {
+  async updateUser(id: string, input: { name?: string; email?: string; username?: string }) {
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name !== undefined) updateData.name = input.name;
     if (input.email !== undefined) updateData.email = input.email;
+    if (input.username !== undefined) updateData.username = input.username;
 
     const [updated] = await db
       .update(user)
@@ -122,6 +133,7 @@ export const userService = {
       .where(eq(user.id, id))
       .returning({
         id: user.id,
+        username: user.username,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -135,16 +147,17 @@ export const userService = {
    * Delete a user and their associated accounts/sessions.
    */
   async deleteUser(id: string) {
-    // Delete associated sessions first
+    // Delete associated sessions to log them out immediately
     await db.delete(session).where(eq(session.userId, id));
 
     // Delete associated accounts
     await db.delete(account).where(eq(account.userId, id));
 
-    // Delete the user
+    // Soft delete the user
     const [deleted] = await db
-      .delete(user)
-      .where(eq(user.id, id))
+      .update(user)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(user.id, id), isNull(user.deletedAt)))
       .returning({
         id: user.id,
         name: user.name,
