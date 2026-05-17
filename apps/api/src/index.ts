@@ -40,8 +40,13 @@ app.use("/api/payment-methods", paymentMethodRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/users", userRoutes);
 
-// ── Start server ──
-app.listen(env.PORT, () => {
-  console.log(`🚀 Laundry API running on http://localhost:${env.PORT}`);
-  console.log(`   Health: http://localhost:${env.PORT}/api/health`);
-});
+// ── Export for Vercel serverless ──
+export default app;
+
+// ── Start server (local development only) ──
+if (process.env.NODE_ENV !== "production") {
+  app.listen(env.PORT, () => {
+    console.log(`🚀 Laundry API running on http://localhost:${env.PORT}`);
+    console.log(`   Health: http://localhost:${env.PORT}/api/health`);
+  });
+}
