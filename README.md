@@ -13,6 +13,7 @@ Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST AP
 - [Menjalankan Database](#-menjalankan-database)
 - [Menjalankan Aplikasi](#-menjalankan-aplikasi)
 - [Registrasi Admin Pertama](#-registrasi-admin-pertama)
+- [Deploy ke Production](#-deploy-ke-production)
 - [Struktur Proyek](#-struktur-proyek)
 - [Script yang Tersedia](#-script-yang-tersedia)
 - [Troubleshooting](#-troubleshooting)
@@ -204,6 +205,151 @@ Invoke-RestMethod -Uri "http://localhost:3001/api/auth/sign-up/email" `
 Setelah berhasil, buka `http://localhost:5173` dan login dengan:
 - **Email:** `admin@laundry.com`
 - **Password:** `password123`
+
+---
+
+## 🌐 Deploy ke Production
+
+Aplikasi ini bisa dideploy **gratis tanpa kartu kredit** menggunakan:
+
+| Komponen | Platform | Biaya |
+|----------|----------|-------|
+| 🗄️ Database | [Neon](https://neon.tech) (PostgreSQL Serverless) | Gratis (0.5 GB) |
+| 🖥️ API Backend | [Vercel](https://vercel.com) (Serverless Functions) | Gratis |
+| 🌐 Dashboard Frontend | [Vercel](https://vercel.com) (Static Hosting) | Gratis |
+
+### Arsitektur Production
+
+```
+Browser → Vercel Dashboard → (rewrite /api/*) → Vercel API (Serverless) → Neon PostgreSQL
+```
+
+> Dashboard memproxy semua request `/api/*` ke API melalui Vercel Rewrites, sehingga cookie session berfungsi tanpa masalah cross-site.
+
+---
+
+### Step 1: Setup Database — Neon
+
+1. Buka [neon.tech](https://neon.tech) → **Sign Up** pakai GitHub/Google
+2. Klik **"Create Project"**
+   - **Project Name:** `laundry`
+   - **Region:** `Asia Pacific (Singapore)`
+3. Copy **Connection String** (pooled), formatnya:
+   ```
+   postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/dbname?sslmode=require
+   ```
+
+### Step 2: Push Schema ke Neon
+
+Dari terminal lokal di folder `apps/api`:
+
+```powershell
+# Windows PowerShell
+$env:DATABASE_URL = "postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/dbname?sslmode=require"
+npx drizzle-kit push
+```
+
+```bash
+# Linux / macOS
+DATABASE_URL="postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/dbname?sslmode=require" \
+npx drizzle-kit push
+```
+
+---
+
+### Step 3: Deploy API — Vercel
+
+1. Buka [vercel.com](https://vercel.com) → **Sign Up** pakai GitHub
+2. **Add New Project** → Import repo dari GitHub
+3. Konfigurasi:
+
+   | Setting | Value |
+   |---------|-------|
+   | **Framework Preset** | `Express` |
+   | **Root Directory** | `apps/api` |
+   | **Build Command** | `npm run build` |
+
+4. Tambahkan **Environment Variables**:
+
+   | Key | Value |
+   |-----|-------|
+   | `DATABASE_URL` | Connection string dari Neon |
+   | `BETTER_AUTH_SECRET` | Random secret (generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
+   | `BETTER_AUTH_URL` | URL API setelah deploy (misal: `https://laundry-api-xxx.vercel.app`) |
+   | `CORS_ORIGIN` | URL Dashboard setelah deploy (misal: `https://laundry-dashboard-xxx.vercel.app`) |
+   | `NODE_ENV` | `production` |
+
+5. Klik **Deploy**
+6. Verifikasi: buka `https://<url-api>/api/health` → harus muncul `{"status":"ok"}`
+
+---
+
+### Step 4: Deploy Dashboard — Vercel
+
+1. **Add New Project** → Import repo yang sama
+2. Konfigurasi:
+
+   | Setting | Value |
+   |---------|-------|
+   | **Framework Preset** | `Vite` |
+   | **Root Directory** | `apps/dashboard` |
+
+3. Tambahkan **Environment Variables**:
+
+   | Key | Value |
+   |-----|-------|
+   | `VITE_API_URL` | `/api` |
+   | `VITE_AUTH_URL` | URL Dashboard itu sendiri (misal: `https://laundry-dashboard-xxx.vercel.app`) |
+
+4. Klik **Deploy**
+
+> **Catatan:** File `apps/dashboard/vercel.json` sudah mengatur rewrite `/api/*` ke API dan SPA fallback untuk client-side routing.
+
+---
+
+### Step 5: Update Environment Variables
+
+Setelah kedua project live, update env vars yang memerlukan URL final:
+
+1. **Project API** → Settings → Environment Variables:
+   - `BETTER_AUTH_URL` = URL API yang sebenarnya
+   - `CORS_ORIGIN` = URL Dashboard yang sebenarnya
+
+2. **Redeploy** kedua project agar perubahan berlaku
+
+---
+
+### Step 6: Buat User Admin
+
+```bash
+curl -X POST https://<url-api>/api/auth/sign-up/email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Admin",
+    "username": "admin",
+    "email": "admin@laundry.com",
+    "password": "Admin123!",
+    "role": "admin"
+  }'
+```
+
+Atau **PowerShell**:
+
+```powershell
+$body = '{"name":"Admin","username":"admin","email":"admin@laundry.com","password":"Admin123!","role":"admin"}'
+Invoke-RestMethod -Uri "https://<url-api>/api/auth/sign-up/email" -Method POST -ContentType "application/json" -Body $body
+```
+
+Login di dashboard dengan **Username:** `admin` / **Password:** `Admin123!`
+
+---
+
+### ⚠️ Limitasi Free Tier
+
+| Platform | Limitasi |
+|----------|----------|
+| **Neon** | 0.5 GB storage, auto-pause setelah 5 menit idle (~300ms cold start) |
+| **Vercel** | Hobby plan untuk personal/non-commercial use only |
 
 ---
 
