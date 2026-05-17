@@ -33,6 +33,8 @@ export function UserManagement() {
   const [editName, setEditName] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   const { data: users = [], isLoading, error } = useUsers();
   const createMutation = useCreateUser();
@@ -63,18 +65,25 @@ export function UserManagement() {
     setEditUserId(user.id);
     setEditName(user.name);
     setEditUsername(user.username);
+    setEditPassword('');
+    setShowEditPassword(false);
     setIsEditModalOpen(true);
   };
 
   const handleUpdateUser = async () => {
     if (!editUserId || !editName.trim() || !editUsername.trim()) return;
     try {
+      const input: any = {
+        name: editName.trim(),
+        username: editUsername.trim(),
+      };
+      if (editPassword) {
+        input.password = editPassword;
+      }
+
       await updateUserMutation.mutateAsync({
         id: editUserId,
-        input: {
-          name: editName.trim(),
-          username: editUsername.trim(),
-        },
+        input,
       });
       setIsEditModalOpen(false);
       setEditUserId(null);
@@ -368,6 +377,8 @@ export function UserManagement() {
         onClose={() => {
           setIsEditModalOpen(false);
           setEditUserId(null);
+          setEditPassword('');
+          setShowEditPassword(false);
         }}
         title="Edit User"
         onSubmit={handleUpdateUser}
@@ -392,6 +403,27 @@ export function UserManagement() {
               placeholder="Username login"
               className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Password Baru</label>
+            <div className="relative">
+              <input
+                type={showEditPassword ? 'text' : 'password'}
+                value={editPassword}
+                onChange={(e) => setEditPassword(e.target.value)}
+                placeholder="Biarkan kosong jika tidak ingin mengubah password"
+                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-4 pr-12 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowEditPassword(!showEditPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-on-surface-variant hover:text-primary transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  {showEditPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
