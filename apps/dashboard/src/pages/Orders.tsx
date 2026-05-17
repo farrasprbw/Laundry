@@ -94,12 +94,12 @@ export function Orders() {
         </div>
       </div>
 
-      {/* Bento/Glassmorphism Data Table Container */}
-      <div className="bg-surface rounded-xl shadow-sm border border-outline-variant/30 overflow-visible">
-        <div className="overflow-x-auto overflow-y-visible">
+      {/* Data Table */}
+      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-h-[250px]">
             <thead>
-              <tr className="bg-surface-container-lowest border-b border-outline-variant/20">
+              <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">ID</th>
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Customer</th>
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Category</th>
@@ -111,7 +111,7 @@ export function Orders() {
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant/10">
+            <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md text-on-surface">
               {isLoading ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-8 text-center text-on-surface-variant">Memuat data...</td>
@@ -122,7 +122,7 @@ export function Orders() {
                 </tr>
               ) : (
                 orders.map((order: any, index: number) => (
-                  <tr key={order.id} className="bg-surface hover:bg-surface-container-low transition-colors group">
+                  <tr key={order.id} className="hover:bg-surface-container-lowest transition-colors group">
                     <td className="px-6 py-4 text-label-md font-label-md text-primary">{order.invoiceNumber}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -188,13 +188,15 @@ export function Orders() {
                           </button>
                         )}
                         {/* WhatsApp Notification Button */}
-                        <button
-                          onClick={() => handleSendWA(order.id)}
-                          className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors"
-                          title="Kirim Notif WA"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">chat</span>
-                        </button>
+                        {order.status === 'FINISHED' && (
+                          <button
+                            onClick={() => handleSendWA(order.id)}
+                            className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors"
+                            title="Kirim Notif WA"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">chat</span>
+                          </button>
+                        )}
                         {/* Delete Button */}
                         <button
                           onClick={() => handleDelete(order.id)}
@@ -213,21 +215,21 @@ export function Orders() {
           </table>
         </div>
 
-        {/* Pagination Footer */}
-        <div className="bg-surface-container-lowest px-6 py-4 border-t border-outline-variant/20 flex items-center justify-between">
-          <span className="text-label-sm font-label-sm text-on-surface-variant">Menampilkan {orders.length} dari {totalItems} entries</span>
-          <div className="flex gap-2">
+        {/* Table Pagination Footer */}
+        <div className="bg-surface-container-low/30 border-t border-outline-variant/20 px-6 py-4 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+          <div>Menampilkan {orders.length} dari {totalItems} order</div>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+              className="p-1.5 rounded-lg border border-outline-variant/50 text-outline hover:bg-surface hover:text-on-surface disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages || totalPages === 0}
-              className="p-2 rounded-lg border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+              className="p-1.5 rounded-lg border border-outline-variant/50 text-outline hover:bg-surface hover:text-on-surface disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>

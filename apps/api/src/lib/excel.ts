@@ -33,6 +33,7 @@ export async function generateExcelReport(data: ExportData): Promise<Buffer> {
     { header: "Invoice", key: "invoice", width: 18 },
     { header: "Tanggal", key: "tanggal", width: 14 },
     { header: "Customer", key: "customer", width: 22 },
+    { header: "Category", key: "category", width: 18 },
     { header: "Amount", key: "amount", width: 16 },
     { header: "Payment Method", key: "paymentMethod", width: 18 },
     { header: "Status Pembayaran", key: "paymentStatus", width: 20 },
@@ -54,6 +55,7 @@ export async function generateExcelReport(data: ExportData): Promise<Buffer> {
         ? new Date(order.createdAt).toLocaleDateString("id-ID")
         : "",
       customer: order.customer?.name ?? "-",
+      category: order.category?.name ?? "-",
       amount: order.totalPrice,
       paymentMethod: order.paymentMethod?.name ?? "-",
       paymentStatus: order.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas",
