@@ -2,6 +2,7 @@ import { db } from "../db/index.js";
 import { user, account, session } from "../db/schema.js";
 import { eq, isNull, and } from "drizzle-orm";
 import { auth } from "../auth/auth.js";
+import { hashPassword } from "better-auth/crypto";
 
 type UserRole = "super_admin" | "admin" | "worker";
 
@@ -121,26 +122,40 @@ export const userService = {
   /**
    * Update a user's profile (name, email).
    */
-  async updateUser(id: string, input: { name?: string; email?: string; username?: string }) {
+  async updateUser(id: string, input: { name?: string; email?: string; username?: string; password?: string }) {
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name !== undefined) updateData.name = input.name;
     if (input.email !== undefined) updateData.email = input.email;
     if (input.username !== undefined) updateData.username = input.username;
 
-    const [updated] = await db
-      .update(user)
-      .set(updateData)
-      .where(eq(user.id, id))
-      .returning({
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        updatedAt: user.updatedAt,
-      });
+    let updatedUser = null;
 
-    return updated ?? null;
+    if (Object.keys(updateData).length > 1) { // more than just updatedAt
+      const [updated] = await db
+        .update(user)
+        .set(updateData)
+        .where(eq(user.id, id))
+        .returning({
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          updatedAt: user.updatedAt,
+        });
+      updatedUser = updated;
+    } else {
+      updatedUser = await this.getUserById(id);
+    }
+
+    if (input.password) {
+      const hashedPassword = await hashPassword(input.password);
+      await db.update(account)
+        .set({ password: hashedPassword })
+        .where(eq(account.userId, id));
+    }
+
+    return updatedUser ?? null;
   },
 
   /**

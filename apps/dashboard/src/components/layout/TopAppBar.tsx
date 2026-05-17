@@ -1,7 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { authClient } from '../../lib/auth-client';
 
-export function TopAppBar() {
+interface TopAppBarProps {
+  onMenuClick?: () => void;
+}
+
+export function TopAppBar({ onMenuClick }: TopAppBarProps) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -17,6 +21,14 @@ export function TopAppBar() {
   return (
     <header className="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] z-40 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm flex justify-between items-center h-16 px-6 ml-auto">
       <div className="flex items-center gap-4">
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-2 -ml-2 text-on-surface-variant hover:text-primary transition-colors active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[24px]">menu</span>
+          </button>
+        )}
         <span className="text-headline-md font-headline-md text-primary md:hidden">Laundry</span>
       </div>
       <div className="flex items-center gap-4">

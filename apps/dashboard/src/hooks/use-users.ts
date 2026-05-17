@@ -35,7 +35,7 @@ export function useUpdateUserRole() {
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: { name?: string; username?: string } }) =>
+    mutationFn: ({ id, input }: { id: string; input: { name?: string; username?: string; password?: string } }) =>
       userService.update(id, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
   });
