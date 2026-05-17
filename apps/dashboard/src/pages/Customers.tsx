@@ -27,6 +27,7 @@ export function Customers() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '', address: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -97,12 +98,15 @@ export function Customers() {
   // Handle Delete
   const handleDelete = async (id: string) => {
     if (!window.confirm('Apakah Anda yakin ingin menghapus pelanggan ini?')) return;
+    setDeletingId(id);
     try {
       await apiClient.delete(`/customers/${id}`);
       fetchCustomers();
     } catch (error) {
       console.error('Failed to delete customer:', error);
       alert('Gagal menghapus data pelanggan');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -272,10 +276,13 @@ export function Customers() {
                         </button>
                         <button 
                           onClick={() => handleDelete(customer.id)}
+                          disabled={deletingId === customer.id}
                           className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors" 
                           title="Delete"
                         >
-                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                          <span className={deletingId === customer.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
+                            {deletingId === customer.id ? 'progress_activity' : 'delete'}
+                          </span>
                         </button>
                       </div>
                     </td>
@@ -314,6 +321,7 @@ export function Customers() {
         title={isEditMode ? "Edit Pelanggan" : "Tambah Pelanggan Baru"}
         onSubmit={handleSubmit}
         isSubmitDisabled={!formData.name || !formData.phone || isSubmitting}
+        isLoading={isSubmitting}
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">

@@ -197,6 +197,7 @@ export function Categories() {
         title={editingCategory ? "Edit Kategori" : "Tambah Kategori Baru"}
         onSubmit={handleSubmit}
         isSubmitDisabled={!name || !price || createCategory.isPending || updateCategory.isPending}
+        isLoading={createCategory.isPending || updateCategory.isPending}
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -286,8 +287,9 @@ export function Categories() {
             <button
               onClick={handleDelete}
               disabled={deleteCategory.isPending}
-              className="text-white px-5 py-2.5 rounded-xl text-label-md font-label-md bg-error text-onError hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-white px-5 py-2.5 rounded-xl text-label-md font-label-md bg-error hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
+              {deleteCategory.isPending && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
               {deleteCategory.isPending ? 'Menghapus...' : 'Hapus Kategori'}
             </button>
           </div>

@@ -307,7 +307,9 @@ export function Orders() {
                             title="Tandai Selesai"
                             disabled={updateStatus.isPending}
                           >
-                            <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                            <span className={updateStatus.isPending && updateStatus.variables?.id === order.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
+                              {updateStatus.isPending && updateStatus.variables?.id === order.id ? 'progress_activity' : 'check_circle'}
+                            </span>
                           </button>
                         )}
                         {order.status === 'FINISHED' && (
@@ -317,7 +319,9 @@ export function Orders() {
                             title="Tandai Diambil"
                             disabled={updateStatus.isPending}
                           >
-                            <span className="material-symbols-outlined text-[20px]">inventory_2</span>
+                            <span className={updateStatus.isPending && updateStatus.variables?.id === order.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
+                              {updateStatus.isPending && updateStatus.variables?.id === order.id ? 'progress_activity' : 'inventory_2'}
+                            </span>
                           </button>
                         )}
                         {/* Print Receipt Button — Only for FINISHED orders */}
@@ -354,7 +358,9 @@ export function Orders() {
                           title="Hapus"
                           disabled={deleteOrder.isPending}
                         >
-                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                          <span className={deleteOrder.isPending && deleteOrder.variables === order.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
+                            {deleteOrder.isPending && deleteOrder.variables === order.id ? 'progress_activity' : 'delete'}
+                          </span>
                         </button>
                       </div>
                     </td>

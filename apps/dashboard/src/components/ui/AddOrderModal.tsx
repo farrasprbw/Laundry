@@ -80,8 +80,9 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
       onClose={onClose}
       title="Buat Order Baru"
       onSubmit={handleSubmit}
-      submitText={createOrder.isPending ? "Menyimpan..." : "Buat Order"}
+      submitText="Buat Order"
       isSubmitDisabled={isFormIncomplete || createOrder.isPending}
+      isLoading={createOrder.isPending}
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">

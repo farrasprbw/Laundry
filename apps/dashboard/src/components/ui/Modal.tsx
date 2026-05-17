@@ -9,9 +9,10 @@ interface ModalProps {
   submitText?: string;
   cancelText?: string;
   isSubmitDisabled?: boolean;
+  isLoading?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, onSubmit, submitText = 'Simpan', cancelText = 'Batal', isSubmitDisabled }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, onSubmit, submitText = 'Simpan', cancelText = 'Batal', isSubmitDisabled, isLoading }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -60,10 +61,11 @@ export function Modal({ isOpen, onClose, title, children, onSubmit, submitText =
           {onSubmit && (
             <button 
               onClick={onSubmit}
-              disabled={isSubmitDisabled}
-              className={`px-5 py-2.5 rounded-xl transition-colors shadow-sm font-label-md text-label-md ${isSubmitDisabled ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70' : 'bg-primary text-on-primary hover:bg-primary/90'}`}
+              disabled={isSubmitDisabled || isLoading}
+              className={`px-5 py-2.5 rounded-xl transition-colors shadow-sm font-label-md text-label-md flex items-center gap-2 ${isSubmitDisabled || isLoading ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70' : 'bg-primary text-on-primary hover:bg-primary/90'}`}
             >
-              {submitText}
+              {isLoading && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
+              {isLoading ? 'Memproses...' : submitText}
             </button>
           )}
         </div>

@@ -272,10 +272,13 @@ export function Expenses() {
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleDelete(expense.id); }}
+                              disabled={deleteExpense.isPending}
                               className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors" 
                               title="Delete"
                             >
-                              <span className="material-symbols-outlined text-[20px]">delete</span>
+                              <span className={deleteExpense.isPending && deleteExpense.variables === expense.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
+                                {deleteExpense.isPending && deleteExpense.variables === expense.id ? 'progress_activity' : 'delete'}
+                              </span>
                             </button>
                           </div>
                         </td>
@@ -320,6 +323,8 @@ export function Expenses() {
         onClose={() => !isSubmitting && setIsModalOpen(false)} 
         title={editingExpense ? "Edit Expense" : "Add New Expense"}
         onSubmit={handleSubmit}
+        isLoading={isSubmitting}
+        isSubmitDisabled={isSubmitting}
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
