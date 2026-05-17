@@ -56,8 +56,8 @@ export const STORE_CONFIG = {
   address: 'Apartemen Rajawali, Jakarta Pusat',
   phone: 'HP : 0812-9678-8330',
   disclaimer: [
-    'Pengambilan barang harus disertai nota.',
-    'Barang dlm berlaku 24 jam setelah barang diambil.',
+    'Pengambilan barang harus disertai invoice.',
+    'Klaim berlaku 24 jam setelah barang diambil.',
     'Kain luntur, berkerut karna sifat kain diluar tanggung jawab kami.',
     'Cucian yang tidak diambil dalam waktu 1 bulan bila rusak / hilang bukan tanggung jawab kami.',
   ],
@@ -292,7 +292,7 @@ export function buildLaundryReceipt(data: ReceiptData): Uint8Array {
 
   // ── Order Info ──
   rb.align('left')
-    .keyValue('No. Nota', data.invoiceNumber)
+    .keyValue('No. Invoice', data.invoiceNumber)
     .keyValue('Tgl Masuk', formatDateTime(data.createdAt));
 
   // Estimated completion

@@ -5,10 +5,11 @@ import type { CreateOrderInput, ListOrdersParams } from "../types/api";
 const ORDERS_KEY = ["orders"] as const;
 
 /** Fetch paginated order list with optional filters. */
-export function useOrders(params?: ListOrdersParams) {
+export function useOrders(params?: ListOrdersParams, refetchInterval?: number) {
   return useQuery({
     queryKey: [...ORDERS_KEY, params],
     queryFn: () => orderService.list(params),
+    refetchInterval,
   });
 }
 
