@@ -212,7 +212,7 @@ export function Expenses() {
       </div>
 
       {/* Data Table Card */}
-      <div className="bg-surface border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.05)] rounded-2xl overflow-visible relative min-h-[400px]">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col relative min-h-[400px]">
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-surface/50 z-10 rounded-2xl">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
@@ -230,7 +230,7 @@ export function Expenses() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-surface-container-low border-b border-outline-variant/20 text-label-md font-label-md text-on-surface-variant">
+                  <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
                     <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Date</th>
                     <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Category</th>
                     <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider hidden sm:table-cell">Description</th>
@@ -238,13 +238,13 @@ export function Expenses() {
                     <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="text-body-md font-body-md text-on-surface divide-y divide-outline-variant/10">
+                <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md text-on-surface">
                   {expenses.map((expense) => {
                     const { date, time } = formatDate(expense.expenseDate);
                     const catDisplay = getCategoryDisplay(expense.category);
                     
                     return (
-                      <tr key={expense.id} className="hover:bg-surface-container-lowest/50 transition-colors group">
+                      <tr key={expense.id} className="hover:bg-surface-container-lowest transition-colors group">
                         <td className="py-4 px-6 whitespace-nowrap">
                           <div className="font-medium">{date}</div>
                           <div className="text-label-sm font-label-sm text-on-surface-variant mt-0.5">{time}</div>
@@ -288,24 +288,24 @@ export function Expenses() {
             
             {/* Pagination Footer */}
             {pagination && pagination.totalPages > 1 && (
-              <div className="bg-surface-container-lowest border-t border-outline-variant/20 px-6 py-4 flex items-center justify-between rounded-b-2xl">
-                <span className="text-label-sm font-label-sm text-on-surface-variant">
+              <div className="bg-surface-container-low/30 border-t border-outline-variant/20 px-6 py-4 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+                <span>
                   Showing {(page - 1) * limit + 1} to {Math.min(page * limit, pagination.total)} of {pagination.total} entries
                 </span>
                 <div className="flex gap-2">
                   <button 
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="p-2 rounded-lg border border-outline-variant/30 text-outline hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1.5 rounded-lg border border-outline-variant/50 text-outline hover:bg-surface hover:text-on-surface disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                    <span className="material-symbols-outlined text-[18px]">chevron_left</span>
                   </button>
                   <button 
                     onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
                     disabled={page === pagination.totalPages}
-                    className="p-2 rounded-lg border border-outline-variant/30 text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1.5 rounded-lg border border-outline-variant/50 text-outline hover:bg-surface hover:text-on-surface disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                    <span className="material-symbols-outlined text-[18px]">chevron_right</span>
                   </button>
                 </div>
               </div>

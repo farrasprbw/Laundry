@@ -6,6 +6,7 @@ interface Transaction {
   invoiceNumber: string;
   createdAt: string;
   customer?: { name: string };
+  category?: { name: string };
   totalPrice: number;
   paymentMethod?: { name: string };
   paymentStatus: string;
@@ -92,6 +93,10 @@ export function Reports() {
       alert('Gagal mengekspor laporan');
     }
   };
+  const getInitials = (name: string) => {
+    return name.substring(0, 2).toUpperCase();
+  };
+
   return (
     <div className="pt-24 pb-24 md:pt-24 md:pb-12 px-container-padding-mobile md:px-container-padding-desktop max-w-[1440px] w-full flex-1">
       <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -222,23 +227,30 @@ export function Reports() {
       </div>
 
       {/* Recent Transactions Table Preview */}
-      <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden">
-        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface/30">
-          <h3 className="text-headline-md font-headline-md text-on-surface">Recent Transactions Preview</h3>
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-8">
+        <div>
+          <h2 className="text-headline-lg font-headline-lg text-on-background flex items-center gap-3">
+            <span className="material-symbols-outlined text-[32px] text-primary">receipt_long</span>
+            Recent Transactions
+          </h2>
+          <p className="text-body-md font-body-md text-on-surface-variant mt-1">Preview of the latest transactions.</p>
         </div>
+      </div>
+
+      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-h-[250px]">
             <thead>
-              <tr className="bg-surface-container-low/50 text-on-surface-variant text-label-sm font-label-sm uppercase tracking-wider border-b border-outline-variant/20">
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">No. Invoice</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Tanggal</th>
+              <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">ID</th>
                 <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Amount</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-center">Payment Method</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-center">Category (Status)</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Category</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Total</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Payment</th>
               </tr>
             </thead>
-            <tbody className="text-body-md font-body-md text-on-surface divide-y divide-outline-variant/10">
+            <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md text-on-surface">
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">Memuat data...</td>
@@ -248,24 +260,31 @@ export function Reports() {
                   <td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">Tidak ada transaksi ditemukan pada rentang tanggal ini.</td>
                 </tr>
               ) : (
-                transactions.slice(0, 10).map((trx) => (
-                  <tr key={trx.id} className="hover:bg-surface-container-low/30 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-on-surface text-label-md font-label-md font-medium">{trx.invoiceNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-on-surface-variant text-body-md">
-                      {new Date(trx.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                transactions.slice(0, 10).map((trx, index) => (
+                  <tr key={trx.id} className="hover:bg-surface-container-lowest transition-colors group">
+                    <td className="px-6 py-4 text-label-md font-label-md text-primary">{trx.invoiceNumber}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-label-sm ${index % 2 === 0 ? 'bg-primary-container text-primary' : 'bg-secondary-container text-secondary'}`}>
+                          {trx.customer ? getInitials(trx.customer.name) : 'NN'}
+                        </div>
+                        <span className="text-body-md font-body-md text-on-surface">{trx.customer?.name || 'Unknown'}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-on-surface text-body-md">{trx.customer?.name ?? '-'}</td>
-                    <td className="px-6 py-4 text-right font-medium text-primary">
+                    <td className="px-6 py-4 text-body-md font-body-md text-on-surface-variant">{trx.category?.name || '-'}</td>
+                    <td className="px-6 py-4 text-body-md font-body-md text-on-surface">
                       {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(trx.totalPrice)}
                     </td>
-                    <td className="px-6 py-4 text-center text-on-surface-variant text-body-md">{trx.paymentMethod?.name ?? '-'}</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm ${trx.paymentStatus === 'PAID' ? 'bg-secondary-container/30 text-secondary' : 'bg-error-container/30 text-error'}`}>
-                        <span className="material-symbols-outlined text-[14px]">
-                          {trx.paymentStatus === 'PAID' ? 'check_circle' : 'pending'}
+                    <td className="px-6 py-4 text-body-md font-body-md text-on-surface-variant">
+                      {new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short' }).format(new Date(trx.createdAt))}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-body-md font-body-md text-on-surface">{trx.paymentMethod?.name || '-'}</span>
+                        <span className={`text-[10px] font-bold ${trx.paymentStatus === 'PAID' ? 'text-secondary' : 'text-error'}`}>
+                          {trx.paymentStatus}
                         </span>
-                        {trx.paymentStatus === 'PAID' ? 'Lunas' : 'Belum Lunas'}
-                      </span>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -273,8 +292,8 @@ export function Reports() {
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-4 border-t border-outline-variant/20 bg-surface/30 text-center">
-          <p className="text-label-sm font-label-sm text-on-surface-variant">Showing {Math.min(transactions.length, 10)} of {transactions.length} transactions</p>
+        <div className="bg-surface-container-low/30 border-t border-outline-variant/20 px-6 py-4 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+          <div>Showing {Math.min(transactions.length, 10)} of {transactions.length} transactions</div>
         </div>
       </div>
     </div>

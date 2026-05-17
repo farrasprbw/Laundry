@@ -251,12 +251,26 @@ export const orderService = {
     const qty = Number(order.quantity);
     const unitLabel = order.category?.unit ?? "kg";
     const categoryName = order.category?.name ?? "Laundry";
+    const totalAmount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(order.totalPrice);
+    const statusLabel = order.paymentStatus === 'PAID' ? 'LUNAS ✅' : 'BELUM BAYAR ❌';
 
-    const message = `Halo *${order.customer.name}*,
+    const message = `Halo Kak *${order.customer.name}*! 👋✨
 
-Cucian Anda dengan invoice *${order.invoiceNumber}* (${categoryName} - ${qty} ${unitLabel}) telah *SELESAI* ✅
+Pakaian bersih dan wangi sudah menanti! Cucian Kakak dengan detail berikut telah *SELESAI* dan siap untuk dijemput:
 
-Silakan diambil. Terima kasih 🙏`;
+🧾 *No. Nota:* ${order.invoiceNumber}
+🧺 *Layanan:* ${categoryName} (${qty} ${unitLabel})
+💰 *Total Tagihan:* ${totalAmount}
+💳 *Status Pembayaran:* ${statusLabel}
+
+Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏✨
+
+---
+*Syarat & Ketentuan Pengambilan:*
+⚠️ Pengambilan barang harus disertai nota.
+⚠️ Komplain berlaku maksimal 24 jam setelah barang diambil.
+⚠️ Kain luntur/berkerut karena sifat kain di luar tanggung jawab kami.
+⚠️ Cucian yang tidak diambil dalam waktu 1 bulan, bila rusak/hilang bukan tanggung jawab kami.`;
 
     const waLink = `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}`;
 
