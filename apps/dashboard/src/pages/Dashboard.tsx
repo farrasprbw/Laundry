@@ -8,9 +8,6 @@ function formatRupiah(value: number): string {
   return `Rp ${value.toLocaleString('id-ID')}`;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 
 export function Dashboard() {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);

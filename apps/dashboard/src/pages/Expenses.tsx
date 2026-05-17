@@ -90,7 +90,7 @@ export function Expenses() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Actions Menu State
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [_activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const openAddModal = () => {
     setEditingExpense(null);
