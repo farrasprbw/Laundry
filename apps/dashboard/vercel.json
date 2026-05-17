@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://laundry-api-eight.vercel.app/api/:path*"
+    },
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }
