@@ -8,7 +8,7 @@ import { usernameClient } from "better-auth/client/plugins";
  * (which forwards /api/auth/* to the Express backend).
  */
 export const authClient = createAuthClient({
-  baseURL: "http://localhost:5173",
+  baseURL: import.meta.env.VITE_AUTH_URL || "http://localhost:5173",
   plugins: [usernameClient()],
 });
 

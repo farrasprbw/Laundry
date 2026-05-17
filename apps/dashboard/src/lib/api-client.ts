@@ -7,7 +7,7 @@ import axios from "axios";
  * so we only need a relative baseURL here.
  */
 const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   withCredentials: true, // send Better Auth session cookies
   headers: {
     "Content-Type": "application/json",
