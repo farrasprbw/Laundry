@@ -26,7 +26,7 @@ export function Login() {
   };
 
   return (
-    <div className="w-full bg-gradient-to-br from-surface via-surface-container-lowest to-surface-container-low text-on-surface font-body-md min-h-screen flex items-center justify-center relative overflow-hidden" style={{ minHeight: 'max(884px, 100dvh)' }}>
+    <div className="w-full h-[100dvh] bg-gradient-to-br from-surface via-surface-container-lowest to-surface-container-low text-on-surface font-body-md flex items-center justify-center relative overflow-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0 opacity-50">
         <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] rounded-full bg-primary-fixed/30 blur-[120px]"></div>
