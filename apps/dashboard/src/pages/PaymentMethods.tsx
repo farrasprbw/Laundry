@@ -5,24 +5,39 @@ import { usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useD
 export function PaymentMethods() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newMethodName, setNewMethodName] = useState('');
+  const [editingMethod, setEditingMethod] = useState<{ id: string; name: string } | null>(null);
 
   const { data: methods = [], isLoading, error } = usePaymentMethods();
   const createMutation = useCreatePaymentMethod();
   const updateMutation = useUpdatePaymentMethod();
   const deleteMutation = useDeletePaymentMethod();
 
-  const handleAddMethod = async () => {
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setNewMethodName('');
+    setEditingMethod(null);
+  };
+
+  const handleSubmit = async () => {
     if (newMethodName.trim()) {
       try {
-        await createMutation.mutateAsync({ name: newMethodName.trim() });
-        setNewMethodName('');
-        setIsModalOpen(false);
+        if (editingMethod) {
+          await updateMutation.mutateAsync({ id: editingMethod.id, name: newMethodName.trim() });
+        } else {
+          await createMutation.mutateAsync({ name: newMethodName.trim() });
+        }
+        closeModal();
       } catch (err: any) {
-        alert(err?.response?.data?.error || 'Gagal menambahkan metode pembayaran');
+        alert(err?.response?.data?.error || `Gagal ${editingMethod ? 'mengubah' : 'menambahkan'} metode pembayaran`);
       }
     }
   };
 
+  const openEditModal = (method: { id: string; name: string }) => {
+    setEditingMethod(method);
+    setNewMethodName(method.name);
+    setIsModalOpen(true);
+  };
   const toggleMethodStatus = async (id: string, currentActive: boolean) => {
     try {
       await updateMutation.mutateAsync({ id, isActive: !currentActive });
@@ -53,7 +68,10 @@ export function PaymentMethods() {
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">Kelola metode pembayaran yang tersedia.</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            closeModal(); // Reset any existing state before opening for add
+            setIsModalOpen(true);
+          }}
           className="bg-primary text-on-primary rounded-xl py-3 px-5 flex items-center gap-2 hover:bg-surface-tint active:scale-95 transition-all shadow-md font-label-md text-label-md"
         >
           <span className="material-symbols-outlined">add</span>
@@ -107,6 +125,13 @@ export function PaymentMethods() {
                     <td className="px-6 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => openEditModal(method)}
+                          className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
+                        <button
                           onClick={() => handleDelete(method.id, method.name)}
                           disabled={deleteMutation.isPending}
                           className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors"
@@ -136,17 +161,14 @@ export function PaymentMethods() {
         </div>
       )}
 
-      {/* Add Payment Method Modal */}
+      {/* Add/Edit Payment Method Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setNewMethodName('');
-        }}
-        title="Tambah Metode Pembayaran"
-        onSubmit={handleAddMethod}
-        isSubmitDisabled={!newMethodName.trim() || createMutation.isPending}
-        isLoading={createMutation.isPending}
+        onClose={closeModal}
+        title={editingMethod ? "Edit Metode Pembayaran" : "Tambah Metode Pembayaran"}
+        onSubmit={handleSubmit}
+        isSubmitDisabled={!newMethodName.trim() || createMutation.isPending || updateMutation.isPending}
+        isLoading={createMutation.isPending || (updateMutation.isPending && !!editingMethod)}
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
