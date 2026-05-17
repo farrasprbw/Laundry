@@ -6,6 +6,7 @@ Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST AP
 
 ## 📋 Daftar Isi
 
+- [Fitur](#-fitur)
 - [Tech Stack](#-tech-stack)
 - [Prasyarat](#-prasyarat)
 - [Instalasi](#-instalasi)
@@ -20,14 +21,33 @@ Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST AP
 
 ---
 
+## ✨ Fitur
+
+- 📊 **Dashboard** — Ringkasan statistik pendapatan, pesanan, dan pelanggan
+- 📦 **Manajemen Pesanan** — CRUD pesanan dengan status tracking (PROCESS → FINISHED → TAKEN)
+- 👥 **Manajemen Pelanggan** — Data pelanggan dengan integrasi WhatsApp
+- 🏷️ **Kategori Layanan** — Kelola kategori laundry beserta harga dan estimasi waktu
+- 💰 **Metode Pembayaran** — Kelola metode pembayaran (tunai, transfer, dll)
+- 💸 **Pencatatan Pengeluaran** — Tracking pengeluaran operasional
+- 📈 **Laporan** — Laporan pendapatan dengan export Excel
+- 🧾 **Invoice Publik** — Halaman invoice yang bisa diakses pelanggan via link
+- ⭐ **Rating** — Pelanggan bisa memberi rating melalui halaman invoice
+- 🖨️ **Thermal Printing** — Cetak struk via printer Bluetooth (ESC/POS)
+- 📱 **Notifikasi WhatsApp** — Kirim notifikasi status pesanan ke pelanggan
+- ⏱️ **Auto-Finish** — Pesanan otomatis selesai berdasarkan estimasi waktu kategori
+- 👤 **Manajemen User** — Kelola akun staff dengan role-based access
+- 📱 **Responsive** — Tampilan optimal di desktop dan mobile
+
+---
+
 ## 🛠 Tech Stack
 
-| Layer       | Teknologi                                                       |
-| ----------- | --------------------------------------------------------------- |
-| **Frontend**| React 19, Vite, TailwindCSS, React Router, TanStack React Query |
-| **Backend** | Express 5, TypeScript, Drizzle ORM, Better Auth, Zod            |
-| **Database**| PostgreSQL 16 (via Docker)                                      |
-| **Tooling** | npm Workspaces, Concurrently, tsx                                |
+| Layer        | Teknologi                                                        |
+| ------------ | ---------------------------------------------------------------- |
+| **Frontend** | React 19, Vite, TailwindCSS, React Router, TanStack React Query |
+| **Backend**  | Express 5, TypeScript, Drizzle ORM, Better Auth, Zod             |
+| **Database** | PostgreSQL 16 (via Docker)                                       |
+| **Tooling**  | npm Workspaces, Concurrently, tsx                                |
 
 ---
 
@@ -37,7 +57,7 @@ Pastikan perangkat kamu sudah terinstall:
 
 | Software       | Versi Minimum | Cek Versi              |
 | -------------- | ------------- | ---------------------- |
-| **Node.js**    | v18+          | `node -v`              |
+| **Node.js**    | v20+          | `node -v`              |
 | **npm**        | v9+           | `npm -v`               |
 | **Docker**     | v20+          | `docker -v`            |
 | **Git**        | v2+           | `git -v`               |
@@ -51,7 +71,7 @@ Pastikan perangkat kamu sudah terinstall:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/<username>/laundry.git
+git clone <repository-url>
 cd laundry
 ```
 
@@ -82,25 +102,30 @@ Copy-Item apps/api/.env.example apps/api/.env
 cp apps/api/.env.example apps/api/.env
 ```
 
-Kemudian buka `apps/api/.env` dan sesuaikan:
+Kemudian buka `apps/api/.env` dan sesuaikan nilainya:
 
 ```env
 # ── Database (harus sama dengan docker-compose.yml) ────────────
-DB_USER=laundry
-DB_PASSWORD=laundry123
+DB_USER=<db_user>
+DB_PASSWORD=<db_password>
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=laundry
-DATABASE_URL=postgresql://laundry:laundry123@localhost:5432/laundry
+DB_NAME=<db_name>
+DATABASE_URL=postgresql://<db_user>:<db_password>@localhost:5432/<db_name>
 
 # ── Auth ───────────────────────────────────────────────────────
-BETTER_AUTH_SECRET=ganti-dengan-secret-key-yang-kuat
+BETTER_AUTH_SECRET=<generate-random-secret>
 BETTER_AUTH_URL=http://localhost:3001
 
 # ── Server ─────────────────────────────────────────────────────
 PORT=3001
 CORS_ORIGIN=http://localhost:5173
 ```
+
+> 💡 **Generate secret key:**
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+> ```
 
 > ⚠️ **Penting:** Jangan commit file `.env` ke repository. File ini sudah termasuk di `.gitignore`.
 
@@ -187,24 +212,22 @@ Saat pertama kali menggunakan aplikasi, kamu perlu membuat akun admin melalui AP
 curl -X POST http://localhost:3001/api/auth/sign-up/email \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Admin",
-    "email": "admin@laundry.com",
-    "password": "password123"
+    "name": "<nama>",
+    "username": "<username>",
+    "email": "<email>",
+    "password": "<password>",
+    "role": "admin"
   }'
 ```
 
 Atau menggunakan **PowerShell**:
 
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:3001/api/auth/sign-up/email" `
-  -Method POST `
-  -ContentType "application/json" `
-  -Body '{"name":"Admin","email":"admin@laundry.com","password":"password123"}'
+$body = '{"name":"<nama>","username":"<username>","email":"<email>","password":"<password>","role":"admin"}'
+Invoke-RestMethod -Uri "http://localhost:3001/api/auth/sign-up/email" -Method POST -ContentType "application/json" -Body $body
 ```
 
-Setelah berhasil, buka `http://localhost:5173` dan login dengan:
-- **Email:** `admin@laundry.com`
-- **Password:** `password123`
+Setelah berhasil, buka `http://localhost:5173` dan login dengan username dan password yang sudah didaftarkan.
 
 ---
 
@@ -236,7 +259,7 @@ Browser → Vercel Dashboard → (rewrite /api/*) → Vercel API (Serverless) �
    - **Region:** `Asia Pacific (Singapore)`
 3. Copy **Connection String** (pooled), formatnya:
    ```
-   postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/dbname?sslmode=require
+   postgresql://<user>:<password>@<host>/<dbname>?sslmode=require
    ```
 
 ### Step 2: Push Schema ke Neon
@@ -245,14 +268,13 @@ Dari terminal lokal di folder `apps/api`:
 
 ```powershell
 # Windows PowerShell
-$env:DATABASE_URL = "postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/dbname?sslmode=require"
+$env:DATABASE_URL = "<connection-string-dari-neon>"
 npx drizzle-kit push
 ```
 
 ```bash
 # Linux / macOS
-DATABASE_URL="postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/dbname?sslmode=require" \
-npx drizzle-kit push
+DATABASE_URL="<connection-string-dari-neon>" npx drizzle-kit push
 ```
 
 ---
@@ -274,9 +296,9 @@ npx drizzle-kit push
    | Key | Value |
    |-----|-------|
    | `DATABASE_URL` | Connection string dari Neon |
-   | `BETTER_AUTH_SECRET` | Random secret (generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
-   | `BETTER_AUTH_URL` | URL API setelah deploy (misal: `https://laundry-api-xxx.vercel.app`) |
-   | `CORS_ORIGIN` | URL Dashboard setelah deploy (misal: `https://laundry-dashboard-xxx.vercel.app`) |
+   | `BETTER_AUTH_SECRET` | Random secret (lihat cara generate di atas) |
+   | `BETTER_AUTH_URL` | URL API setelah deploy |
+   | `CORS_ORIGIN` | URL Dashboard setelah deploy |
    | `NODE_ENV` | `production` |
 
 5. Klik **Deploy**
@@ -299,7 +321,7 @@ npx drizzle-kit push
    | Key | Value |
    |-----|-------|
    | `VITE_API_URL` | `/api` |
-   | `VITE_AUTH_URL` | URL Dashboard itu sendiri (misal: `https://laundry-dashboard-xxx.vercel.app`) |
+   | `VITE_AUTH_URL` | URL Dashboard itu sendiri |
 
 4. Klik **Deploy**
 
@@ -325,10 +347,10 @@ Setelah kedua project live, update env vars yang memerlukan URL final:
 curl -X POST https://<url-api>/api/auth/sign-up/email \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Admin",
-    "username": "admin",
-    "email": "admin@laundry.com",
-    "password": "Admin123!",
+    "name": "<nama>",
+    "username": "<username>",
+    "email": "<email>",
+    "password": "<password>",
     "role": "admin"
   }'
 ```
@@ -336,11 +358,9 @@ curl -X POST https://<url-api>/api/auth/sign-up/email \
 Atau **PowerShell**:
 
 ```powershell
-$body = '{"name":"Admin","username":"admin","email":"admin@laundry.com","password":"Admin123!","role":"admin"}'
+$body = '{"name":"<nama>","username":"<username>","email":"<email>","password":"<password>","role":"admin"}'
 Invoke-RestMethod -Uri "https://<url-api>/api/auth/sign-up/email" -Method POST -ContentType "application/json" -Body $body
 ```
-
-Login di dashboard dengan **Username:** `admin` / **Password:** `Admin123!`
 
 ---
 
@@ -374,12 +394,22 @@ laundry/
 │   │
 │   └── dashboard/              # Frontend React Dashboard
 │       ├── src/
-│       │   ├── components/     # UI Components (Sidebar, Tables, dll)
+│       │   ├── components/     # UI Components (Sidebar, Modal, Tables)
 │       │   ├── hooks/          # Custom React hooks
 │       │   ├── lib/            # Auth client & utilities
+│       │   ├── pages/          # Halaman aplikasi
+│       │   │   ├── Dashboard   # Ringkasan & statistik
+│       │   │   ├── Orders      # Manajemen pesanan
+│       │   │   ├── Customers   # Manajemen pelanggan
+│       │   │   ├── Categories  # Kategori layanan
+│       │   │   ├── Expenses    # Pencatatan pengeluaran
+│       │   │   ├── Reports     # Laporan & export
+│       │   │   ├── Invoice     # Invoice publik & rating
+│       │   │   └── ...         # Login, UserManagement, dll
 │       │   ├── providers/      # Context providers (Auth, Query)
 │       │   ├── services/       # API service layer (axios)
 │       │   ├── types/          # TypeScript type definitions
+│       │   ├── utils/          # Thermal printer & receipt builder
 │       │   ├── App.tsx         # Main app & routing
 │       │   └── main.tsx        # React entry point
 │       ├── tailwind.config.js  # Tailwind configuration
