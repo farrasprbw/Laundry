@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import apiClient from '../lib/api-client';
 import { useOrders, useUpdateOrderStatus, useDeleteOrder } from '../hooks/use-orders';
 import { usePrinter } from '../hooks/use-printer';
@@ -12,7 +12,14 @@ export function Orders() {
     status: statusFilter || undefined,
     page,
     limit: 10,
-  });
+  }, 60000); // Auto-refresh every 60 seconds
+
+  // Countdown ticker — re-renders every second for live countdown
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const orders = data?.data || [];
   const totalPages = data?.pagination.totalPages || 1;
@@ -278,12 +285,45 @@ export function Orders() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      {order.status === 'PROCESS' && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-primary-fixed text-on-primary-fixed">
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5 animate-pulse"></span>
-                          Process
-                        </span>
-                      )}
+                      {order.status === 'PROCESS' && (() => {
+                        const est = order.category?.estimatedDurationMinutes;
+                        if (est) {
+                          const finishTime = new Date(order.createdAt).getTime() + est * 60 * 1000;
+                          const remaining = Math.max(0, finishTime - Date.now());
+                          if (remaining > 0) {
+                            const hrs = Math.floor(remaining / 3600000);
+                            const mins = Math.floor((remaining % 3600000) / 60000);
+                            const secs = Math.floor((remaining % 60000) / 1000);
+                            const timeStr = hrs > 0 ? `${hrs}j ${mins}m ${secs}d` : mins > 0 ? `${mins}m ${secs}d` : `${secs}d`;
+                            return (
+                              <div className="flex flex-col gap-1">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-primary-fixed text-on-primary-fixed">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5 animate-pulse"></span>
+                                  Process
+                                </span>
+                                <span className="text-[10px] text-on-surface-variant font-mono">
+                                  ⏱ {timeStr}
+                                </span>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="flex flex-col gap-1">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-tertiary-container text-on-tertiary-container">
+                                  <span className="material-symbols-outlined text-[14px] mr-1 animate-spin">autorenew</span>
+                                  Auto-finish...
+                                </span>
+                              </div>
+                            );
+                          }
+                        }
+                        return (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-primary-fixed text-on-primary-fixed">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5 animate-pulse"></span>
+                            Process
+                          </span>
+                        );
+                      })()}
                       {order.status === 'FINISHED' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-secondary-fixed text-on-secondary-fixed">
                           <span className="material-symbols-outlined text-[14px] mr-1">check_circle</span>

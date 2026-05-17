@@ -9,13 +9,15 @@ import { Reports } from './pages/Reports';
 import { Login } from './pages/Login';
 import { PaymentMethods } from './pages/PaymentMethods';
 import { UserManagement } from './pages/UserManagement';
+import { Invoice } from './pages/Invoice';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public route */}
+        {/* Public routes */}
         <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+        <Route path="/invoice/:invoiceNumber" element={<Invoice />} />
 
         {/* Protected routes — redirect to /login if not authenticated */}
         <Route element={<ProtectedRoute />}>

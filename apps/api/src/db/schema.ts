@@ -115,9 +115,12 @@ export const orders = pgTable("orders", {
     .references(() => paymentMethods.id),
   paymentStatus: text("payment_status").notNull().default("UNPAID"), // UNPAID | PAID
   notes: text("notes"),
+  discount: integer("discount").notNull().default(0), // Diskon dalam Rupiah
+  parfume: text("parfume"), // Pilihan parfum (opsional)
   finishedAt: timestamp("finished_at"),
   takenAt: timestamp("taken_at"),
   waNotificationSent: boolean("wa_notification_sent").notNull().default(false),
+  rating: integer("rating"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"),

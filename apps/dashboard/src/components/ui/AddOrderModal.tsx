@@ -17,6 +17,8 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   const [notes, setNotes] = useState('');
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<"UNPAID" | "PAID">('UNPAID');
+  const [discount, setDiscount] = useState('0');
+  const [parfume, setParfume] = useState('');
 
   const { data: customersData, isLoading: isLoadingCustomers, refetch: refetchCustomers } = useCustomers({ limit: 100 });
   const { data: categoriesData, isLoading: isLoadingCategories, refetch: refetchCategories } = useCategories();
@@ -38,7 +40,95 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   const paymentMethods = paymentMethodsData || [];
 
   const selectedCategory = categories.find(c => c.id === categoryId);
-  const totalPrice = selectedCategory && quantity ? selectedCategory.pricePerUnit * Number(quantity) : 0;
+  const subtotal = selectedCategory && quantity ? selectedCategory.pricePerUnit * Number(quantity) : 0;
+  const discountAmount = Number(discount) || 0;
+  const totalPrice = Math.max(0, subtotal - discountAmount);
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount).replace('IDR', 'Rp');
+
+  const formatDateTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} - ${hh}:${min}`;
+  };
+
+  const getEstimatedFinish = (createdAt: string, durationMinutes: number) => {
+    const d = new Date(createdAt);
+    d.setMinutes(d.getMinutes() + durationMinutes);
+    return formatDateTime(d.toISOString());
+  };
+
+  const buildInvoiceWALink = (order: any) => {
+    const customer = customers.find(c => c.id === customerId);
+    const category = selectedCategory;
+    const selectedPM = paymentMethods.find(pm => pm.id === paymentMethodId);
+    if (!customer) return null;
+
+    const phone = customer.phone.replace(/\D/g, '');
+    const intlPhone = phone.startsWith('0') ? `62${phone.slice(1)}` : phone;
+
+    const qty = Number(quantity);
+    const unitLabel = category?.unit ?? 'kg';
+    const categoryName = category?.name ?? 'Laundry';
+    const pricePerUnit = category?.pricePerUnit ?? 0;
+    const total = order.totalPrice;
+    const disc = order.discount ?? 0;
+    const subTotal = total + disc;
+    const paymentStatusLabel = paymentStatus === 'PAID' ? 'LUNAS ✅' : 'BELUM BAYAR ❌';
+    const pmName = selectedPM?.name ?? '-';
+    const estSelesai = category?.estimatedDurationMinutes
+      ? getEstimatedFinish(order.createdAt, category.estimatedDurationMinutes)
+      : '-';
+    const parfumeLabel = order.parfume || '-';
+
+    const invoiceUrl = `${window.location.origin}/invoice/${order.invoiceNumber}`;
+
+    const message = `*MAXPRESS LAUNDROMAT*
+Apartment Amethys, Jl. Rajawali Selatan II No. 6 B, Jakarta Pusat
+HP : 0812-9678-8330
+
+━━━━━━━━━━━━━━━━━━━━
+
+📋 *DETAIL ORDER*
+No Invoice  : ${order.invoiceNumber}
+Pelanggan   : *${customer.name}*
+Tgl Masuk   : ${formatDateTime(order.createdAt)}
+Est Selesai : ${estSelesai}
+
+━━━━━━━━━━━━━━━━━━━━
+
+🧺 *${categoryName}*
+   ${qty} ${unitLabel} x ${formatCurrency(pricePerUnit)}
+   = ${formatCurrency(subTotal)}
+
+━━━━━━━━━━━━━━━━━━━━
+
+💳 Status Bayar : ${paymentStatusLabel}
+   SubTotal     : ${formatCurrency(subTotal)}
+   Diskon       : ${disc > 0 ? `- ${formatCurrency(disc)}` : 'Rp 0'}
+   *Total       : ${formatCurrency(total)}*
+
+💰 Pembayaran : ${pmName}
+📌 Status     : SEDANG DIPROSES
+🌸 Parfum     : ${parfumeLabel}
+📝 Notes      : ${pmName}
+   BCA 6565125439 a/n NUR PUJI LESTARI
+
+━━━━━━━━━━━━━━━━━━━━
+
+📄 *Lihat Invoice Online:*
+${invoiceUrl}
+
+Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
+Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
+
+    return `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}`;
+  };
 
   const handleSubmit = () => {
     if (!customerId || !categoryId || !quantity || Number(quantity) <= 0 || !paymentMethodId || !paymentStatus) {
@@ -54,15 +144,25 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
         notes: notes || undefined,
         paymentMethodId: paymentMethodId || undefined,
         paymentStatus,
+        discount: discountAmount,
+        parfume: parfume || undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (order) => {
+          // Auto-send invoice via WhatsApp
+          const waLink = buildInvoiceWALink(order);
+          if (waLink) {
+            window.open(waLink, '_blank');
+          }
+
           setCustomerId('');
           setCategoryId('');
           setQuantity('');
           setNotes('');
           setPaymentMethodId('');
           setPaymentStatus('UNPAID');
+          setDiscount('0');
+          setParfume('');
           onClose();
         },
         onError: (err: any) => {
@@ -140,6 +240,35 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Diskon (Rp)</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">Rp</span>
+              <input
+                type="number"
+                placeholder="0"
+                min="0"
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-10 pr-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-label-md font-label-md text-on-surface">Subtotal</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">Rp</span>
+              <input
+                type="text"
+                value={subtotal.toLocaleString('id-ID')}
+                readOnly
+                className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-xl pl-10 pr-4 py-3 text-body-md text-on-surface-variant focus:outline-none cursor-not-allowed"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
             <label className="text-label-md font-label-md text-on-surface">Total Harga</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">Rp</span>
@@ -147,7 +276,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
                 type="text"
                 value={totalPrice.toLocaleString('id-ID')}
                 readOnly
-                className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-xl pl-10 pr-4 py-3 text-body-md text-on-surface-variant focus:outline-none cursor-not-allowed"
+                className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-xl pl-10 pr-4 py-3 text-body-md text-on-surface-variant focus:outline-none cursor-not-allowed font-bold"
               />
             </div>
           </div>
@@ -199,6 +328,17 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
               </label>
             </div>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-label-md font-label-md text-on-surface">Parfum (Opsional)</label>
+          <input
+            type="text"
+            placeholder="Contoh: Lavender, Rose, Ocean Fresh..."
+            value={parfume}
+            onChange={(e) => setParfume(e.target.value)}
+            className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+          />
         </div>
 
         <div className="flex flex-col gap-1.5 mt-2">

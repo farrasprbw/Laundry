@@ -21,6 +21,8 @@ interface CreateOrderInput {
   notes?: string;
   paymentMethodId?: string;
   paymentStatus?: string;
+  discount?: number;
+  parfume?: string;
 }
 
 interface ListOrdersParams {
@@ -82,6 +84,7 @@ export const orderService = {
             id: categories.id,
             name: categories.name,
             unit: categories.unit,
+            estimatedDurationMinutes: categories.estimatedDurationMinutes,
           },
           paymentMethod: {
             id: paymentMethods.id,
@@ -149,7 +152,9 @@ export const orderService = {
     }
 
     const invoiceNumber = await generateInvoiceNumber();
-    const totalPrice = Math.round(input.quantity * category.pricePerUnit);
+    const subtotal = Math.round(input.quantity * category.pricePerUnit);
+    const discountAmount = input.discount ?? 0;
+    const totalPrice = Math.max(0, subtotal - discountAmount);
 
     const [order] = await db
       .insert(orders)
@@ -163,6 +168,8 @@ export const orderService = {
         notes: input.notes ?? null,
         paymentMethodId: input.paymentMethodId ?? null,
         paymentStatus: input.paymentStatus ?? "UNPAID",
+        discount: input.discount ?? 0,
+        parfume: input.parfume ?? null,
       })
       .returning();
 
@@ -258,7 +265,7 @@ export const orderService = {
 
 Pakaian bersih dan wangi sudah menanti! Cucian Kakak dengan detail berikut telah *SELESAI* dan siap untuk dijemput:
 
-🧾 *No. Nota:* ${order.invoiceNumber}
+🧾 *No. Invoice:* ${order.invoiceNumber}
 🧺 *Layanan:* ${categoryName} (${qty} ${unitLabel})
 💰 *Total Tagihan:* ${totalAmount}
 💳 *Status Pembayaran:* ${statusLabel}
@@ -267,7 +274,7 @@ Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
 
 ---
 *Syarat & Ketentuan Pengambilan:*
-⚠️ Pengambilan barang harus disertai nota.
+⚠️ Pengambilan barang harus disertai invoice.
 ⚠️ Komplain berlaku maksimal 24 jam setelah barang diambil.
 ⚠️ Kain luntur/berkerut karena sifat kain di luar tanggung jawab kami.
 ⚠️ Cucian yang tidak diambil dalam waktu 1 bulan, bila rusak/hilang bukan tanggung jawab kami.`;

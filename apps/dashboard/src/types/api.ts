@@ -40,6 +40,8 @@ export interface Order {
   totalPrice: number;
   status: "PROCESS" | "FINISHED" | "TAKEN";
   notes: string | null;
+  discount: number;
+  parfume: string | null;
   finishedAt: string | null;
   takenAt: string | null;
   waNotificationSent: boolean;
@@ -56,6 +58,7 @@ export interface Order {
     id: string;
     name: string;
     unit: string;
+    estimatedDurationMinutes?: number;
   } | null;
 }
 
@@ -166,6 +169,8 @@ export interface CreateOrderInput {
   notes?: string;
   paymentMethodId?: string;
   paymentStatus?: "UNPAID" | "PAID";
+  discount?: number;
+  parfume?: string;
 }
 
 export interface CreateExpenseInput {
