@@ -239,7 +239,9 @@ export function UserManagement() {
                           className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors"
                           title="Hapus User"
                         >
-                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                          <span className={deleteMutation.isPending && deleteMutation.variables === u.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
+                            {deleteMutation.isPending && deleteMutation.variables === u.id ? 'progress_activity' : 'delete'}
+                          </span>
                         </button>
                       </div>
                     </td>
@@ -274,6 +276,8 @@ export function UserManagement() {
         }}
         title="Tambah User Baru"
         onSubmit={handleCreateUser}
+        isLoading={createMutation.isPending}
+        isSubmitDisabled={!formName.trim() || !formUsername.trim() || !formPassword.trim() || createMutation.isPending}
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -342,6 +346,8 @@ export function UserManagement() {
         }}
         title="Ubah Role User"
         onSubmit={handleUpdateRole}
+        isLoading={updateRoleMutation.isPending}
+        isSubmitDisabled={updateRoleMutation.isPending}
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -382,6 +388,8 @@ export function UserManagement() {
         }}
         title="Edit User"
         onSubmit={handleUpdateUser}
+        isLoading={updateUserMutation.isPending}
+        isSubmitDisabled={!editName.trim() || !editUsername.trim() || updateUserMutation.isPending}
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">

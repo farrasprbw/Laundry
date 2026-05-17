@@ -112,7 +112,9 @@ export function PaymentMethods() {
                           className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors"
                           title="Delete"
                         >
-                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                          <span className={deleteMutation.isPending && deleteMutation.variables === method.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
+                            {deleteMutation.isPending && deleteMutation.variables === method.id ? 'progress_activity' : 'delete'}
+                          </span>
                         </button>
                       </div>
                     </td>
@@ -143,6 +145,8 @@ export function PaymentMethods() {
         }}
         title="Tambah Metode Pembayaran"
         onSubmit={handleAddMethod}
+        isSubmitDisabled={!newMethodName.trim() || createMutation.isPending}
+        isLoading={createMutation.isPending}
       >
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
