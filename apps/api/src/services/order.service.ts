@@ -385,7 +385,7 @@ Est Selesai : ${estSelesai}
 
 🧺 *${categoryName}*
    ${qty} ${unitLabel} x ${formatCurrency(pricePerUnit)}
-   *Total       : ${formatCurrency(order.totalPrice)}*
+   *Total : ${formatCurrency(order.totalPrice)}*
 
 ━━━━━━━━━━━━━━━━━━━━
 
