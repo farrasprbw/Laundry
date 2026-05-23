@@ -22,7 +22,6 @@ import {
   Chip,
   Spinner,
   Pagination,
-  Tooltip,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
