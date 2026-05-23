@@ -28,7 +28,7 @@ interface InvoiceData {
     description: string | null;
     pricePerUnit: number;
     unit: string;
-    estimatedDurationMinutes: number;
+    estimatedDurationDays: number;
   } | null;
   paymentMethod: {
     id: string;
@@ -54,9 +54,10 @@ const formatDate = (dateStr: string) => {
   return `${dd}/${mm}/${yyyy} - ${hh}:${min}`;
 };
 
-const getEstimatedFinish = (createdAt: string, durationMinutes: number) => {
+const getEstimatedFinish = (createdAt: string, durationDays: number) => {
   const d = new Date(createdAt);
-  d.setMinutes(d.getMinutes() + durationMinutes);
+  d.setDate(d.getDate() + (durationDays - 1));
+  d.setHours(17, 0, 0, 0);
   return formatDate(d.toISOString());
 };
 
@@ -82,14 +83,14 @@ const getStatusColor = (status: string) => {
 function StarIcon({
   filled,
   hovered,
-  onClick,
+  onPress,
   onMouseEnter,
   onMouseLeave,
   disabled,
 }: {
   filled: boolean;
   hovered: boolean;
-  onClick: () => void;
+  onPress: () => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   disabled: boolean;
@@ -106,7 +107,7 @@ function StarIcon({
       fill="currentColor"
       viewBox="0 0 20 20"
       xmlns="http://www.w3.org/2000/svg"
-      onClick={disabled ? undefined : onClick}
+      onClick={disabled ? undefined : onPress}
       onMouseEnter={disabled ? undefined : onMouseEnter}
       onMouseLeave={disabled ? undefined : onMouseLeave}
     >
@@ -141,7 +142,8 @@ export function Invoice() {
     const fetchInvoice = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_BASE}/invoice/${encodeURIComponent(invoiceNumber)}`);
+        const fullInvoiceNumber = invoiceNumber.startsWith('#') ? invoiceNumber : `#${invoiceNumber}`;
+        const res = await fetch(`${API_BASE}/invoice/${encodeURIComponent(fullInvoiceNumber)}`);
         if (!res.ok) {
           throw new Error(res.status === 404 ? 'Invoice tidak ditemukan' : 'Gagal memuat invoice');
         }
@@ -170,7 +172,8 @@ export function Invoice() {
     try {
       setSubmitting(true);
       setRatingError(null);
-      const res = await fetch(`${API_BASE}/invoice/${encodeURIComponent(invoiceNumber)}/rating`, {
+      const fullInvoiceNumber = invoiceNumber.startsWith('#') ? invoiceNumber : `#${invoiceNumber}`;
+      const res = await fetch(`${API_BASE}/invoice/${encodeURIComponent(fullInvoiceNumber)}/rating`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating: selectedRating }),
@@ -192,7 +195,7 @@ export function Invoice() {
   // ── Loading State ──
   if (loading) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+      <div className="min-h-[100dvh] w-full bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
           <p className="text-gray-500 text-sm font-medium">Memuat invoice...</p>
@@ -204,7 +207,7 @@ export function Invoice() {
   // ── Error State ──
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center px-4">
+      <div className="min-h-[100dvh] w-full bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col items-center justify-center px-4">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 max-w-sm w-full text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,8 +223,7 @@ export function Invoice() {
 
   const qty = Number(data.quantity);
   const pricePerUnit = data.category?.pricePerUnit ?? 0;
-  const discountAmount = data.discount ?? 0;
-  const subTotal = data.totalPrice + discountAmount;
+  const subTotal = data.totalPrice;
   const isDisabledRating = ratingSubmitted;
 
   return (
@@ -270,7 +272,7 @@ export function Invoice() {
               <span className="text-gray-400">Est Selesai</span>
               <span className="font-medium text-gray-700 text-right">
                 {data.category
-                  ? getEstimatedFinish(data.createdAt, data.category.estimatedDurationMinutes)
+                  ? getEstimatedFinish(data.createdAt, data.category.estimatedDurationDays)
                   : '-'}
               </span>
             </div>
@@ -304,19 +306,9 @@ export function Invoice() {
                 {data.paymentStatus === 'PAID' ? 'LUNAS' : 'BELUM BAYAR'}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">SubTotal</span>
-              <span className="font-medium text-gray-700 text-right">{formatCurrency(subTotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400">Diskon</span>
-              <span className={`font-medium text-right ${discountAmount > 0 ? 'text-red-500' : 'text-gray-700'}`}>
-                {discountAmount > 0 ? `- ${formatCurrency(discountAmount)}` : 'Rp 0'}
-              </span>
-            </div>
-            <div className="flex justify-between pt-3 border-t border-gray-100">
-              <span className="text-base font-bold text-gray-900">Total</span>
-              <span className="text-lg font-extrabold text-blue-500">{formatCurrency(data.totalPrice)}</span>
+            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+              <span className="text-base font-bold text-gray-900">Total Harga</span>
+              <span className="text-2xl font-black text-gray-900 tracking-tight">{formatCurrency(data.totalPrice)}</span>
             </div>
           </div>
 
@@ -372,7 +364,7 @@ export function Invoice() {
                   key={star}
                   filled={star <= selectedRating}
                   hovered={star <= hoveredRating && !isDisabledRating}
-                  onClick={() => !isDisabledRating && setSelectedRating(star)}
+                  onPress={() => !isDisabledRating && setSelectedRating(star)}
                   onMouseEnter={() => !isDisabledRating && setHoveredRating(star)}
                   onMouseLeave={() => !isDisabledRating && setHoveredRating(0)}
                   disabled={isDisabledRating}

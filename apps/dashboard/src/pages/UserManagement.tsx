@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useUsers, useCreateUser, useUpdateUserRole, useUpdateUser, useDeleteUser } from '../hooks/use-users';
 import type { UserRole } from '../types/api';
+import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Tooltip } from '@nextui-org/react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin: 'Super Admin',
@@ -9,11 +11,6 @@ const ROLE_LABELS: Record<UserRole, string> = {
   worker: 'Worker',
 };
 
-const ROLE_STYLES: Record<UserRole, string> = {
-  super_admin: 'bg-primary/15 text-primary border-primary/30',
-  admin: 'bg-secondary/15 text-secondary border-secondary/30',
-  worker: 'bg-surface-variant text-on-surface-variant border-outline-variant/30',
-};
 
 export function UserManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -24,6 +21,7 @@ export function UserManagement() {
   // Create form state
   const [formName, setFormName] = useState('');
   const [formUsername, setFormUsername] = useState('');
+  const [formPhone, setFormPhone] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('worker');
 
@@ -32,9 +30,11 @@ export function UserManagement() {
   const [editUserId, setEditUserId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editUsername, setEditUsername] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [editPassword, setEditPassword] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
+  const [confirmState, setConfirmState] = useState<{ open: boolean, data: { id: string, name: string } | null }>({ open: false, data: null });
 
   const { data: users = [], isLoading, error } = useUsers();
   const createMutation = useCreateUser();
@@ -48,11 +48,13 @@ export function UserManagement() {
       await createMutation.mutateAsync({
         name: formName.trim(),
         username: formUsername.trim(),
+        phone: formPhone.trim(),
         password: formPassword,
         role: formRole,
       });
       setFormName('');
       setFormUsername('');
+      setFormPhone('');
       setFormPassword('');
       setFormRole('worker');
       setIsCreateModalOpen(false);
@@ -65,6 +67,7 @@ export function UserManagement() {
     setEditUserId(user.id);
     setEditName(user.name);
     setEditUsername(user.username);
+    setEditPhone(user.phone || '');
     setEditPassword('');
     setShowEditPassword(false);
     setIsEditModalOpen(true);
@@ -76,6 +79,7 @@ export function UserManagement() {
       const input: any = {
         name: editName.trim(),
         username: editUsername.trim(),
+        phone: editPhone.trim(),
       };
       if (editPassword) {
         input.password = editPassword;
@@ -109,18 +113,22 @@ export function UserManagement() {
     }
   };
 
-  const handleDeleteUser = async (id: string, name: string) => {
-    if (confirm(`Hapus user "${name}"? Aksi ini tidak bisa dibatalkan.`)) {
-      try {
-        await deleteMutation.mutateAsync(id);
-      } catch (err: any) {
-        alert(err?.response?.data?.error || 'Gagal menghapus user');
-      }
+  const handleDeleteUser = (id: string, name: string) => {
+    setConfirmState({ open: true, data: { id, name } });
+  };
+
+  const onConfirmDelete = async () => {
+    if (!confirmState.data) return;
+    try {
+      await deleteMutation.mutateAsync(confirmState.data.id);
+      setConfirmState({ open: false, data: null });
+    } catch (err: any) {
+      alert(err?.response?.data?.error || 'Gagal menghapus user');
     }
   };
 
   return (
-    <div className="pt-24 px-6 md:px-10 pb-24 md:pb-10 max-w-[1440px] w-full flex-1">
+    <div className="pt-24 px-container-padding-mobile md:px-container-padding-desktop pb-24 md:pb-10 w-full flex-1">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
@@ -130,13 +138,14 @@ export function UserManagement() {
           </h2>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">Kelola user dan role matrix.</p>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-primary text-on-primary rounded-xl py-3 px-5 flex items-center gap-2 hover:bg-surface-tint active:scale-95 transition-all shadow-md font-label-md text-label-md"
+        <Button
+          color="primary"
+          onPress={() => setIsCreateModalOpen(true)}
+          startContent={<span className="material-symbols-outlined">person_add</span>}
+          className="rounded-xl py-6 px-5 shadow-md text-label-md font-label-md text-white"
         >
-          <span className="material-symbols-outlined">person_add</span>
           Tambah User
-        </button>
+        </Button>
       </div>
 
       {/* Role Matrix Legend */}
@@ -170,7 +179,7 @@ export function UserManagement() {
       {/* Loading / Error */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
-          <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <Spinner label="Memuat data..." />
         </div>
       )}
 
@@ -180,85 +189,97 @@ export function UserManagement() {
         </div>
       )}
 
-      {/* User Table */}
       {!isLoading && !error && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
-                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">User</th>
-                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Username</th>
-                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Dibuat</th>
-                  <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md text-on-surface">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-surface-container-lowest transition-colors group">
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-label-md">
-                          {u.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-medium text-on-background">{u.name}</span>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden p-6">
+          <div className="overflow-x-auto w-full">
+            <Table aria-label="User Table" removeWrapper shadow="none" className="min-w-max w-full">
+            <TableHeader>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">User</TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Username</TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Role</TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Dibuat</TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</TableColumn>
+            </TableHeader>
+            <TableBody emptyContent="Belum ada user.">
+              {users.map((u) => (
+                <TableRow key={u.id} className="hover:bg-surface-container-lowest transition-colors group">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-label-md">
+                        {u.name.charAt(0).toUpperCase()}
                       </div>
-                    </td>
-                    <td className="px-6 py-5 text-on-surface-variant">{u.username}</td>
-                    <td className="px-6 py-5">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-label-sm font-label-sm font-bold border ${ROLE_STYLES[u.role]}`}>
-                        {ROLE_LABELS[u.role]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-on-surface-variant text-body-sm">
-                      {new Date(u.createdAt).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: 'short',
-                      })}
-                    </td>
-                    <td className="px-6 py-5 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => openEditModal(u)}
-                          className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors"
-                          title="Edit User"
+                      <span className="font-medium text-on-background">{u.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-on-surface-variant">{u.username}</span>
+                      {u.phone && <span className="text-label-sm text-on-surface-variant/70">{u.phone}</span>}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      color={
+                        u.role === 'super_admin' ? 'primary' :
+                          u.role === 'admin' ? 'secondary' : 'default'
+                      }
+                      className="font-bold border"
+                    >
+                      {ROLE_LABELS[u.role]}
+                    </Chip>
+                  </TableCell>
+                  <TableCell className="text-on-surface-variant text-body-sm">
+                    {new Date(u.createdAt).toLocaleDateString('id-ID', {
+                      day: '2-digit',
+                      month: 'short',
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Tooltip content="Edit User">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => openEditModal(u)}
+                          className="text-outline hover:text-primary"
                         >
                           <span className="material-symbols-outlined text-[20px]">edit</span>
-                        </button>
-                        <button
-                          onClick={() => openRoleModal(u.id, u.role)}
-                          className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors"
-                          title="Ubah Role"
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="Ubah Role">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => openRoleModal(u.id, u.role)}
+                          className="text-outline hover:text-primary"
                         >
                           <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(u.id, u.name)}
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="Hapus User">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => handleDeleteUser(u.id, u.name)}
                           disabled={deleteMutation.isPending}
-                          className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors"
-                          title="Hapus User"
+                          className="text-outline hover:text-error"
                         >
                           <span className={deleteMutation.isPending && deleteMutation.variables === u.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
                             {deleteMutation.isPending && deleteMutation.variables === u.id ? 'progress_activity' : 'delete'}
                           </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {users.length === 0 && (
-                  <tr>
-                    <td className="px-6 py-8 text-center" colSpan={5}>
-                      <div className="flex flex-col items-center justify-center gap-2 text-on-surface-variant">
-                        <span className="material-symbols-outlined text-[32px] opacity-70">group</span>
-                        <p className="text-body-md font-body-md font-medium">Belum ada user.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            </Table>
           </div>
         </div>
       )}
@@ -270,6 +291,7 @@ export function UserManagement() {
           setIsCreateModalOpen(false);
           setFormName('');
           setFormUsername('');
+          setFormPhone('');
           setFormPassword('');
           setFormRole('worker');
           setShowPassword(false);
@@ -280,60 +302,62 @@ export function UserManagement() {
         isSubmitDisabled={!formName.trim() || !formUsername.trim() || !formPassword.trim() || createMutation.isPending}
       >
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Nama</label>
-            <input
-              type="text"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              placeholder="Nama lengkap"
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              autoFocus
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Username</label>
-            <input
-              type="text"
-              value={formUsername}
-              onChange={(e) => setFormUsername(e.target.value)}
-              placeholder="username"
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={formPassword}
-                onChange={(e) => setFormPassword(e.target.value)}
-                placeholder="Minimal 8 karakter"
-                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-4 pr-12 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-on-surface-variant hover:text-primary transition-colors"
+          <Input
+            type="text"
+            label="Nama"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder="Nama lengkap"
+            variant="bordered"
+            autoFocus
+          />
+          <Input
+            type="text"
+            label="Username"
+            value={formUsername}
+            onChange={(e) => setFormUsername(e.target.value)}
+            placeholder="username"
+            variant="bordered"
+          />
+          <Input
+            type="text"
+            label="No. HP"
+            value={formPhone}
+            onChange={(e) => setFormPhone(e.target.value)}
+            placeholder="Contoh: 081234567890"
+            variant="bordered"
+          />
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            label="Password"
+            value={formPassword}
+            onChange={(e) => setFormPassword(e.target.value)}
+            placeholder="Minimal 8 karakter"
+            variant="bordered"
+            endContent={
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onPress={() => setShowPassword(!showPassword)}
+                className="text-on-surface-variant hover:text-primary"
               >
                 <span className="material-symbols-outlined text-[20px]">
                   {showPassword ? 'visibility_off' : 'visibility'}
                 </span>
-              </button>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Role</label>
-            <select
-              value={formRole}
-              onChange={(e) => setFormRole(e.target.value as UserRole)}
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            >
-              <option value="worker">Worker</option>
-              <option value="admin">Admin</option>
-              <option value="super_admin">Super Admin</option>
-            </select>
-          </div>
+              </Button>
+            }
+          />
+          <Select
+            label="Role"
+            selectedKeys={formRole ? [formRole] : []}
+            onChange={(e) => setFormRole(e.target.value as UserRole)}
+            variant="bordered"
+          >
+            <SelectItem key="worker" value="worker">Worker</SelectItem>
+            <SelectItem key="admin" value="admin">Admin</SelectItem>
+            <SelectItem key="super_admin" value="super_admin">Super Admin</SelectItem>
+          </Select>
         </div>
       </Modal>
 
@@ -350,18 +374,16 @@ export function UserManagement() {
         isSubmitDisabled={updateRoleMutation.isPending}
       >
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Pilih Role Baru</label>
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            >
-              <option value="worker">Worker</option>
-              <option value="admin">Admin</option>
-              <option value="super_admin">Super Admin</option>
-            </select>
-          </div>
+          <Select
+            label="Pilih Role Baru"
+            selectedKeys={selectedRole ? [selectedRole] : []}
+            onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+            variant="bordered"
+          >
+            <SelectItem key="worker" value="worker">Worker</SelectItem>
+            <SelectItem key="admin" value="admin">Admin</SelectItem>
+            <SelectItem key="super_admin" value="super_admin">Super Admin</SelectItem>
+          </Select>
           <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/20">
             <p className="text-label-sm font-label-sm text-on-surface-variant mb-2">Hak Akses Role:</p>
             {selectedRole === 'super_admin' && (
@@ -392,49 +414,63 @@ export function UserManagement() {
         isSubmitDisabled={!editName.trim() || !editUsername.trim() || updateUserMutation.isPending}
       >
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Nama</label>
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              placeholder="Nama lengkap"
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Username</label>
-            <input
-              type="text"
-              value={editUsername}
-              onChange={(e) => setEditUsername(e.target.value)}
-              placeholder="Username login"
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Password Baru</label>
-            <div className="relative">
-              <input
-                type={showEditPassword ? 'text' : 'password'}
-                value={editPassword}
-                onChange={(e) => setEditPassword(e.target.value)}
-                placeholder="Biarkan kosong jika tidak ingin mengubah password"
-                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-4 pr-12 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowEditPassword(!showEditPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-on-surface-variant hover:text-primary transition-colors"
+          <Input
+            type="text"
+            label="Nama"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            placeholder="Nama lengkap"
+            variant="bordered"
+          />
+          <Input
+            type="text"
+            label="Username"
+            value={editUsername}
+            onChange={(e) => setEditUsername(e.target.value)}
+            placeholder="Username login"
+            variant="bordered"
+          />
+          <Input
+            type="text"
+            label="No. HP"
+            value={editPhone}
+            onChange={(e) => setEditPhone(e.target.value)}
+            placeholder="Contoh: 081234567890"
+            variant="bordered"
+          />
+          <Input
+            type={showEditPassword ? 'text' : 'password'}
+            label="Password Baru"
+            value={editPassword}
+            onChange={(e) => setEditPassword(e.target.value)}
+            placeholder="Biarkan kosong jika tidak ingin mengubah password"
+            variant="bordered"
+            endContent={
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onPress={() => setShowEditPassword(!showEditPassword)}
+                className="text-on-surface-variant hover:text-primary"
               >
                 <span className="material-symbols-outlined text-[20px]">
                   {showEditPassword ? 'visibility_off' : 'visibility'}
                 </span>
-              </button>
-            </div>
-          </div>
+              </Button>
+            }
+          />
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmState.open}
+        onClose={() => setConfirmState({ open: false, data: null })}
+        onConfirm={onConfirmDelete}
+        title="Hapus User"
+        message={`Hapus user "${confirmState.data?.name}"? Aksi ini tidak bisa dibatalkan.`}
+        confirmText="Hapus"
+        cancelText="Batal"
+      />
     </div>
   );
 }

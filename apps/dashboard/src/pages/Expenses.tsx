@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '../components/ui/Modal';
-import { 
-  useExpenses, 
-  useCreateExpense, 
-  useUpdateExpense, 
-  useDeleteExpense 
+import { ConfirmModal } from '../components/ui/ConfirmModal';
+import {
+  useExpenses,
+  useCreateExpense,
+  useUpdateExpense,
+  useDeleteExpense
 } from '../hooks/use-expenses';
 import type { Expense } from '../types/api';
+import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Pagination, Tooltip, Textarea } from '@nextui-org/react';
 
 const CATEGORIES = [
   { value: "detergent", label: "Detergent & Supplies", icon: "water_drop", color: "bg-primary-fixed-dim/30 text-on-primary-fixed-variant" },
@@ -52,6 +54,7 @@ export function Expenses() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [confirmState, setConfirmState] = useState<{ open: boolean, data: string | null }>({ open: false, data: null });
   const [selectedMonthYear, setSelectedMonthYear] = useState<string>("");
   const limit = 10;
 
@@ -115,16 +118,25 @@ export function Expenses() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this expense?")) {
-      await deleteExpense.mutateAsync(id);
-    }
+  const handleDelete = (id: string) => {
+    setConfirmState({ open: true, data: id });
     setActiveMenu(null);
+  };
+
+  const onConfirmDelete = async () => {
+    if (!confirmState.data) return;
+    try {
+      await deleteExpense.mutateAsync(confirmState.data);
+      setConfirmState({ open: false, data: null });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete expense.");
+    }
   };
 
   const handleSubmit = async () => {
     if (!formData.amount || !formData.expenseDate || !formData.category) return;
-    
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -155,67 +167,69 @@ export function Expenses() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const monthOptions = generateMonthOptions();
+  const monthOptions = [{ label: "All Months", value: "" }, ...generateMonthOptions()];
   const expenses = expensesData?.data || [];
   const pagination = expensesData?.pagination;
 
   return (
-    <div className="pt-24 pb-24 md:pt-24 md:pb-10 px-container-padding-mobile md:px-container-padding-desktop max-w-[1440px] w-full flex-1">
+    <div className="pt-24 pb-24 md:pt-24 md:pb-10 px-container-padding-mobile md:px-container-padding-desktop w-full flex-1">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h2 className="text-headline-lg font-headline-lg md:text-display-lg md:font-display-lg text-on-surface">Expenses</h2>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">Track and manage facility operational costs.</p>
         </div>
-        <button 
-          onClick={openAddModal}
-          className="w-full md:w-auto bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container transition-all active:scale-[0.98] py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md h-[48px] md:h-[56px]"
+        <Button
+          color="primary"
+          onPress={openAddModal}
+          className="w-full md:w-auto font-semibold px-6 py-7 rounded-xl shadow-sm text-label-md text-white"
+          startContent={<span className="material-symbols-outlined">add</span>}
         >
-          <span className="material-symbols-outlined fill-icon">add</span>
-          <span className="font-label-md text-label-md font-semibold">Add Expense</span>
-        </button>
+          Add Expense
+        </Button>
       </div>
 
       {/* Controls Toolbar */}
       <div className="bg-surface border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.05)] rounded-2xl p-4 mb-6 flex flex-col lg:flex-row gap-4 items-center justify-between">
         {/* Search */}
-        <div className="relative w-full lg:w-96">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className="material-symbols-outlined text-outline">search</span>
-          </div>
-          <input 
-            className="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-xl text-body-md font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface transition-colors placeholder:text-outline/70" 
-            placeholder="Search expenses by description..." 
-            type="text" 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <Input
+          className="w-full lg:w-96"
+          placeholder="Search expenses by description..."
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          startContent={<span className="material-symbols-outlined text-outline mr-1 text-[20px]">search</span>}
+          variant="bordered"
+        />
         {/* Filters */}
         <div className="flex w-full lg:w-auto gap-3">
-          <div className="relative flex-1 lg:w-48">
-            <select 
-              value={selectedMonthYear}
-              onChange={(e) => {
-                setSelectedMonthYear(e.target.value);
-                setPage(1);
-              }}
-              className="w-full appearance-none bg-surface-container-low border-none py-3 pl-4 pr-10 rounded-xl text-body-md font-body-md text-on-surface focus:ring-2 focus:ring-primary cursor-pointer"
-            >
-              <option value="">All Months</option>
-              {monthOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            aria-label="Filter Bulan"
+            placeholder="All Months"
+            selectedKeys={selectedMonthYear ? [selectedMonthYear] : []}
+            onChange={(e) => {
+              setSelectedMonthYear(e.target.value);
+              setPage(1);
+            }}
+            className="w-full lg:w-48"
+            variant="bordered"
+            size="sm"
+          >
+            {monthOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </Select>
         </div>
       </div>
 
       {/* Data Table Card */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col relative min-h-[400px]">
+      {/* Data Table Card */}
+      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col p-6 relative min-h-[400px]">
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-surface/50 z-10 rounded-2xl">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+            <Spinner label="Memuat data..." />
           </div>
         ) : expenses.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[400px] text-center px-4 rounded-2xl">
@@ -227,90 +241,98 @@ export function Expenses() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
-                    <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider hidden sm:table-cell">Description</th>
-                    <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Amount</th>
-                    <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md text-on-surface">
-                  {expenses.map((expense) => {
-                    const { date, time } = formatDate(expense.expenseDate);
-                    const catDisplay = getCategoryDisplay(expense.category);
-                    
-                    return (
-                      <tr key={expense.id} className="hover:bg-surface-container-lowest transition-colors group">
-                        <td className="py-4 px-6 whitespace-nowrap">
-                          <div className="font-medium">{date}</div>
-                          <div className="text-label-sm font-label-sm text-on-surface-variant mt-0.5">{time}</div>
-                        </td>
-                        <td className="py-4 px-6 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-label-sm ${catDisplay.color}`}>
-                            <span className="material-symbols-outlined text-[16px]">{catDisplay.icon}</span>
-                            {catDisplay.label}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 hidden sm:table-cell text-on-surface-variant max-w-xs truncate">
-                          {expense.description || "-"}
-                        </td>
-                        <td className="py-4 px-6 whitespace-nowrap text-right font-medium text-error">
-                          -{formatCurrency(expense.amount)}
-                        </td>
-                        <td className="py-4 px-6 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); openEditModal(expense); }}
-                              className="p-2 text-outline hover:text-primary hover:bg-primary-container/30 rounded-lg transition-colors" 
-                              title="Edit"
+            <div className="overflow-x-auto w-full">
+              <Table aria-label="Expenses Table" removeWrapper shadow="none" className="min-w-max w-full">
+              <TableHeader>
+                <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Date</TableColumn>
+                <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Category</TableColumn>
+                <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider hidden sm:table-cell">Description</TableColumn>
+                <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Amount</TableColumn>
+                <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {expenses.map((expense) => {
+                  const { date, time } = formatDate(expense.expenseDate);
+                  const catDisplay = getCategoryDisplay(expense.category);
+
+                  return (
+                    <TableRow key={expense.id} className="hover:bg-surface-container-lowest transition-colors group">
+                      <TableCell className="whitespace-nowrap">
+                        <div className="font-medium">{date}</div>
+                        <div className="text-label-sm font-label-sm text-on-surface-variant mt-0.5">{time}</div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color={
+                            expense.category === 'detergent' ? 'primary' :
+                              expense.category === 'electricity' ? 'default' :
+                                expense.category === 'water' ? 'secondary' :
+                                  expense.category === 'maintenance' ? 'danger' :
+                                    expense.category === 'rent' ? 'warning' : 'default'
+                          }
+                          startContent={<span className="material-symbols-outlined text-[16px] mr-1">{catDisplay.icon}</span>}
+                        >
+                          {catDisplay.label}
+                        </Chip>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-on-surface-variant max-w-xs truncate">
+                        {expense.description || "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-medium text-error">
+                        -{formatCurrency(expense.amount)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Tooltip content="Edit">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              onPress={() => openEditModal(expense)}
+                              className="text-outline hover:text-primary"
                             >
                               <span className="material-symbols-outlined text-[20px]">edit</span>
-                            </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleDelete(expense.id); }}
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content="Delete">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              onPress={() => handleDelete(expense.id)}
                               disabled={deleteExpense.isPending}
-                              className="p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors" 
-                              title="Delete"
+                              className="text-outline hover:text-error"
                             >
                               <span className={deleteExpense.isPending && deleteExpense.variables === expense.id ? "material-symbols-outlined animate-spin text-[20px]" : "material-symbols-outlined text-[20px]"}>
                                 {deleteExpense.isPending && deleteExpense.variables === expense.id ? 'progress_activity' : 'delete'}
                               </span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            </Button>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+              </Table>
             </div>
-            
+
             {/* Pagination Footer */}
             {pagination && pagination.totalPages > 1 && (
-              <div className="bg-surface-container-low/30 border-t border-outline-variant/20 px-6 py-4 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+              <div className="bg-surface-container-low/30 border-t border-outline-variant/20 px-6 py-4 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant mt-4">
                 <span>
                   Showing {(page - 1) * limit + 1} to {Math.min(page * limit, pagination.total)} of {pagination.total} entries
                 </span>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="p-1.5 rounded-lg border border-outline-variant/50 text-outline hover:bg-surface hover:text-on-surface disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                  </button>
-                  <button 
-                    onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
-                    disabled={page === pagination.totalPages}
-                    className="p-1.5 rounded-lg border border-outline-variant/50 text-outline hover:bg-surface hover:text-on-surface disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                  </button>
-                </div>
+                <Pagination
+                  total={pagination.totalPages}
+                  page={page}
+                  onChange={(newPage) => setPage(newPage)}
+                  size="sm"
+                  variant="flat"
+                  color="primary"
+                />
               </div>
             )}
           </>
@@ -318,72 +340,77 @@ export function Expenses() {
       </div>
 
       {/* Add/Edit Expense Modal */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => !isSubmitting && setIsModalOpen(false)} 
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => !isSubmitting && setIsModalOpen(false)}
         title={editingExpense ? "Edit Expense" : "Add New Expense"}
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
         isSubmitDisabled={isSubmitting}
       >
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Date *</label>
-            <input 
-              type="date" 
-              value={formData.expenseDate}
-              onChange={(e) => setFormData({...formData, expenseDate: e.target.value})}
-              required
-              disabled={isSubmitting}
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
-            />
-          </div>
-          
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Category *</label>
-            <select 
-              value={formData.category}
-              onChange={(e) => setFormData({...formData, category: e.target.value})}
-              disabled={isSubmitting}
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
-            >
-              {CATEGORIES.map(cat => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
-              ))}
-            </select>
-          </div>
+          <Input
+            type="date"
+            label="Date *"
+            value={formData.expenseDate}
+            onChange={(e) => setFormData({ ...formData, expenseDate: e.target.value })}
+            isRequired
+            isDisabled={isSubmitting}
+            variant="bordered"
+          />
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Amount (IDR) *</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-medium">Rp</span>
-              <input 
-                type="number" 
-                placeholder="0" 
-                step="1"
-                min="0"
-                required
-                disabled={isSubmitting}
-                value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-12 pr-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-50"
-              />
-            </div>
-          </div>
-          
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Description</label>
-            <textarea 
-              placeholder="Enter expense details" 
-              rows={3}
-              disabled={isSubmitting}
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none disabled:opacity-50"
-            ></textarea>
-          </div>
+          <Select
+            label="Category *"
+            selectedKeys={formData.category ? [formData.category] : []}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            isDisabled={isSubmitting}
+            variant="bordered"
+          >
+            {CATEGORIES.map(cat => (
+              <SelectItem key={cat.value} value={cat.value}>
+                {cat.label}
+              </SelectItem>
+            ))}
+          </Select>
+
+          <Input
+            type="number"
+            label="Amount (IDR) *"
+            placeholder="0"
+            step="1"
+            min="0"
+            isRequired
+            isDisabled={isSubmitting}
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            variant="bordered"
+            startContent={
+              <div className="pointer-events-none flex items-center">
+                <span className="text-default-400 text-small">Rp</span>
+              </div>
+            }
+          />
+
+          <Textarea
+            label="Description"
+            placeholder="Enter expense details"
+            disabled={isSubmitting}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            variant="bordered"
+          />
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmState.open}
+        onClose={() => setConfirmState({ open: false, data: null })}
+        onConfirm={onConfirmDelete}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

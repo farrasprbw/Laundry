@@ -76,7 +76,7 @@ export interface ReceiptData {
   paymentStatus: string;
   discount?: number;
   createdAt: string;
-  estimatedDurationMinutes?: number;
+  estimatedDurationDays?: number;
   notes?: string | null;
   parfum?: string;
 }
@@ -255,11 +255,7 @@ function formatDateTime(dateString: string): string {
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
-function addMinutes(dateString: string, minutes: number): string {
-  const d = new Date(dateString);
-  d.setMinutes(d.getMinutes() + minutes);
-  return d.toISOString();
-}
+
 
 /**
  * Build a complete laundry receipt matching the reference photo layout.
@@ -296,9 +292,11 @@ export function buildLaundryReceipt(data: ReceiptData): Uint8Array {
     .keyValue('Tgl Masuk', formatDateTime(data.createdAt));
 
   // Estimated completion
-  if (data.estimatedDurationMinutes) {
-    const estDone = addMinutes(data.createdAt, data.estimatedDurationMinutes);
-    rb.keyValue('Est Selesai', formatDateTime(estDone));
+  if (data.estimatedDurationDays) {
+    const d = new Date(data.createdAt);
+    d.setDate(d.getDate() + (data.estimatedDurationDays - 1));
+    d.setHours(17, 0, 0, 0);
+    rb.keyValue('Est Selesai', formatDateTime(d.toISOString()));
   }
 
   rb.separator();

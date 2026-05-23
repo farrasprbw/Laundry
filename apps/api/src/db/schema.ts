@@ -22,6 +22,7 @@ export const user = pgTable("user", {
   image: text("image"),
   username: text("username").unique(),
   displayUsername: text("display_username"),
+  phone: text("phone"),
   role: text("role").notNull().default("worker"), // worker | admin | super_admin
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -89,7 +90,7 @@ export const categories = pgTable("categories", {
   icon: text("icon").notNull().default("styler"), // Material Symbol name
   pricePerUnit: integer("price_per_unit").notNull(), // in Rupiah (e.g. 7000 = Rp 7.000)
   unit: text("unit").notNull().default("kg"), // kg | pcs | unit
-  estimatedDurationMinutes: integer("estimated_duration_minutes").notNull(),
+  estimatedDurationDays: integer("estimated_duration_days").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

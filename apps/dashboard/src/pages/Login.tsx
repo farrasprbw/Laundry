@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLogin } from '../hooks/use-auth';
+import { Button, Input } from '@nextui-org/react';
 
 export function Login() {
   const { login } = useLogin();
@@ -58,72 +59,57 @@ export function Login() {
           )}
 
           {/* Login Form */}
-          <form className="w-full flex flex-col gap-stack-md" onSubmit={handleLogin}>
+          <form className="w-full flex flex-col gap-6" onSubmit={handleLogin}>
 
             {/* Username Field */}
-            <div className="flex flex-col gap-stack-sm">
-              <label className="font-label-md text-label-md text-on-surface" htmlFor="username">Username</label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">person</span>
-                <input
-                  className="w-full bg-surface-container-low border-0 border-b-2 border-outline-variant/50 focus:border-primary focus:ring-0 rounded-t-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline transition-colors h-[48px]"
-                  id="username"
-                  name="username"
-                  placeholder="Enter your username"
-                  type="text"
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
+            <Input
+              id="username"
+              name="username"
+              placeholder="Enter your username"
+              label="Username"
+              isRequired
+              isDisabled={loading}
+              variant="bordered"
+              startContent={<span className="material-symbols-outlined text-outline text-[20px] mr-1">person</span>}
+            />
 
             {/* Password Field */}
-            <div className="flex flex-col gap-stack-sm mt-stack-sm">
-              <div className="flex justify-between items-center">
-                <label className="font-label-md text-label-md text-on-surface" htmlFor="password">Password</label>
-              </div>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">lock</span>
-                <input
-                  className="w-full bg-surface-container-low border-0 border-b-2 border-outline-variant/50 focus:border-primary focus:ring-0 rounded-t-lg pl-10 pr-12 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline transition-colors h-[48px]"
-                  id="password"
-                  name="password"
-                  placeholder="Enter your password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors focus:outline-none"
+            <Input
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              isRequired
+              isDisabled={loading}
+              variant="bordered"
+              startContent={<span className="material-symbols-outlined text-outline text-[20px] mr-1">lock</span>}
+              endContent={
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  onPress={() => setShowPassword(!showPassword)}
+                  className="text-outline hover:text-on-surface"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   <span className="material-symbols-outlined text-[20px]">
                     {showPassword ? 'visibility_off' : 'visibility'}
                   </span>
-                </button>
-              </div>
-            </div>
+                </Button>
+              }
+            />
 
             {/* Primary Action Button */}
-            <button
-              className="w-full h-[56px] mt-stack-md bg-primary hover:bg-surface-tint text-on-primary font-label-md text-label-md rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md"
+            <Button
               type="submit"
-              disabled={loading}
+              color="primary"
+              className="w-full py-7 shadow-md font-semibold text-label-md rounded-lg mt-2 text-white"
+              isLoading={loading}
+              endContent={!loading && <span className="material-symbols-outlined text-[20px]">arrow_forward</span>}
             >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Login
-                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-                </>
-              )}
-            </button>
+              {loading ? 'Signing in...' : 'Login'}
+            </Button>
           </form>
         </div>
       </main>
