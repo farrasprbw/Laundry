@@ -33,8 +33,8 @@ Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST AP
 - 🧾 **Invoice Publik** — Halaman invoice yang bisa diakses pelanggan via link
 - ⭐ **Rating** — Pelanggan bisa memberi rating melalui halaman invoice
 - 🖨️ **Thermal Printing** — Cetak struk via printer Bluetooth (ESC/POS)
-- 📱 **Notifikasi WhatsApp** — Kirim notifikasi status pesanan ke pelanggan
-- ⏱️ **Auto-Finish** — Pesanan otomatis selesai berdasarkan estimasi waktu kategori
+- 📱 **Notifikasi WhatsApp** — Kirim notifikasi status pesanan ke pelanggan (menggunakan API Fonnte)
+- ⏱️ **Auto-Finish** — Pesanan otomatis selesai berdasarkan estimasi waktu kategori (via cron-job.org)
 - 👤 **Manajemen User** — Kelola akun staff dengan role-based access
 - 📱 **Responsive** — Tampilan optimal di desktop dan mobile
 
@@ -47,6 +47,7 @@ Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST AP
 | **Frontend** | React 19, Vite, TailwindCSS, React Router, TanStack React Query |
 | **Backend**  | Express 5, TypeScript, Drizzle ORM, Better Auth, Zod             |
 | **Database** | PostgreSQL 16 (via Docker)                                       |
+| **Integrations**| Fonnte API (WhatsApp), cron-job.org (Scheduler)                  |
 | **Tooling**  | npm Workspaces, Concurrently, tsx                                |
 
 ---
