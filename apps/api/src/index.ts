@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { env } from "./env.js";
+import { db } from "./db/index.js";
+import { sql } from "drizzle-orm";
 
 // Route imports
 import authRoutes from "./routes/auth.routes.js";
@@ -31,8 +33,13 @@ app.use("/api/auth", authRoutes);
 app.use(express.json());
 
 // ── Health check ──
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+app.get("/api/health", async (_req, res) => {
+  try {
+    await db.execute(sql`SELECT 1`);
+    res.json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ status: "error", db: "failed", error: err.message });
+  }
 });
 
 // ── Routes ──
