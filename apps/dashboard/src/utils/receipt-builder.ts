@@ -61,7 +61,7 @@ export const STORE_CONFIG = {
     'Kain luntur, berkerut karna sifat kain diluar tanggung jawab kami.',
     'Cucian yang tidak diambil dalam waktu 1 bulan bila rusak / hilang bukan tanggung jawab kami.',
   ],
-  qrCodeUrl: 'https://www.instagram.com/maxpress_official/?hl=en',
+  qrCodeUrl: 'https://maps.app.goo.gl/6EtkVKWEwRKrLwSK6',
 };
 
 // ── Receipt Data Interface ──
