@@ -37,8 +37,9 @@ app.get("/api/health", async (_req, res) => {
   try {
     await db.execute(sql`SELECT 1`);
     res.json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
-  } catch (err: any) {
-    res.status(500).json({ status: "error", db: "failed", error: err.message });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).json({ status: "error", db: "failed", error: message });
   }
 });
 
