@@ -36,7 +36,10 @@ export class BluetoothPrinter {
   private server: BluetoothRemoteGATTServer | null = null;
   private writeCharacteristic: BluetoothRemoteGATTCharacteristic | null = null;
   private _status: PrinterStatus = 'disconnected';
-  private listeners: Map<string, Set<EventCallback<unknown>>> = new Map();
+  private listeners = {
+    statusChange: new Set<EventCallback<PrinterStatus>>(),
+    error: new Set<EventCallback<string>>(),
+  };
 
   /** Check if Web Bluetooth is supported */
   static isSupported(): boolean {
@@ -60,19 +63,19 @@ export class BluetoothPrinter {
 
   /** Subscribe to events */
   on<K extends keyof PrinterEventMap>(event: K, callback: EventCallback<PrinterEventMap[K]>): void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
-    }
-    this.listeners.get(event)!.add(callback);
+    const set = this.listeners[event] as Set<EventCallback<PrinterEventMap[K]>>;
+    set.add(callback);
   }
 
   /** Unsubscribe from events */
   off<K extends keyof PrinterEventMap>(event: K, callback: EventCallback<PrinterEventMap[K]>): void {
-    this.listeners.get(event)?.delete(callback);
+    const set = this.listeners[event] as Set<EventCallback<PrinterEventMap[K]>>;
+    set.delete(callback);
   }
 
   private emit<K extends keyof PrinterEventMap>(event: K, data: PrinterEventMap[K]): void {
-    this.listeners.get(event)?.forEach(cb => cb(data));
+    const set = this.listeners[event] as Set<EventCallback<PrinterEventMap[K]>>;
+    set.forEach(cb => cb(data));
   }
 
   private setStatus(status: PrinterStatus): void {
