@@ -16,11 +16,14 @@ const router = Router();
  */
 router.get("/auto-finish", async (req: Request, res: Response) => {
   try {
-    // In production, verify the cron secret
+    // In production, verify the cron secret (Vercel sends it via Authorization header)
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && req.query.key !== cronSecret) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+    if (cronSecret) {
+      const authHeader = req.headers.authorization;
+      if (req.query.key !== cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
     }
 
     const count = await autoFinishService.autoFinishOrders();
