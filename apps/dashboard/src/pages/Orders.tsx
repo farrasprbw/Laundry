@@ -75,6 +75,10 @@ export function Orders() {
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
       await updateStatus.mutateAsync({ id, status: newStatus });
+      // Auto-trigger WA notification when order becomes FINISHED
+      if (newStatus === "FINISHED") {
+        handleSendWA(id);
+      }
     } catch (error: any) {
       alert(error.response?.data?.error || "Gagal mengubah status");
     }
@@ -390,6 +394,36 @@ export function Orders() {
           </Button>
         </div>
       )}
+
+      {/* Unnotified Finished Orders Banner */}
+      {(() => {
+        const unnotifiedOrders = orders.filter(
+          (o: any) => o.status === "FINISHED" && !o.waNotificationSent
+        );
+        if (unnotifiedOrders.length === 0) return null;
+        return (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary-container/30 border border-secondary/20 text-secondary">
+            <span className="material-symbols-outlined text-[20px]">notifications_active</span>
+            <span className="text-body-md font-body-md flex-1">
+              <strong>{unnotifiedOrders.length} order</strong> selesai dan belum dikirim notifikasi WhatsApp.
+            </span>
+            <Button
+              size="sm"
+              color="secondary"
+              variant="flat"
+              className="whitespace-nowrap"
+              startContent={<span className="material-symbols-outlined text-[16px]">send</span>}
+              onPress={async () => {
+                for (const order of unnotifiedOrders) {
+                  await handleSendWA(order.id);
+                }
+              }}
+            >
+              Kirim Semua
+            </Button>
+          </div>
+        );
+      })()}
 
       {/* Data Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col p-6">
