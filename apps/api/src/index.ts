@@ -25,6 +25,9 @@ app.use(
     credentials: true,
   })
 );
+// ── Auth Route (Must be before express.json() for better-auth) ──
+app.use("/api/auth", authRoutes);
+
 app.use(express.json());
 
 // ── Health check ──
@@ -34,7 +37,6 @@ app.get("/api/health", (_req, res) => {
 
 // ── Routes ──
 app.use("/api/public", publicRoutes);
-app.use("/api/auth", authRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
