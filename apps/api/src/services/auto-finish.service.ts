@@ -17,6 +17,11 @@ export const autoFinishService = {
     // Finish time = DATE(createdAt in WIB) + (estimatedDurationDays - 1) days + 17 hours
     // e.g. 1 day (express) → same day at 17:00 WIB, 2 days → next day at 17:00 WIB
     // All times converted to Asia/Jakarta to avoid UTC mismatch
+    // createdAt is stored as 'timestamp without time zone' but contains UTC values
+    // (standard Node.js/Drizzle behavior). We need to:
+    // 1. Interpret createdAt as UTC → convert to Jakarta time to get the correct date
+    // 2. Calculate target finish = that Jakarta date + (estimatedDays - 1) days + 17 hours
+    // 3. Compare with current Jakarta time
     const overdueOrders = await db
       .select({
         orderId: orders.id,
@@ -27,7 +32,11 @@ export const autoFinishService = {
         and(
           eq(orders.status, "PROCESS"),
           isNull(orders.deletedAt),
-          sql`(NOW() AT TIME ZONE 'Asia/Jakarta') >= (${orders.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')::date + (${categories.estimatedDurationDays} - 1) * INTERVAL '1 day' + INTERVAL '17 hours'`
+          sql`(NOW() AT TIME ZONE 'Asia/Jakarta') >= (
+            (${orders.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')::date
+            + make_interval(days => (${categories.estimatedDurationDays} - 1))
+            + INTERVAL '17 hours'
+          )`
         )
       );
 

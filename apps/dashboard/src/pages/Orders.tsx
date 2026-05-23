@@ -42,8 +42,8 @@ export function Orders() {
       page,
       limit: 10,
     },
-    60000,
-  ); // Auto-refresh every 60 seconds
+    15000,
+  ); // Auto-refresh every 15 seconds
 
   // Countdown ticker — re-renders every second for live countdown
   const [, setTick] = useState(0);

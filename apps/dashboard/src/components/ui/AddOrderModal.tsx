@@ -1,10 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Modal } from './Modal';
-import { useCustomers } from '../../hooks/use-customers';
-import { useCategories } from '../../hooks/use-categories';
-import { useCreateOrder } from '../../hooks/use-orders';
-import { usePaymentMethods } from '../../hooks/use-payment-methods';
-import { Select, SelectItem, Input, RadioGroup, Radio, Textarea } from '@nextui-org/react';
+import { useState, useEffect } from "react";
+import { Modal } from "./Modal";
+import { useCustomers } from "../../hooks/use-customers";
+import { useCategories } from "../../hooks/use-categories";
+import { useCreateOrder } from "../../hooks/use-orders";
+import { usePaymentMethods } from "../../hooks/use-payment-methods";
+import {
+  Select,
+  SelectItem,
+  Input,
+  RadioGroup,
+  Radio,
+  Textarea,
+} from "@nextui-org/react";
 
 interface AddOrderModalProps {
   isOpen: boolean;
@@ -12,17 +19,31 @@ interface AddOrderModalProps {
 }
 
 export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
-  const [customerId, setCustomerId] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [notes, setNotes] = useState('');
-  const [paymentMethodId, setPaymentMethodId] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState<"UNPAID" | "PAID">('UNPAID');
-  const [parfume, setParfume] = useState('');
+  const [customerId, setCustomerId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [notes, setNotes] = useState("");
+  const [paymentMethodId, setPaymentMethodId] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<"UNPAID" | "PAID">(
+    "UNPAID",
+  );
+  const [parfume, setParfume] = useState("");
 
-  const { data: customersData, isLoading: isLoadingCustomers, refetch: refetchCustomers } = useCustomers({ limit: 100 });
-  const { data: categoriesData, isLoading: isLoadingCategories, refetch: refetchCategories } = useCategories();
-  const { data: paymentMethodsData, isLoading: isLoadingPM, refetch: refetchPM } = usePaymentMethods();
+  const {
+    data: customersData,
+    isLoading: isLoadingCustomers,
+    refetch: refetchCustomers,
+  } = useCustomers({ limit: 100 });
+  const {
+    data: categoriesData,
+    isLoading: isLoadingCategories,
+    refetch: refetchCategories,
+  } = useCategories();
+  const {
+    data: paymentMethodsData,
+    isLoading: isLoadingPM,
+    refetch: refetchPM,
+  } = usePaymentMethods();
 
   const createOrder = useCreateOrder();
 
@@ -39,20 +60,29 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   const categories = categoriesData || [];
   const paymentMethods = paymentMethodsData || [];
 
-  const selectedCategory = categories.find(c => c.id === categoryId);
-  const subtotal = selectedCategory && quantity ? selectedCategory.pricePerUnit * Number(quantity) : 0;
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const subtotal =
+    selectedCategory && quantity
+      ? selectedCategory.pricePerUnit * Number(quantity)
+      : 0;
   const totalPrice = subtotal;
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount).replace('IDR', 'Rp');
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    })
+      .format(amount)
+      .replace("IDR", "Rp");
 
   const formatDateTime = (dateStr: string) => {
     const d = new Date(dateStr);
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();
-    const hh = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
     return `${dd}/${mm}/${yyyy} - ${hh}:${min}`;
   };
 
@@ -64,27 +94,28 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   };
 
   const buildInvoiceWALink = (order: any) => {
-    const customer = customers.find(c => c.id === customerId);
+    const customer = customers.find((c) => c.id === customerId);
     const category = selectedCategory;
-    const selectedPM = paymentMethods.find(pm => pm.id === paymentMethodId);
+    const selectedPM = paymentMethods.find((pm) => pm.id === paymentMethodId);
     if (!customer) return null;
 
-    const phone = customer.phone.replace(/\D/g, '');
-    const intlPhone = phone.startsWith('0') ? `62${phone.slice(1)}` : phone;
+    const phone = customer.phone.replace(/\D/g, "");
+    const intlPhone = phone.startsWith("0") ? `62${phone.slice(1)}` : phone;
 
     const qty = Number(quantity);
-    const unitLabel = category?.unit ?? 'kg';
-    const categoryName = category?.name ?? 'Laundry';
+    const unitLabel = category?.unit ?? "kg";
+    const categoryName = category?.name ?? "Laundry";
     const pricePerUnit = category?.pricePerUnit ?? 0;
     const total = order.totalPrice;
-    const paymentStatusLabel = paymentStatus === 'PAID' ? 'LUNAS ✅' : 'BELUM BAYAR ❌';
-    const pmName = selectedPM?.name ?? '-';
+    const paymentStatusLabel =
+      paymentStatus === "PAID" ? "LUNAS ✅" : "BELUM BAYAR ❌";
+    const pmName = selectedPM?.name ?? "-";
     const estSelesai = category?.estimatedDurationDays
       ? getEstimatedFinish(order.createdAt, category.estimatedDurationDays)
-      : '-';
-    const parfumeLabel = order.parfume || '-';
+      : "-";
+    const parfumeLabel = order.parfume || "-";
 
-    const rawInvoice = order.invoiceNumber.replace(/^#/, '');
+    const rawInvoice = order.invoiceNumber.replace(/^#/, "");
     const invoiceUrl = `${window.location.origin}/invoice/${encodeURIComponent(rawInvoice)}`;
 
     const message = `*MAXPRESS LAUNDROMAT*
@@ -103,13 +134,11 @@ Est Selesai : ${estSelesai}
 
 🧺 *${categoryName}*
    ${qty} ${unitLabel} x ${formatCurrency(pricePerUnit)}
-    = ${formatCurrency(total)}
+   *Total       : ${formatCurrency(total)}*
 
 ━━━━━━━━━━━━━━━━━━━━
 
 💳 Status Bayar : ${paymentStatusLabel}
-   *Total       : ${formatCurrency(total)}*
-
 💰 Pembayaran : ${pmName}
 📌 Status     : SEDANG DIPROSES
 🌸 Parfum     : ${parfumeLabel}
@@ -128,8 +157,17 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
   };
 
   const handleSubmit = () => {
-    if (!customerId || !categoryId || !quantity || Number(quantity) <= 0 || !paymentMethodId || !paymentStatus) {
-      alert("Mohon lengkapi semua data wajib (Pelanggan, Layanan, Berat/Jumlah, dan Metode Pembayaran) dengan benar.");
+    if (
+      !customerId ||
+      !categoryId ||
+      !quantity ||
+      Number(quantity) <= 0 ||
+      !paymentMethodId ||
+      !paymentStatus
+    ) {
+      alert(
+        "Mohon lengkapi semua data wajib (Pelanggan, Layanan, Berat/Jumlah, dan Metode Pembayaran) dengan benar.",
+      );
       return;
     }
 
@@ -149,26 +187,32 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
           // Auto-send invoice via WhatsApp
           const waLink = buildInvoiceWALink(order);
           if (waLink) {
-            window.open(waLink, '_blank');
+            window.open(waLink, "_blank");
           }
 
-          setCustomerId('');
-          setCategoryId('');
-          setQuantity('');
-          setNotes('');
-          setPaymentMethodId('');
-          setPaymentStatus('UNPAID');
-          setParfume('');
+          setCustomerId("");
+          setCategoryId("");
+          setQuantity("");
+          setNotes("");
+          setPaymentMethodId("");
+          setPaymentStatus("UNPAID");
+          setParfume("");
           onClose();
         },
         onError: (err: any) => {
           alert(err?.message || "Gagal membuat order");
-        }
-      }
+        },
+      },
     );
   };
 
-  const isFormIncomplete = !customerId || !categoryId || !quantity || Number(quantity) <= 0 || !paymentMethodId || !paymentStatus;
+  const isFormIncomplete =
+    !customerId ||
+    !categoryId ||
+    !quantity ||
+    Number(quantity) <= 0 ||
+    !paymentMethodId ||
+    !paymentStatus;
 
   return (
     <Modal
@@ -189,8 +233,12 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
           isLoading={isLoadingCustomers}
           variant="bordered"
         >
-          {customers.map(c => (
-            <SelectItem key={c.id} value={c.id} textValue={`${c.name} (${c.phone})`}>
+          {customers.map((c) => (
+            <SelectItem
+              key={c.id}
+              value={c.id}
+              textValue={`${c.name} (${c.phone})`}
+            >
               {c.name} ({c.phone})
             </SelectItem>
           ))}
@@ -204,9 +252,13 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
           isLoading={isLoadingCategories}
           variant="bordered"
         >
-          {categories.map(c => (
-            <SelectItem key={c.id} value={c.id} textValue={`${c.name} (Rp ${c.pricePerUnit.toLocaleString('id-ID')}/${c.unit})`}>
-              {c.name} (Rp {c.pricePerUnit.toLocaleString('id-ID')}/{c.unit})
+          {categories.map((c) => (
+            <SelectItem
+              key={c.id}
+              value={c.id}
+              textValue={`${c.name} (Rp ${c.pricePerUnit.toLocaleString("id-ID")}/${c.unit})`}
+            >
+              {c.name} (Rp {c.pricePerUnit.toLocaleString("id-ID")}/{c.unit})
             </SelectItem>
           ))}
         </Select>
@@ -214,7 +266,7 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             type="number"
-            label={`Berat / Jumlah ${selectedCategory ? `(${selectedCategory.unit})` : ''}`}
+            label={`Berat / Jumlah ${selectedCategory ? `(${selectedCategory.unit})` : ""}`}
             placeholder="0"
             step="0.1"
             min="0.1"
@@ -226,7 +278,7 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
           <Input
             type="text"
             label="Total Harga"
-            value={totalPrice.toLocaleString('id-ID')}
+            value={totalPrice.toLocaleString("id-ID")}
             isReadOnly
             startContent={
               <div className="pointer-events-none flex items-center">
@@ -247,21 +299,25 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
             isLoading={isLoadingPM}
             variant="bordered"
           >
-            {paymentMethods.filter(pm => pm.isActive).map(pm => (
-              <SelectItem key={pm.id} value={pm.id} textValue={pm.name}>
-                {pm.name}
-              </SelectItem>
-            ))}
+            {paymentMethods
+              .filter((pm) => pm.isActive)
+              .map((pm) => (
+                <SelectItem key={pm.id} value={pm.id} textValue={pm.name}>
+                  {pm.name}
+                </SelectItem>
+              ))}
           </Select>
 
           <div className="flex flex-col gap-1.5 pl-1">
             <RadioGroup
               label="Status Pembayaran"
               value={paymentStatus}
-              onValueChange={(val) => setPaymentStatus(val as "UNPAID" | "PAID")}
+              onValueChange={(val) =>
+                setPaymentStatus(val as "UNPAID" | "PAID")
+              }
               orientation="horizontal"
               classNames={{
-                label: "text-small text-default-500"
+                label: "text-small text-default-500",
               }}
             >
               <Radio value="UNPAID">Belum Lunas</Radio>
