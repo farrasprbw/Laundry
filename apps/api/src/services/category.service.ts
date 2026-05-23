@@ -8,7 +8,6 @@ interface CreateCategoryInput {
   icon?: string;
   pricePerUnit: number;
   unit: string;
-  unit: string;
   estimatedDurationDays: number;
 }
 
