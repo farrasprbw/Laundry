@@ -62,6 +62,19 @@ export function useUpdateOrderStatus() {
   });
 }
 
+/** Update payment status (UNPAID → PAID). */
+export function useUpdatePaymentStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, paymentStatus }: { id: string; paymentStatus: string }) =>
+      orderService.updatePaymentStatus(id, paymentStatus),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ORDERS_KEY });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
 /** Delete an order. */
 export function useDeleteOrder() {
   const queryClient = useQueryClient();

@@ -1,20 +1,22 @@
 import { db } from "../db/index.js";
 import { orders, categories } from "../db/schema.js";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, inArray } from "drizzle-orm";
 
 /**
  * Auto-finish service — automatically transitions orders from PROCESS → FINISHED
- * when the estimated duration (from the category) has elapsed since order creation.
+ * when the estimated duration (in days) has elapsed at 17:00.
  */
 export const autoFinishService = {
   /**
-   * Find all PROCESS orders whose estimated completion time has passed,
+   * Find all PROCESS orders whose estimated completion time has passed (17:00 on the target day),
    * and update their status to FINISHED.
    *
    * @returns number of orders that were auto-finished
    */
   async autoFinishOrders(): Promise<number> {
-    // Find all PROCESS orders where NOW() > createdAt + estimatedDurationMinutes
+    // Finish time = DATE(createdAt in WIB) + (estimatedDurationDays - 1) days + 17 hours
+    // e.g. 1 day (express) → same day at 17:00 WIB, 2 days → next day at 17:00 WIB
+    // All times converted to Asia/Jakarta to avoid UTC mismatch
     const overdueOrders = await db
       .select({
         orderId: orders.id,
@@ -25,8 +27,7 @@ export const autoFinishService = {
         and(
           eq(orders.status, "PROCESS"),
           isNull(orders.deletedAt),
-          // createdAt + estimatedDurationMinutes < NOW()
-          sql`${orders.createdAt} + (${categories.estimatedDurationMinutes} || ' minutes')::interval < NOW()`
+          sql`(NOW() AT TIME ZONE 'Asia/Jakarta') >= (${orders.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')::date + (${categories.estimatedDurationDays} - 1) * INTERVAL '1 day' + INTERVAL '17 hours'`
         )
       );
 
@@ -37,8 +38,8 @@ export const autoFinishService = {
     const orderIds = overdueOrders.map((o) => o.orderId);
     const now = new Date();
 
-    // Batch update all overdue orders to FINISHED
-    const result = await db
+    // Batch update all overdue orders to FINISHED using inArray + returning
+    const updated = await db
       .update(orders)
       .set({
         status: "FINISHED",
@@ -47,14 +48,13 @@ export const autoFinishService = {
       })
       .where(
         and(
-          sql`${orders.id} IN (${sql.join(
-            orderIds.map((id) => sql`${id}`),
-            sql`, `
-          )})`,
-          eq(orders.status, "PROCESS") // safety check — only update if still PROCESS
+          inArray(orders.id, orderIds),
+          eq(orders.status, "PROCESS") // safety check
         )
-      );
+      )
+      .returning({ id: orders.id });
 
-    return orderIds.length;
+    console.log(`[AUTO-FINISH] Updated ${updated.length} orders to FINISHED:`, updated.map((o) => o.id));
+    return updated.length;
   },
 };

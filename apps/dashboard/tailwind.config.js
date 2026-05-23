@@ -4,13 +4,13 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "../../node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       "colors": {
         "surface-variant": "#d9e3f6",
         "surface-container": "#e6eeff",
-        "error": "#ba1a1a",
         "surface-container-high": "#dee9fc",
         "tertiary-container": "#6b7775",
         "on-tertiary-fixed": "#121e1c",
@@ -21,7 +21,6 @@ export default {
         "surface-container-lowest": "#ffffff",
         "surface-bright": "#f8f9ff",
         "on-error": "#ffffff",
-        "primary": "#0058be",
         "primary-fixed": "#d8e2ff",
         "tertiary-fixed-dim": "#bcc9c6",
         "on-tertiary-fixed-variant": "#3d4947",
@@ -29,7 +28,6 @@ export default {
         "primary-fixed-dim": "#adc6ff",
         "on-surface": "#121c2a",
         "on-tertiary-container": "#f3fffc",
-        "secondary": "#006c49",
         "surface-container-low": "#eff4ff",
         "on-secondary-fixed-variant": "#005236",
         "on-primary-container": "#fefcff",
@@ -94,7 +92,26 @@ export default {
     },
   },
   plugins: [
-    require('@tailwindcss/forms'),
     require('@tailwindcss/container-queries'),
+    require("@nextui-org/react").nextui({
+      themes: {
+        light: {
+          colors: {
+            primary: {
+              DEFAULT: "#0058be",
+              foreground: "#ffffff",
+            }
+          }
+        },
+        dark: {
+          colors: {
+            primary: {
+              DEFAULT: "#0058be",
+              foreground: "#ffffff",
+            }
+          }
+        }
+      }
+    }),
   ],
 }

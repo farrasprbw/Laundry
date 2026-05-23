@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authClient } from '../../lib/auth-client';
+import { Button } from '@nextui-org/react';
 
 interface TopAppBarProps {
   onMenuClick?: () => void;
@@ -8,12 +10,18 @@ interface TopAppBarProps {
 export function TopAppBar({ onMenuClick }: TopAppBarProps) {
   const navigate = useNavigate();
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
           navigate('/login');
         },
+        onError: () => {
+          setIsLoggingOut(false);
+        }
       },
     });
   };
@@ -22,23 +30,28 @@ export function TopAppBar({ onMenuClick }: TopAppBarProps) {
     <header className="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] z-40 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30 shadow-sm flex justify-between items-center h-16 px-6 ml-auto">
       <div className="flex items-center gap-4">
         {onMenuClick && (
-          <button
-            onClick={onMenuClick}
-            className="md:hidden p-2 -ml-2 text-on-surface-variant hover:text-primary transition-colors active:scale-95"
+          <Button
+            isIconOnly
+            variant="light"
+            onPress={onMenuClick}
+            className="md:hidden text-on-surface-variant hover:text-primary"
           >
             <span className="material-symbols-outlined text-[24px]">menu</span>
-          </button>
+          </Button>
         )}
         <span className="text-headline-md font-headline-md text-primary md:hidden">Laundry</span>
       </div>
       <div className="flex items-center gap-4">
-        <button
-          onClick={handleLogout}
-          className="flex items-center justify-center text-error hover:bg-error/10 transition-colors px-4 py-2 rounded-lg active:scale-95 gap-2 text-label-md font-label-md font-bold"
+        <Button
+          onPress={handleLogout}
+          isLoading={isLoggingOut}
+          variant="light"
+          color="danger"
+          startContent={!isLoggingOut && <span className="material-symbols-outlined text-[20px]">logout</span>}
+          className="font-bold text-label-md"
         >
-          <span className="material-symbols-outlined text-[20px]">logout</span>
-          <span className="hidden md:inline">Logout</span>
-        </button>
+          <span className="hidden md:inline">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+        </Button>
       </div>
     </header>
   );

@@ -4,6 +4,7 @@ import { useCustomers } from '../../hooks/use-customers';
 import { useCategories } from '../../hooks/use-categories';
 import { useCreateOrder } from '../../hooks/use-orders';
 import { usePaymentMethods } from '../../hooks/use-payment-methods';
+import { Select, SelectItem, Input, RadioGroup, Radio, Textarea } from '@nextui-org/react';
 
 interface AddOrderModalProps {
   isOpen: boolean;
@@ -17,7 +18,6 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   const [notes, setNotes] = useState('');
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<"UNPAID" | "PAID">('UNPAID');
-  const [discount, setDiscount] = useState('0');
   const [parfume, setParfume] = useState('');
 
   const { data: customersData, isLoading: isLoadingCustomers, refetch: refetchCustomers } = useCustomers({ limit: 100 });
@@ -41,8 +41,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
 
   const selectedCategory = categories.find(c => c.id === categoryId);
   const subtotal = selectedCategory && quantity ? selectedCategory.pricePerUnit * Number(quantity) : 0;
-  const discountAmount = Number(discount) || 0;
-  const totalPrice = Math.max(0, subtotal - discountAmount);
+  const totalPrice = subtotal;
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount).replace('IDR', 'Rp');
@@ -57,9 +56,10 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     return `${dd}/${mm}/${yyyy} - ${hh}:${min}`;
   };
 
-  const getEstimatedFinish = (createdAt: string, durationMinutes: number) => {
+  const getEstimatedFinish = (createdAt: string, durationDays: number) => {
     const d = new Date(createdAt);
-    d.setMinutes(d.getMinutes() + durationMinutes);
+    d.setDate(d.getDate() + (durationDays - 1));
+    d.setHours(17, 0, 0, 0);
     return formatDateTime(d.toISOString());
   };
 
@@ -77,16 +77,15 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     const categoryName = category?.name ?? 'Laundry';
     const pricePerUnit = category?.pricePerUnit ?? 0;
     const total = order.totalPrice;
-    const disc = order.discount ?? 0;
-    const subTotal = total + disc;
     const paymentStatusLabel = paymentStatus === 'PAID' ? 'LUNAS ✅' : 'BELUM BAYAR ❌';
     const pmName = selectedPM?.name ?? '-';
-    const estSelesai = category?.estimatedDurationMinutes
-      ? getEstimatedFinish(order.createdAt, category.estimatedDurationMinutes)
+    const estSelesai = category?.estimatedDurationDays
+      ? getEstimatedFinish(order.createdAt, category.estimatedDurationDays)
       : '-';
     const parfumeLabel = order.parfume || '-';
 
-    const invoiceUrl = `${window.location.origin}/invoice/${order.invoiceNumber}`;
+    const rawInvoice = order.invoiceNumber.replace(/^#/, '');
+    const invoiceUrl = `${window.location.origin}/invoice/${encodeURIComponent(rawInvoice)}`;
 
     const message = `*MAXPRESS LAUNDROMAT*
 Apartment Amethys, Jl. Rajawali Selatan II No. 6 B, Jakarta Pusat
@@ -104,13 +103,11 @@ Est Selesai : ${estSelesai}
 
 🧺 *${categoryName}*
    ${qty} ${unitLabel} x ${formatCurrency(pricePerUnit)}
-   = ${formatCurrency(subTotal)}
+    = ${formatCurrency(total)}
 
 ━━━━━━━━━━━━━━━━━━━━
 
 💳 Status Bayar : ${paymentStatusLabel}
-   SubTotal     : ${formatCurrency(subTotal)}
-   Diskon       : ${disc > 0 ? `- ${formatCurrency(disc)}` : 'Rp 0'}
    *Total       : ${formatCurrency(total)}*
 
 💰 Pembayaran : ${pmName}
@@ -144,7 +141,7 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
         notes: notes || undefined,
         paymentMethodId: paymentMethodId || undefined,
         paymentStatus,
-        discount: discountAmount,
+        discount: 0,
         parfume: parfume || undefined,
       },
       {
@@ -161,7 +158,6 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
           setNotes('');
           setPaymentMethodId('');
           setPaymentStatus('UNPAID');
-          setDiscount('0');
           setParfume('');
           onClose();
         },
@@ -185,172 +181,111 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
       isLoading={createOrder.isPending}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-label-md font-label-md text-on-surface">Pilih Pelanggan</label>
-          <select
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer"
-          >
-            <option value="" disabled>Pilih pelanggan...</option>
-            {isLoadingCustomers ? (
-              <option disabled>Loading...</option>
-            ) : (
-              customers.map(c => (
-                <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
-              ))
-            )}
-            <option value="new" disabled>+ Tambah Pelanggan Baru (Dari menu Customers)</option>
-          </select>
-        </div>
+        <Select
+          label="Pilih Pelanggan"
+          placeholder="Pilih pelanggan..."
+          selectedKeys={customerId ? [customerId] : []}
+          onChange={(e) => setCustomerId(e.target.value)}
+          isLoading={isLoadingCustomers}
+          variant="bordered"
+        >
+          {customers.map(c => (
+            <SelectItem key={c.id} value={c.id} textValue={`${c.name} (${c.phone})`}>
+              {c.name} ({c.phone})
+            </SelectItem>
+          ))}
+        </Select>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-label-md font-label-md text-on-surface">Layanan</label>
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer"
-          >
-            <option value="" disabled>Pilih layanan...</option>
-            {isLoadingCategories ? (
-              <option disabled>Loading...</option>
-            ) : (
-              categories.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} (Rp {c.pricePerUnit.toLocaleString('id-ID')}/{c.unit})
-                </option>
-              ))
-            )}
-          </select>
-        </div>
+        <Select
+          label="Layanan"
+          placeholder="Pilih layanan..."
+          selectedKeys={categoryId ? [categoryId] : []}
+          onChange={(e) => setCategoryId(e.target.value)}
+          isLoading={isLoadingCategories}
+          variant="bordered"
+        >
+          {categories.map(c => (
+            <SelectItem key={c.id} value={c.id} textValue={`${c.name} (Rp ${c.pricePerUnit.toLocaleString('id-ID')}/${c.unit})`}>
+              {c.name} (Rp {c.pricePerUnit.toLocaleString('id-ID')}/{c.unit})
+            </SelectItem>
+          ))}
+        </Select>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Berat / Jumlah {selectedCategory ? `(${selectedCategory.unit})` : ''}</label>
-            <div className="relative">
-              <input
-                type="number"
-                placeholder="0"
-                step="0.1"
-                min="0.1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Diskon (Rp)</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">Rp</span>
-              <input
-                type="number"
-                placeholder="0"
-                min="0"
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                className="w-full bg-surface-container-low border border-outline-variant/50 rounded-xl pl-10 pr-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              />
-            </div>
-          </div>
-        </div>
+          <Input
+            type="number"
+            label={`Berat / Jumlah ${selectedCategory ? `(${selectedCategory.unit})` : ''}`}
+            placeholder="0"
+            step="0.1"
+            min="0.1"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            variant="bordered"
+          />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Subtotal</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">Rp</span>
-              <input
-                type="text"
-                value={subtotal.toLocaleString('id-ID')}
-                readOnly
-                className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-xl pl-10 pr-4 py-3 text-body-md text-on-surface-variant focus:outline-none cursor-not-allowed"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Total Harga</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">Rp</span>
-              <input
-                type="text"
-                value={totalPrice.toLocaleString('id-ID')}
-                readOnly
-                className="w-full bg-surface-container-highest border border-outline-variant/30 rounded-xl pl-10 pr-4 py-3 text-body-md text-on-surface-variant focus:outline-none cursor-not-allowed font-bold"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Metode Pembayaran</label>
-            <select
-              value={paymentMethodId}
-              onChange={(e) => setPaymentMethodId(e.target.value)}
-              className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer"
-            >
-              <option value="">Pilih Metode</option>
-              {isLoadingPM ? (
-                <option disabled>Loading...</option>
-              ) : (
-                paymentMethods.filter(pm => pm.isActive).map(pm => (
-                  <option key={pm.id} value={pm.id}>{pm.name}</option>
-                ))
-              )}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-label-md font-label-md text-on-surface">Status Pembayaran</label>
-            <div className="flex gap-4 pt-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="paymentStatus"
-                  value="UNPAID"
-                  checked={paymentStatus === 'UNPAID'}
-                  onChange={() => setPaymentStatus('UNPAID')}
-                  className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                />
-                <span className="text-body-md text-on-surface">Belum Lunas</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="paymentStatus"
-                  value="PAID"
-                  checked={paymentStatus === 'PAID'}
-                  onChange={() => setPaymentStatus('PAID')}
-                  className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                />
-                <span className="text-body-md text-on-surface">Lunas</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-label-md font-label-md text-on-surface">Parfum (Opsional)</label>
-          <input
+          <Input
             type="text"
-            placeholder="Contoh: Lavender, Rose, Ocean Fresh..."
-            value={parfume}
-            onChange={(e) => setParfume(e.target.value)}
-            className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            label="Total Harga"
+            value={totalPrice.toLocaleString('id-ID')}
+            isReadOnly
+            startContent={
+              <div className="pointer-events-none flex items-center">
+                <span className="text-default-400 text-small">Rp</span>
+              </div>
+            }
+            variant="bordered"
+            className="font-bold"
           />
         </div>
 
-        <div className="flex flex-col gap-1.5 mt-2">
-          <label className="text-label-md font-label-md text-on-surface">Catatan (Opsional)</label>
-          <textarea
-            placeholder="Tambahkan catatan khusus untuk order ini..."
-            rows={2}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="bg-surface-container-low border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none"
-          ></textarea>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <Select
+            label="Metode Pembayaran"
+            placeholder="Pilih Metode"
+            selectedKeys={paymentMethodId ? [paymentMethodId] : []}
+            onChange={(e) => setPaymentMethodId(e.target.value)}
+            isLoading={isLoadingPM}
+            variant="bordered"
+          >
+            {paymentMethods.filter(pm => pm.isActive).map(pm => (
+              <SelectItem key={pm.id} value={pm.id} textValue={pm.name}>
+                {pm.name}
+              </SelectItem>
+            ))}
+          </Select>
+
+          <div className="flex flex-col gap-1.5 pl-1">
+            <RadioGroup
+              label="Status Pembayaran"
+              value={paymentStatus}
+              onValueChange={(val) => setPaymentStatus(val as "UNPAID" | "PAID")}
+              orientation="horizontal"
+              classNames={{
+                label: "text-small text-default-500"
+              }}
+            >
+              <Radio value="UNPAID">Belum Lunas</Radio>
+              <Radio value="PAID">Lunas</Radio>
+            </RadioGroup>
+          </div>
         </div>
+
+        <Input
+          type="text"
+          label="Parfum (Opsional)"
+          placeholder="Contoh: Lavender, Rose, Ocean Fresh..."
+          value={parfume}
+          onChange={(e) => setParfume(e.target.value)}
+          variant="bordered"
+        />
+
+        <Textarea
+          label="Catatan (Opsional)"
+          placeholder="Tambahkan catatan khusus untuk order ini..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          variant="bordered"
+        />
       </div>
     </Modal>
   );

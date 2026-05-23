@@ -19,6 +19,7 @@ export const userService = {
         username: user.username,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         image: user.image,
         createdAt: user.createdAt,
@@ -41,6 +42,7 @@ export const userService = {
         username: user.username,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         image: user.image,
         createdAt: user.createdAt,
@@ -60,6 +62,7 @@ export const userService = {
     name: string;
     email?: string;
     username: string;
+    phone?: string;
     password: string;
     role: UserRole;
   }) {
@@ -85,11 +88,16 @@ export const userService = {
       throw new Error("Failed to create user");
     }
 
+    if (input.phone) {
+      await db.update(user).set({ phone: input.phone }).where(eq(user.id, result.user.id));
+    }
+
     return {
       id: result.user.id,
       username: (result.user as any).username ?? input.username,
       name: result.user.name,
       email: result.user.email,
+      phone: input.phone,
       role: (result.user as any).role ?? input.role,
       createdAt: result.user.createdAt,
     };
@@ -122,11 +130,12 @@ export const userService = {
   /**
    * Update a user's profile (name, email).
    */
-  async updateUser(id: string, input: { name?: string; email?: string; username?: string; password?: string }) {
+  async updateUser(id: string, input: { name?: string; email?: string; username?: string; phone?: string; password?: string }) {
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name !== undefined) updateData.name = input.name;
     if (input.email !== undefined) updateData.email = input.email;
     if (input.username !== undefined) updateData.username = input.username;
+    if (input.phone !== undefined) updateData.phone = input.phone;
 
     let updatedUser = null;
 

@@ -84,7 +84,7 @@ export const orderService = {
             id: categories.id,
             name: categories.name,
             unit: categories.unit,
-            estimatedDurationMinutes: categories.estimatedDurationMinutes,
+            estimatedDurationDays: categories.estimatedDurationDays,
           },
           paymentMethod: {
             id: paymentMethods.id,
@@ -231,6 +231,19 @@ export const orderService = {
     const [order] = await db
       .update(orders)
       .set(updateData)
+      .where(eq(orders.id, id))
+      .returning();
+
+    return order;
+  },
+
+  async updatePayment(id: string, paymentStatus: string) {
+    const existing = await this.getById(id);
+    if (!existing) return null;
+
+    const [order] = await db
+      .update(orders)
+      .set({ paymentStatus, updatedAt: new Date() })
       .where(eq(orders.id, id))
       .returning();
 

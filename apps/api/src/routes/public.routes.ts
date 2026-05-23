@@ -26,7 +26,7 @@ router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
           description: categories.description,
           pricePerUnit: categories.pricePerUnit,
           unit: categories.unit,
-          estimatedDurationMinutes: categories.estimatedDurationMinutes,
+          estimatedDurationDays: categories.estimatedDurationDays,
         },
         paymentMethod: {
           id: paymentMethods.id,

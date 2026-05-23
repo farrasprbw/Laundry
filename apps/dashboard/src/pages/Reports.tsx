@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../lib/api-client';
+import { Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner } from '@nextui-org/react';
 
 interface Transaction {
   id: string;
@@ -98,7 +99,7 @@ export function Reports() {
   };
 
   return (
-    <div className="pt-24 pb-24 md:pt-24 md:pb-12 px-container-padding-mobile md:px-container-padding-desktop max-w-[1440px] w-full flex-1">
+    <div className="pt-24 pb-24 md:pt-24 md:pb-12 px-container-padding-mobile md:px-container-padding-desktop w-full flex-1">
       <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-headline-lg-mobile md:text-display-lg font-display-lg text-on-surface">Financial Reports</h2>
@@ -178,50 +179,47 @@ export function Reports() {
           </div>
           <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="w-full sm:w-auto flex gap-2">
-              <div className="w-1/2 sm:w-auto">
-                <label className="block text-label-sm font-label-sm text-on-surface-variant mb-1 ml-1">Start Date</label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={startDate}
-                    max={endDate || undefined}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setStartDate(val);
-                      if (endDate && val > endDate) {
-                        setEndDate(val);
-                      }
-                    }}
-                    className="bg-surface-container-lowest border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors"
-                  />
-                </div>
-              </div>
-              <div className="w-1/2 sm:w-auto">
-                <label className="block text-label-sm font-label-sm text-on-surface-variant mb-1 ml-1">End Date</label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate || undefined}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEndDate(val);
-                      if (startDate && val < startDate) {
-                        setStartDate(val);
-                      }
-                    }}
-                    className="bg-surface-container-lowest border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 outline-none transition-colors"
-                  />
-                </div>
-              </div>
+              <Input
+                type="date"
+                label="Start Date"
+                value={startDate}
+                max={endDate || undefined}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setStartDate(val);
+                  if (endDate && val > endDate) {
+                    setEndDate(val);
+                  }
+                }}
+                variant="bordered"
+                size="sm"
+                className="w-1/2 sm:w-40"
+              />
+              <Input
+                type="date"
+                label="End Date"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEndDate(val);
+                  if (startDate && val < startDate) {
+                    setStartDate(val);
+                  }
+                }}
+                variant="bordered"
+                size="sm"
+                className="w-1/2 sm:w-40"
+              />
             </div>
-            <button
-              onClick={handleExportExcel}
-              className="w-full sm:w-auto bg-primary text-on-primary hover:bg-primary-container transition-colors px-6 py-2.5 rounded-lg text-label-md font-label-md flex items-center justify-center gap-2 shadow-sm font-semibold h-[42px]"
+            <Button
+              color="primary"
+              onPress={handleExportExcel}
+              startContent={<span className="material-symbols-outlined text-[20px]">table_view</span>}
+              className="w-full sm:w-auto font-semibold px-6 py-6 shadow-sm text-label-md text-white"
             >
-              <span className="material-symbols-outlined text-[20px]">table_view</span>
               Export Excel
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -237,62 +235,54 @@ export function Reports() {
         </div>
       </div>
 
-      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-h-[250px]">
-            <thead>
-              <tr className="bg-surface-container-low/50 border-b border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">ID</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Category</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Total</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Payment</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md text-on-surface">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">Memuat data...</td>
-                </tr>
-              ) : transactions.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">Tidak ada transaksi ditemukan pada rentang tanggal ini.</td>
-                </tr>
-              ) : (
-                transactions.slice(0, 10).map((trx, index) => (
-                  <tr key={trx.id} className="hover:bg-surface-container-lowest transition-colors group">
-                    <td className="px-6 py-4 text-label-md font-label-md text-primary">{trx.invoiceNumber}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-label-sm ${index % 2 === 0 ? 'bg-primary-container text-primary' : 'bg-secondary-container text-secondary'}`}>
-                          {trx.customer ? getInitials(trx.customer.name) : 'NN'}
-                        </div>
-                        <span className="text-body-md font-body-md text-on-surface">{trx.customer?.name || 'Unknown'}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-body-md font-body-md text-on-surface-variant">{trx.category?.name || '-'}</td>
-                    <td className="px-6 py-4 text-body-md font-body-md text-on-surface">
-                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(trx.totalPrice)}
-                    </td>
-                    <td className="px-6 py-4 text-body-md font-body-md text-on-surface-variant">
-                      {new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short' }).format(new Date(trx.createdAt))}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-body-md font-body-md text-on-surface">{trx.paymentMethod?.name || '-'}</span>
-                        <span className={`text-[10px] font-bold ${trx.paymentStatus === 'PAID' ? 'text-secondary' : 'text-error'}`}>
-                          {trx.paymentStatus}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col p-6">
+        <div className="overflow-x-auto w-full">
+          <Table aria-label="Transactions Table" removeWrapper shadow="none" className="min-w-max w-full">
+          <TableHeader>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">ID</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Customer</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Category</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Total</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Date</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Payment</TableColumn>
+          </TableHeader>
+          <TableBody
+            isLoading={isLoading}
+            loadingContent={<Spinner label="Memuat transaksi..." />}
+            emptyContent="Tidak ada transaksi ditemukan pada rentang tanggal ini."
+          >
+            {transactions.slice(0, 10).map((trx, index) => (
+              <TableRow key={trx.id} className="hover:bg-surface-container-lowest transition-colors group">
+                <TableCell className="text-label-md font-label-md text-primary">{trx.invoiceNumber}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-label-sm ${index % 2 === 0 ? 'bg-primary-container text-primary' : 'bg-secondary-container text-secondary'}`}>
+                      {trx.customer ? getInitials(trx.customer.name) : 'NN'}
+                    </div>
+                    <span className="text-body-md font-body-md text-on-surface">{trx.customer?.name || 'Unknown'}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-body-md font-body-md text-on-surface-variant">{trx.category?.name || '-'}</TableCell>
+                <TableCell className="text-body-md font-body-md text-on-surface">
+                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(trx.totalPrice)}
+                </TableCell>
+                <TableCell className="text-body-md font-body-md text-on-surface-variant">
+                  {new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short' }).format(new Date(trx.createdAt))}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="text-body-md font-body-md text-on-surface">{trx.paymentMethod?.name || '-'}</span>
+                    <span className={`text-[10px] font-bold ${trx.paymentStatus === 'PAID' ? 'text-secondary' : 'text-error'}`}>
+                      {trx.paymentStatus}
+                    </span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          </Table>
         </div>
-        <div className="bg-surface-container-low/30 border-t border-outline-variant/20 px-6 py-4 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+        <div className="bg-surface-container-low/30 border-t border-outline-variant/20 px-6 py-4 flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant mt-4">
           <div>Showing {Math.min(transactions.length, 10)} of {transactions.length} transactions</div>
         </div>
       </div>

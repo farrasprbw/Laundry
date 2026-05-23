@@ -45,6 +45,14 @@ export const orderService = {
     return data;
   },
 
+  /** Update payment status (UNPAID -> PAID). */
+  async updatePaymentStatus(id: string, paymentStatus: string): Promise<Order> {
+    const { data } = await apiClient.patch<Order>(`/orders/${id}/payment`, {
+      paymentStatus,
+    });
+    return data;
+  },
+
   /** Soft-delete an order. */
   async remove(id: string): Promise<void> {
     await apiClient.delete(`/orders/${id}`);

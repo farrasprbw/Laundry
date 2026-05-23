@@ -1,11 +1,30 @@
 import { useState } from 'react';
 import { AddOrderModal } from '../components/ui/AddOrderModal';
 import { useDashboardStats, useDashboardRecentOrders, useDashboardFinancialTrend } from '../hooks/use-dashboard';
+import { Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner } from '@nextui-org/react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 function formatRupiah(value: number): string {
   if (value >= 1_000_000) return `Rp ${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `Rp ${(value / 1_000).toFixed(0)}K`;
   return `Rp ${value.toLocaleString('id-ID')}`;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg shadow-lg p-3 text-sm">
+      <p className="text-on-surface-variant font-medium mb-1.5">{label}</p>
+      {payload.map((entry: any, i: number) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: entry.color }} />
+          <span className="text-on-surface-variant">{entry.name}:</span>
+          <span className="font-semibold text-on-background">Rp {Number(entry.value).toLocaleString('id-ID')}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 
@@ -17,41 +36,21 @@ export function Dashboard() {
 
   const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  // Build SVG paths from trend data
-  const maxIncome = Math.max(...trend.map(t => t.income), 1);
-  const maxExpense = Math.max(...trend.map(t => t.expenses), 1);
-  const maxVal = Math.max(maxIncome, maxExpense, 1);
+  // Format trend data for Recharts
+  const chartData = trend.map(t => ({
+    date: new Date(t.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+    Income: t.income,
+    Expenses: t.expenses,
+  }));
 
-  const buildPath = (values: number[], close = false) => {
-    if (values.length === 0) return '';
-    const points = values.map((v, i) => {
-      const x = (i / Math.max(values.length - 1, 1)) * 100;
-      const y = 95 - (v / maxVal) * 80;
-      return { x, y };
-    });
-    let d = `M${points[0].x},${points[0].y}`;
-    for (let i = 1; i < points.length; i++) {
-      const cx1 = points[i - 1].x + (points[i].x - points[i - 1].x) * 0.4;
-      const cx2 = points[i].x - (points[i].x - points[i - 1].x) * 0.4;
-      d += ` C${cx1},${points[i - 1].y} ${cx2},${points[i].y} ${points[i].x},${points[i].y}`;
-    }
-    if (close) {
-      d += ` L100,100 L0,100 Z`;
-    }
-    return d;
-  };
-
-  const incomeValues = trend.map(t => t.income);
-  const expenseValues = trend.map(t => t.expenses);
-
-  const STATUS_STYLES: Record<string, string> = {
-    PROCESS: 'bg-primary/10 text-primary',
-    FINISHED: 'bg-secondary/10 text-secondary',
-    TAKEN: 'bg-surface-variant text-on-surface-variant',
+  const STATUS_COLORS: Record<string, "primary" | "secondary" | "default" | "success" | "warning" | "danger"> = {
+    PROCESS: 'primary',
+    FINISHED: 'secondary',
+    TAKEN: 'default',
   };
 
   return (
-    <main className="flex-1 pt-24 px-container-padding-desktop pb-container-padding-desktop max-w-[1440px] w-full">
+    <main className="flex-1 pt-24 px-container-padding-desktop pb-container-padding-desktop w-full">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-gutter gap-4">
         <div>
@@ -61,13 +60,14 @@ export function Dashboard() {
           </h2>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">{today}</p>
         </div>
-        <button
-          onClick={() => setIsOrderModalOpen(true)}
-          className="bg-primary text-on-primary px-6 py-3 rounded-lg text-label-md font-label-md shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2"
+        <Button
+          color="primary"
+          onPress={() => setIsOrderModalOpen(true)}
+          startContent={<span className="material-symbols-outlined text-[18px]">add</span>}
+          className="px-6 py-6 rounded-lg text-label-md font-label-md shadow-sm text-white"
         >
-          <span className="material-symbols-outlined text-[18px]">add</span>
           Order Baru
-        </button>
+        </Button>
       </div>
 
       {/* Stats Bento Grid */}
@@ -187,39 +187,60 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[300px] relative w-full bg-surface-bright rounded-lg overflow-hidden border border-outline-variant/10">
+          <div className="flex-1 min-h-[300px] relative w-full bg-surface-bright rounded-lg overflow-hidden border border-outline-variant/10 p-4">
             {trendLoading ? (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <Spinner label="Memuat grafik..." />
               </div>
             ) : (
-              <svg className="absolute bottom-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-                <line stroke="#e6eeff" strokeWidth="0.5" x1="0" x2="100" y1="25" y2="25"></line>
-                <line stroke="#e6eeff" strokeWidth="0.5" x1="0" x2="100" y1="50" y2="50"></line>
-                <line stroke="#e6eeff" strokeWidth="0.5" x1="0" x2="100" y1="75" y2="75"></line>
-                {/* Expense area */}
-                <path d={buildPath(expenseValues, true)} fill="#ffdad6" opacity="0.4"></path>
-                <path d={buildPath(expenseValues)} fill="none" stroke="#ba1a1a" strokeWidth="1.5"></path>
-                {/* Income area */}
-                <path d={buildPath(incomeValues, true)} fill="url(#blue-gradient)" opacity="0.8"></path>
-                <path d={buildPath(incomeValues)} fill="none" stroke="#0058be" strokeWidth="2"></path>
-                <defs>
-                  <linearGradient id="blue-gradient" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#d8e2ff" stopOpacity="0.8"></stop>
-                    <stop offset="100%" stopColor="#ffffff" stopOpacity="0.1"></stop>
-                  </linearGradient>
-                </defs>
-              </svg>
-            )}
-            {/* Date labels */}
-            {!trendLoading && trend.length > 0 && (
-              <div className="absolute bottom-2 left-0 right-0 flex justify-between px-2">
-                {trend.map((t, i) => (
-                  <span key={i} className="text-[9px] text-on-surface-variant/60">
-                    {new Date(t.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                  </span>
-                ))}
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0058be" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#0058be" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ba1a1a" stopOpacity={0.2} />
+                      <stop offset="100%" stopColor="#ba1a1a" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    axisLine={false}
+                    tickLine={false}
+                    dy={8}
+                  />
+                  <YAxis
+                    tickFormatter={(v: number) => formatRupiah(v)}
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={70}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="Expenses"
+                    stroke="#ba1a1a"
+                    strokeWidth={1.5}
+                    fill="url(#expenseGradient)"
+                    dot={{ r: 3, fill: '#ba1a1a', stroke: '#fff', strokeWidth: 1.5 }}
+                    activeDot={{ r: 5, stroke: '#ba1a1a', strokeWidth: 2, fill: '#fff' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="Income"
+                    stroke="#0058be"
+                    strokeWidth={2.5}
+                    fill="url(#incomeGradient)"
+                    dot={{ r: 3.5, fill: '#0058be', stroke: '#fff', strokeWidth: 1.5 }}
+                    activeDot={{ r: 5, stroke: '#0058be', strokeWidth: 2, fill: '#fff' }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             )}
           </div>
         </div>
@@ -255,56 +276,43 @@ export function Dashboard() {
       </div>
 
       {/* Recent Orders Table */}
-      <div className="mt-gutter bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden">
-        <div className="p-6 border-b border-outline-variant/20 flex justify-between items-center">
-          <h3 className="text-headline-md font-headline-md text-on-background">Recent Orders</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-surface-container-low/50">
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Order ID</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Service</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Qty</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="text-body-md font-body-md text-on-background">
-              {ordersLoading ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center">
-                    <div className="flex justify-center">
-                      <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    </div>
-                  </td>
-                </tr>
-              ) : recentOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-on-surface-variant">
-                    <span className="material-symbols-outlined text-[32px] opacity-70 mb-2 block">receipt_long</span>
-                    Belum ada order
-                  </td>
-                </tr>
-              ) : (
-                recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-outline-variant/10 hover:bg-surface-bright transition-colors cursor-pointer">
-                    <td className="py-4 px-6 text-label-md font-label-md text-primary">{order.invoiceNumber}</td>
-                    <td className="py-4 px-6">{order.customer?.name ?? '-'}</td>
-                    <td className="py-4 px-6">{order.category?.name ?? '-'}</td>
-                    <td className="py-4 px-6 text-on-surface-variant">{parseFloat(order.quantity)} {order.category?.unit ?? ''}</td>
-                    <td className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[order.status] ?? 'bg-surface-variant text-on-surface-variant'}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-right font-medium">Rp {Number(order.totalPrice).toLocaleString('id-ID')}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div className="mt-gutter bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden p-6">
+        <h3 className="text-headline-md font-headline-md text-on-background mb-4">Recent Orders</h3>
+        <div className="overflow-x-auto w-full">
+          <Table aria-label="Recent Orders Table" removeWrapper shadow="none" className="min-w-max w-full">
+          <TableHeader>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Order ID</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Customer</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Service</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Qty</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Status</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Amount</TableColumn>
+          </TableHeader>
+          <TableBody
+            isLoading={ordersLoading}
+            loadingContent={<Spinner label="Memuat order..." />}
+            emptyContent="Belum ada order"
+          >
+            {recentOrders.map((order) => (
+              <TableRow key={order.id} className="border-b border-outline-variant/10 hover:bg-surface-bright transition-colors cursor-pointer">
+                <TableCell className="py-4 text-label-md font-label-md text-primary">{order.invoiceNumber}</TableCell>
+                <TableCell className="py-4">{order.customer?.name ?? '-'}</TableCell>
+                <TableCell className="py-4">{order.category?.name ?? '-'}</TableCell>
+                <TableCell className="py-4 text-on-surface-variant">{parseFloat(order.quantity)} {order.category?.unit ?? ''}</TableCell>
+                <TableCell className="py-4">
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={STATUS_COLORS[order.status] ?? 'default'}
+                  >
+                    {order.status}
+                  </Chip>
+                </TableCell>
+                <TableCell className="py-4 text-right font-medium">Rp {Number(order.totalPrice).toLocaleString('id-ID')}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          </Table>
         </div>
       </div>
 

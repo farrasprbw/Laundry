@@ -8,7 +8,8 @@ interface CreateCategoryInput {
   icon?: string;
   pricePerUnit: number;
   unit: string;
-  estimatedDurationMinutes: number;
+  unit: string;
+  estimatedDurationDays: number;
 }
 
 export const categoryService = {
@@ -37,7 +38,7 @@ export const categoryService = {
         icon: input.icon ?? "styler",
         pricePerUnit: input.pricePerUnit,
         unit: input.unit,
-        estimatedDurationMinutes: input.estimatedDurationMinutes,
+        estimatedDurationDays: input.estimatedDurationDays,
       })
       .returning();
 

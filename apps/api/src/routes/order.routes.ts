@@ -67,6 +67,19 @@ router.patch("/:id/status", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Update payment status — authenticated users (workers) can update payment status
+router.patch("/:id/payment", async (req: AuthRequest, res: Response) => {
+  try {
+    const { paymentStatus } = req.body;
+    if (!paymentStatus) { res.status(400).json({ error: "paymentStatus is required" }); return; }
+    const order = await orderService.updatePayment(req.params.id as string, paymentStatus);
+    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    res.json(order);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || "Failed to update payment status" });
+  }
+});
+
 router.delete("/:id", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
     const order = await orderService.delete(req.params.id as string);

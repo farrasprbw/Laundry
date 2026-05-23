@@ -23,7 +23,7 @@ export interface Category {
   icon: string;
   pricePerUnit: number;
   unit: string; // kg | pcs | unit
-  estimatedDurationMinutes: number;
+  estimatedDurationDays: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -58,7 +58,7 @@ export interface Order {
     id: string;
     name: string;
     unit: string;
-    estimatedDurationMinutes?: number;
+    estimatedDurationDays?: number;
   } | null;
 }
 
@@ -159,7 +159,7 @@ export interface CreateCategoryInput {
   icon?: string;
   pricePerUnit: number;
   unit: string;
-  estimatedDurationMinutes: number;
+  estimatedDurationDays: number;
 }
 
 export interface CreateOrderInput {
@@ -208,6 +208,7 @@ export interface UserInfo {
   id: string;
   username: string;
   name: string;
+  phone?: string | null;
   role: UserRole;
   image: string | null;
   createdAt: string;
@@ -217,6 +218,7 @@ export interface UserInfo {
 export interface CreateUserInput {
   name: string;
   username: string;
+  phone?: string;
   password: string;
   role: UserRole;
 }

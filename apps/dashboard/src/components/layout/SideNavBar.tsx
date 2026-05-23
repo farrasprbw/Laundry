@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useSession } from '../../hooks/use-auth';
 import type { UserRole } from '../../types/api';
+import { Button } from '@nextui-org/react';
 
 interface NavItem {
   to: string;
@@ -41,16 +42,15 @@ export function SideNavBar({ isOpen = false, onClose }: SideNavBarProps) {
     <>
       {/* Mobile Backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-[60] md:hidden transition-opacity"
           onClick={onClose}
         />
       )}
-      
-      <aside 
-        className={`bg-surface-container-low border-r border-outline-variant/20 shadow-md fixed left-0 top-0 h-screen w-64 flex flex-col pt-6 pb-24 md:pb-6 z-[70] transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 md:z-40`}
+
+      <aside
+        className={`bg-surface-container-low border-r border-outline-variant/20 shadow-md fixed left-0 top-0 h-screen w-64 flex flex-col pt-6 pb-24 md:pb-6 z-[70] transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } md:translate-x-0 md:z-40`}
       >
         <div className="px-6 mb-8 flex justify-between items-center">
           <div className="flex flex-col gap-1">
@@ -58,20 +58,22 @@ export function SideNavBar({ isOpen = false, onClose }: SideNavBarProps) {
             <p className="text-label-md font-label-md text-on-surface-variant">Manage Facility</p>
           </div>
           {onClose && (
-            <button 
-              onClick={onClose}
-              className="md:hidden p-2 text-on-surface-variant hover:text-primary transition-colors"
+            <Button
+              isIconOnly
+              variant="light"
+              onPress={onClose}
+              className="md:hidden text-on-surface-variant hover:text-primary"
             >
               <span className="material-symbols-outlined text-[24px]">close</span>
-            </button>
+            </Button>
           )}
         </div>
 
         <nav className="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
           {filteredItems.map((item) => (
-            <NavLink 
-              key={item.to} 
-              to={item.to} 
+            <NavLink
+              key={item.to}
+              to={item.to}
               className={getNavLinkClass}
               onClick={() => {
                 if (onClose) onClose();

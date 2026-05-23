@@ -28,11 +28,11 @@ router.get("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
 // CUD routes: admin or super_admin only
 router.post("/", requireAuth, requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, icon, pricePerUnit, unit, estimatedDurationMinutes } = req.body;
-    if (!name || !pricePerUnit || !unit || !estimatedDurationMinutes) {
-      res.status(400).json({ error: "Missing required fields: name, pricePerUnit, unit, estimatedDurationMinutes" }); return;
+    const { name, description, icon, pricePerUnit, unit, estimatedDurationDays } = req.body;
+    if (!name || !pricePerUnit || !unit || !estimatedDurationDays) {
+      res.status(400).json({ error: "Missing required fields: name, pricePerUnit, unit, estimatedDurationDays" }); return;
     }
-    const category = await categoryService.create({ name, description, icon, pricePerUnit, unit, estimatedDurationMinutes });
+    const category = await categoryService.create({ name, description, icon, pricePerUnit, unit, estimatedDurationDays });
     res.status(201).json(category);
   } catch (err) {
     res.status(500).json({ error: "Failed to create category" });

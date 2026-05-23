@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useSession } from '../../hooks/use-auth';
 import { AddOrderModal } from '../ui/AddOrderModal';
 import type { UserRole } from '../../types/api';
+import { Button } from '@nextui-org/react';
 
 interface BottomNavItem {
   to: string;
@@ -38,14 +39,15 @@ export function BottomNavBar() {
           if (index === Math.floor(filteredItems.length / 2)) {
             return (
               <div key="fab-group" className="contents">
-                <button 
-                  onClick={() => setIsOrderModalOpen(true)}
-                  className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high/50 active:scale-90 transition-transform flex-1 h-full rounded-xl mx-1"
+                <Button
+                  isIconOnly
+                  radius="full"
+                  color="primary"
+                  onPress={() => setIsOrderModalOpen(true)}
+                  className="-mt-8 shadow-md border-4 border-background w-12 h-12 min-w-12 z-50 text-white"
                 >
-                  <div className="bg-primary text-on-primary rounded-full p-2 -mt-6 shadow-md border-4 border-background">
-                    <span className="material-symbols-outlined">add</span>
-                  </div>
-                </button>
+                  <span className="material-symbols-outlined">add</span>
+                </Button>
                 <NavLink key={item.to} to={item.to} className={getNavLinkClass}>
                   {({ isActive }) => (
                     <>
