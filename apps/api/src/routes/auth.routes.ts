@@ -8,9 +8,11 @@ router.all("/*splat", async (req, res, next) => {
   try {
     const handler = toNodeHandler(auth);
     await handler(req, res);
-  } catch (err: any) {
+  } catch (err) {
     console.error("BetterAuth Error:", err);
-    res.status(500).json({ error: "BetterAuth Error", message: err.message, stack: err.stack });
+    const message = err instanceof Error ? err.message : "Unknown error";
+    const stack = err instanceof Error ? err.stack : undefined;
+    res.status(500).json({ error: "BetterAuth Error", message, stack });
   }
 });
 
