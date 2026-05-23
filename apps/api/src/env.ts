@@ -6,6 +6,7 @@ export const env = {
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || "http://localhost:3001",
   PORT: parseInt(process.env.PORT || "3001", 10),
   CORS_ORIGIN: process.env.CORS_ORIGIN || "http://localhost:5173",
+  FONNTE_TOKEN: process.env.FONNTE_TOKEN || "",
 } as const;
 
 // Validate required env vars at startup
