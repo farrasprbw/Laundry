@@ -1,6 +1,7 @@
 import { db } from "../db/index.js";
 import { orders, categories } from "../db/schema.js";
 import { eq, and, isNull, sql, inArray } from "drizzle-orm";
+import { orderService } from "./order.service.js";
 
 /**
  * Auto-finish service — automatically transitions orders from PROCESS → FINISHED
@@ -64,6 +65,14 @@ export const autoFinishService = {
       .returning({ id: orders.id });
 
     console.log(`[AUTO-FINISH] Updated ${updated.length} orders to FINISHED:`, updated.map((o) => o.id));
+
+    // Send WhatsApp notification for each auto-finished order asynchronously
+    for (const o of updated) {
+      orderService.sendWhatsAppNotification(o.id).catch(err => 
+        console.error(`[AUTO-FINISH] Failed to send WA for order ${o.id}:`, err)
+      );
+    }
+
     return updated.length;
   },
 };

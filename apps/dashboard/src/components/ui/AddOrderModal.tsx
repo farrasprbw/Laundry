@@ -67,95 +67,6 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
       : 0;
   const totalPrice = subtotal;
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    })
-      .format(amount)
-      .replace("IDR", "Rp");
-
-  const formatDateTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    const hh = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    return `${dd}/${mm}/${yyyy} - ${hh}:${min}`;
-  };
-
-  const getEstimatedFinish = (createdAt: string, durationDays: number) => {
-    const d = new Date(createdAt);
-    d.setDate(d.getDate() + (durationDays - 1));
-    d.setHours(17, 0, 0, 0);
-    return formatDateTime(d.toISOString());
-  };
-
-  const buildInvoiceWALink = (order: any) => {
-    const customer = customers.find((c) => c.id === customerId);
-    const category = selectedCategory;
-    const selectedPM = paymentMethods.find((pm) => pm.id === paymentMethodId);
-    if (!customer) return null;
-
-    const phone = customer.phone.replace(/\D/g, "");
-    const intlPhone = phone.startsWith("0") ? `62${phone.slice(1)}` : phone;
-
-    const qty = Number(quantity);
-    const unitLabel = category?.unit ?? "kg";
-    const categoryName = category?.name ?? "Laundry";
-    const pricePerUnit = category?.pricePerUnit ?? 0;
-    const total = order.totalPrice;
-    const paymentStatusLabel =
-      paymentStatus === "PAID" ? "LUNAS ✅" : "BELUM BAYAR ❌";
-    const pmName = selectedPM?.name ?? "-";
-    const estSelesai = category?.estimatedDurationDays
-      ? getEstimatedFinish(order.createdAt, category.estimatedDurationDays)
-      : "-";
-    const parfumeLabel = order.parfume || "-";
-
-    const rawInvoice = order.invoiceNumber.replace(/^#/, "");
-    const invoiceUrl = `${window.location.origin}/invoice/${encodeURIComponent(rawInvoice)}`;
-
-    const message = `*MAXPRESS LAUNDROMAT*
-Apartment Amethys, Jl. Rajawali Selatan II No. 6 B, Jakarta Pusat
-HP : 0812-9678-8330
-
-━━━━━━━━━━━━━━━━━━━━
-
-📋 *DETAIL ORDER*
-No Invoice  : ${order.invoiceNumber}
-Pelanggan   : *${customer.name}*
-Tgl Masuk   : ${formatDateTime(order.createdAt)}
-Est Selesai : ${estSelesai}
-
-━━━━━━━━━━━━━━━━━━━━
-
-🧺 *${categoryName}*
-   ${qty} ${unitLabel} x ${formatCurrency(pricePerUnit)}
-   *Total       : ${formatCurrency(total)}*
-
-━━━━━━━━━━━━━━━━━━━━
-
-💳 Status Bayar : ${paymentStatusLabel}
-💰 Pembayaran : ${pmName}
-📌 Status     : SEDANG DIPROSES
-🌸 Parfum     : ${parfumeLabel}
-📝 Notes      : ${pmName}
-   BCA 6565125439 a/n NUR PUJI LESTARI
-
-━━━━━━━━━━━━━━━━━━━━
-
-📄 *Lihat Invoice Online:*
-${invoiceUrl}
-
-Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
-Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
-
-    return `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}`;
-  };
-
   const handleSubmit = () => {
     if (
       !customerId ||
@@ -183,12 +94,8 @@ Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
         parfume: parfume || undefined,
       },
       {
-        onSuccess: (order) => {
-          // Auto-send invoice via WhatsApp
-          const waLink = buildInvoiceWALink(order);
-          if (waLink) {
-            window.open(waLink, "_blank");
-          }
+        onSuccess: () => {
+          // WhatsApp notification is now handled automatically by the backend via Fonnte API
 
           setCustomerId("");
           setCategoryId("");

@@ -13,6 +13,8 @@ import {
 } from "drizzle-orm";
 import { generateInvoiceNumber } from "../lib/invoice.js";
 import { categoryService } from "./category.service.js";
+import { whatsappService } from "./whatsapp.service.js";
+import { env } from "../env.js";
 
 interface CreateOrderInput {
   customerId: string;
@@ -173,6 +175,11 @@ export const orderService = {
       })
       .returning();
 
+    // Auto-send new order notification
+    this.sendNewOrderWhatsAppNotification(order.id).catch((err) =>
+      console.error(`Failed to send new order WA for ${order.id}:`, err)
+    );
+
     return order;
   },
 
@@ -233,6 +240,14 @@ export const orderService = {
       .set(updateData)
       .where(eq(orders.id, id))
       .returning();
+
+    // Auto-send WhatsApp notification if status changed to FINISHED
+    if (newStatus === "FINISHED") {
+      // Run asynchronously without blocking the request
+      this.sendWhatsAppNotification(id).catch((err) => 
+        console.error(`Failed to send WA for order ${id}:`, err)
+      );
+    }
 
     return order;
   },
@@ -301,5 +316,94 @@ Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
       .where(eq(orders.id, id));
 
     return { waLink, message, phone: intlPhone };
+  },
+
+  async sendWhatsAppNotification(id: string) {
+    const data = await this.generateWhatsAppLink(id);
+    if (!data) return false;
+
+    // Use Fonnte to send message directly from server
+    return await whatsappService.sendMessage(data.phone, data.message);
+  },
+
+  async sendNewOrderWhatsAppNotification(id: string) {
+    const order = await this.getById(id);
+    if (!order || !order.customer) return false;
+
+    const phone = order.customer.phone.replace(/\D/g, "");
+    const intlPhone = phone.startsWith("0") ? `62${phone.slice(1)}` : phone;
+
+    const qty = Number(order.quantity);
+    const unitLabel = order.category?.unit ?? "kg";
+    const categoryName = order.category?.name ?? "Laundry";
+    
+    // Formatting currency
+    const formatCurrency = (val: number) => 
+      new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+
+    const pricePerUnit = order.category?.pricePerUnit ?? 0;
+    const paymentStatusLabel = order.paymentStatus === "PAID" ? "LUNAS ✅" : "BELUM BAYAR ❌";
+    const pmName = order.paymentMethod?.name ?? "-";
+    const parfumeLabel = order.parfume ?? "Standard";
+
+    // Estimated completion time
+    const createdAt = new Date(order.createdAt);
+    const estimatedDays = order.category?.estimatedDurationDays ?? 1;
+    const estDate = new Date(createdAt);
+    estDate.setDate(estDate.getDate() + estimatedDays - 1);
+    estDate.setHours(17, 0, 0, 0);
+    const estSelesai = estDate.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }) + " 17:00 WIB";
+
+    const formattedDate = createdAt.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const invoiceUrl = `${env.CORS_ORIGIN}/invoice/${order.id}`;
+
+    const message = `*MAXPRESS LAUNDROMAT*
+Apartment Amethys, Jl. Rajawali Selatan II No. 6 B, Jakarta Pusat
+HP : 0812-9678-8330
+
+━━━━━━━━━━━━━━━━━━━━
+
+📋 *DETAIL ORDER*
+No Invoice  : ${order.invoiceNumber}
+Pelanggan   : *${order.customer.name}*
+Tgl Masuk   : ${formattedDate}
+Est Selesai : ${estSelesai}
+
+━━━━━━━━━━━━━━━━━━━━
+
+🧺 *${categoryName}*
+   ${qty} ${unitLabel} x ${formatCurrency(pricePerUnit)}
+   *Total       : ${formatCurrency(order.totalPrice)}*
+
+━━━━━━━━━━━━━━━━━━━━
+
+💳 Status Bayar : ${paymentStatusLabel}
+💰 Pembayaran : ${pmName}
+📌 Status     : SEDANG DIPROSES
+🌸 Parfum     : ${parfumeLabel}
+📝 Notes      : ${order.notes || "-"}
+   BCA 6565125439 a/n NUR PUJI LESTARI
+
+━━━━━━━━━━━━━━━━━━━━
+
+📄 *Lihat Invoice Online:*
+${invoiceUrl}
+
+Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
+Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
+
+    return await whatsappService.sendMessage(intlPhone, message);
   },
 };
