@@ -39,7 +39,8 @@ router.post("/", async (req: AuthRequest, res: Response) => {
     }
     const order = await orderService.create({ customerId, categoryId, quantity: Number(quantity), notes, paymentMethodId, paymentStatus, discount: discount ? Number(discount) : 0, parfume }, req.user!.id);
     res.status(201).json(order);
-  } catch (err: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     res.status(400).json({ error: err.message || "Failed to create order" });
   }
 });
@@ -62,8 +63,9 @@ router.patch("/:id/status", async (req: AuthRequest, res: Response) => {
     const order = await orderService.updateStatus(req.params.id as string, status);
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
     res.json(order);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || "Failed to update status" });
+  } catch (error: unknown) {
+    const err = error as Error;
+    res.status(400).json({ error: err.message || "Failed to update order status" });
   }
 });
 
@@ -75,7 +77,8 @@ router.patch("/:id/payment", async (req: AuthRequest, res: Response) => {
     const order = await orderService.updatePayment(req.params.id as string, paymentStatus);
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
     res.json(order);
-  } catch (err: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     res.status(400).json({ error: err.message || "Failed to update payment status" });
   }
 });
@@ -90,14 +93,14 @@ router.delete("/:id", requireRole("admin", "super_admin"), async (req: AuthReque
   }
 });
 
-// WhatsApp notification link
-router.get("/:id/wa-link", async (req: AuthRequest, res: Response) => {
+// WhatsApp notification send via Fonnte
+router.post("/:id/wa-send", async (req: AuthRequest, res: Response) => {
   try {
-    const result = await orderService.generateWhatsAppLink(req.params.id as string);
-    if (!result) { res.status(404).json({ error: "Order not found" }); return; }
-    res.json(result);
+    const success = await orderService.sendWhatsAppNotification(req.params.id as string);
+    if (!success) { res.status(404).json({ error: "Failed to send or order not found" }); return; }
+    res.json({ message: "WhatsApp notification sent successfully" });
   } catch (err) {
-    res.status(500).json({ error: "Failed to generate WhatsApp link" });
+    res.status(500).json({ error: "Failed to send WhatsApp notification" });
   }
 });
 

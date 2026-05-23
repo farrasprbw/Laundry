@@ -100,9 +100,10 @@ export function Customers() {
         await createCustomer.mutateAsync(formData);
       }
       setIsModalOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       console.error("Failed to save customer:", error);
-      alert(error.response?.data?.error || "Gagal menyimpan data pelanggan");
+      alert(err.response?.data?.error || "Gagal menyimpan data pelanggan");
     }
   };
 

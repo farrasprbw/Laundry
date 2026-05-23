@@ -76,13 +76,13 @@ export const reportService = {
   },
 
   async getTransactions(dateFrom?: string, dateTo?: string) {
-    let filter = isNull(orders.deletedAt);
+    let filter: ReturnType<typeof and> = isNull(orders.deletedAt);
     if (dateFrom && dateTo) {
       filter = and(
         isNull(orders.deletedAt),
         gte(orders.createdAt, new Date(dateFrom)),
         lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`))
-      ) as any;
+      );
     }
 
     return db.select({

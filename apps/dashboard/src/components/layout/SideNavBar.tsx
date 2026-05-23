@@ -29,7 +29,7 @@ interface SideNavBarProps {
 export function SideNavBar({ isOpen = false, onClose }: SideNavBarProps) {
   const { data: session } = useSession();
 
-  const userRole = ((session?.user as any)?.role as UserRole) || 'worker';
+  const userRole = ((session?.user as { role?: string })?.role as UserRole) || 'worker';
 
   const filteredItems = NAV_ITEMS.filter((item) => item.roles.includes(userRole));
 

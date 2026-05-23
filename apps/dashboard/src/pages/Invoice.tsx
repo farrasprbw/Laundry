@@ -155,7 +155,8 @@ export function Invoice() {
           setSelectedRating(json.rating);
           setRatingSubmitted(true);
         }
-      } catch (err: any) {
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { error?: string } }; message?: string };
         setError(err.message || 'Terjadi kesalahan');
       } finally {
         setLoading(false);
@@ -185,7 +186,8 @@ export function Invoice() {
       }
 
       setRatingSubmitted(true);
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       setRatingError(err.message || 'Gagal mengirim penilaian');
     } finally {
       setSubmitting(false);

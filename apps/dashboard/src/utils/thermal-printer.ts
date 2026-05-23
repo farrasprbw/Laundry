@@ -36,7 +36,7 @@ export class BluetoothPrinter {
   private server: BluetoothRemoteGATTServer | null = null;
   private writeCharacteristic: BluetoothRemoteGATTCharacteristic | null = null;
   private _status: PrinterStatus = 'disconnected';
-  private listeners: Map<string, Set<EventCallback<any>>> = new Map();
+  private listeners: Map<string, Set<EventCallback<unknown>>> = new Map();
 
   /** Check if Web Bluetooth is supported */
   static isSupported(): boolean {
@@ -131,7 +131,8 @@ export class BluetoothPrinter {
       this.setStatus('connected');
       return true;
 
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       // User cancelled the picker
       if (err.name === 'NotFoundError' || err.message?.includes('cancelled')) {
         this.setStatus('disconnected');
@@ -241,7 +242,8 @@ export class BluetoothPrinter {
       this.setStatus('connected');
       return true;
 
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       this.setStatus('error');
       this.emit('error', `Gagal mencetak: ${err.message}`);
       return false;

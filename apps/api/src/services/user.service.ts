@@ -88,17 +88,19 @@ export const userService = {
       throw new Error("Failed to create user");
     }
 
+    const userData = result.user as { username?: string; role?: string };
+
     if (input.phone) {
       await db.update(user).set({ phone: input.phone }).where(eq(user.id, result.user.id));
     }
 
     return {
       id: result.user.id,
-      username: (result.user as any).username ?? input.username,
+      username: userData.username ?? input.username,
       name: result.user.name,
       email: result.user.email,
       phone: input.phone,
-      role: (result.user as any).role ?? input.role,
+      role: userData.role ?? input.role,
       createdAt: result.user.createdAt,
     };
   },

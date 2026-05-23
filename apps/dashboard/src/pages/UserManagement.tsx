@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useUsers, useCreateUser, useUpdateUserRole, useUpdateUser, useDeleteUser } from '../hooks/use-users';
-import type { UserRole } from '../types/api';
+import type { UserRole, UserInfo } from '../types/api';
 import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Tooltip } from '@nextui-org/react';
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -58,12 +58,13 @@ export function UserManagement() {
       setFormPassword('');
       setFormRole('worker');
       setIsCreateModalOpen(false);
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       alert(err?.response?.data?.error || 'Gagal membuat user');
     }
   };
 
-  const openEditModal = (user: any) => {
+  const openEditModal = (user: UserInfo) => {
     setEditUserId(user.id);
     setEditName(user.name);
     setEditUsername(user.username);
@@ -76,7 +77,7 @@ export function UserManagement() {
   const handleUpdateUser = async () => {
     if (!editUserId || !editName.trim() || !editUsername.trim()) return;
     try {
-      const input: any = {
+      const input: Record<string, string | undefined> = {
         name: editName.trim(),
         username: editUsername.trim(),
         phone: editPhone.trim(),
@@ -91,7 +92,8 @@ export function UserManagement() {
       });
       setIsEditModalOpen(false);
       setEditUserId(null);
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       alert(err?.response?.data?.error || 'Gagal memperbarui user');
     }
   };
@@ -108,7 +110,8 @@ export function UserManagement() {
       await updateRoleMutation.mutateAsync({ id: selectedUserId, role: selectedRole });
       setIsRoleModalOpen(false);
       setSelectedUserId(null);
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       alert(err?.response?.data?.error || 'Gagal mengubah role');
     }
   };
@@ -122,7 +125,8 @@ export function UserManagement() {
     try {
       await deleteMutation.mutateAsync(confirmState.data.id);
       setConfirmState({ open: false, data: null });
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       alert(err?.response?.data?.error || 'Gagal menghapus user');
     }
   };

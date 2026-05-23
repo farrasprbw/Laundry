@@ -22,7 +22,7 @@ const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
 export function BottomNavBar() {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const { data: session } = useSession();
-  const userRole = ((session?.user as any)?.role as UserRole) || 'worker';
+  const userRole = ((session?.user as { role?: string })?.role as UserRole) || 'worker';
 
   const filteredItems = BOTTOM_NAV_ITEMS.filter((item) => item.roles.includes(userRole));
 

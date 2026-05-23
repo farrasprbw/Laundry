@@ -106,7 +106,8 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           setParfume("");
           onClose();
         },
-        onError: (err: any) => {
+        onError: (error: unknown) => {
+          const err = error as { message?: string };
           alert(err?.message || "Gagal membuat order");
         },
       },
