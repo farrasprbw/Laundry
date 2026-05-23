@@ -56,8 +56,8 @@ if (process.env.NODE_ENV !== "production") {
     console.log(`🚀 Laundry API running on http://localhost:${env.PORT}`);
     console.log(`   Health: http://localhost:${env.PORT}/api/health`);
 
-    // ── Auto-finish cron (every 5 minutes in dev) ──
-    const CRON_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+    // ── Auto-finish cron (every 1 minute in dev) ──
+    const CRON_INTERVAL_MS = 1 * 60 * 1000; // 1 minute
     setInterval(async () => {
       try {
         const count = await autoFinishService.autoFinishOrders();
@@ -68,6 +68,6 @@ if (process.env.NODE_ENV !== "production") {
         console.error("[CRON] Auto-finish error:", err);
       }
     }, CRON_INTERVAL_MS);
-    console.log(`   ⏱️  Auto-finish cron: every 5 minutes`);
+    console.log(`   ⏱️  Auto-finish cron: every 1 minute`);
   });
 }
