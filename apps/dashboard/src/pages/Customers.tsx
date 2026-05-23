@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { Modal } from "../components/ui/Modal";
 import { ConfirmModal } from "../components/ui/ConfirmModal";
-import apiClient from "../lib/api-client";
+import {
+  useCustomers,
+  useCreateCustomer,
+  useUpdateCustomer,
+  useDeleteCustomer,
+} from "../hooks/use-customers";
 import {
   Button,
   Input,
@@ -28,14 +33,10 @@ interface Customer {
 }
 
 export function Customers() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
 
   // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,7 +49,6 @@ export function Customers() {
     phone: "",
     address: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -64,31 +64,20 @@ export function Customers() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch data
-  const fetchCustomers = async () => {
-    setIsLoading(true);
-    try {
-      const response = await apiClient.get("/customers", {
-        params: {
-          search: debouncedSearch,
-          page,
-          limit: 10,
-          sort: sortOrder,
-        },
-      });
-      setCustomers(response.data.data);
-      setTotalPages(response.data.pagination.totalPages);
-      setTotalItems(response.data.pagination.total);
-    } catch (error) {
-      console.error("Failed to fetch customers:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // React Query hooks
+  const { data: customersData, isLoading } = useCustomers({
+    search: debouncedSearch || undefined,
+    page,
+    limit: 10,
+    sort: sortOrder,
+  });
+  const createCustomer = useCreateCustomer();
+  const updateCustomer = useUpdateCustomer();
+  const deleteCustomer = useDeleteCustomer();
 
-  useEffect(() => {
-    fetchCustomers();
-  }, [debouncedSearch, page, sortOrder]);
+  const customers = (customersData?.data ?? []) as Customer[];
+  const totalPages = customersData?.pagination.totalPages ?? 1;
+  const totalItems = customersData?.pagination.total ?? 0;
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
@@ -104,20 +93,16 @@ export function Customers() {
   // Handle Form Submit
   const handleSubmit = async () => {
     if (!formData.name || !formData.phone) return;
-    setIsSubmitting(true);
     try {
       if (isEditMode && selectedCustomerId) {
-        await apiClient.put(`/customers/${selectedCustomerId}`, formData);
+        await updateCustomer.mutateAsync({ id: selectedCustomerId, ...formData });
       } else {
-        await apiClient.post("/customers", formData);
+        await createCustomer.mutateAsync(formData);
       }
       setIsModalOpen(false);
-      fetchCustomers();
     } catch (error: any) {
       console.error("Failed to save customer:", error);
       alert(error.response?.data?.error || "Gagal menyimpan data pelanggan");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -130,8 +115,7 @@ export function Customers() {
     if (!confirmState.data) return;
     setDeletingId(confirmState.data);
     try {
-      await apiClient.delete(`/customers/${confirmState.data}`);
-      fetchCustomers();
+      await deleteCustomer.mutateAsync(confirmState.data);
       setConfirmState({ open: false, data: null });
     } catch (error) {
       console.error("Failed to delete customer:", error);
@@ -418,8 +402,8 @@ export function Customers() {
         onClose={() => setIsModalOpen(false)}
         title={isEditMode ? "Edit Pelanggan" : "Tambah Pelanggan Baru"}
         onSubmit={handleSubmit}
-        isSubmitDisabled={!formData.name || !formData.phone || isSubmitting}
-        isLoading={isSubmitting}
+        isSubmitDisabled={!formData.name || !formData.phone || createCustomer.isPending || updateCustomer.isPending}
+        isLoading={createCustomer.isPending || updateCustomer.isPending}
       >
         <div className="flex flex-col gap-4">
           <Input

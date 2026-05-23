@@ -42,7 +42,7 @@ export const customerService = {
           createdAt: customers.createdAt,
           updatedAt: customers.updatedAt,
           deletedAt: customers.deletedAt,
-          orderCount: sql<number>`(SELECT count(*)::int FROM orders WHERE customer_id = ${customers.id} AND deleted_at IS NULL)`,
+          orderCount: sql<number>`(SELECT count(*)::int FROM orders WHERE customer_id = customers.id AND deleted_at IS NULL)`,
         })
         .from(customers)
         .where(where)
