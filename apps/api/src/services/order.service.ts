@@ -367,7 +367,7 @@ Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
       minute: "2-digit",
     });
 
-    const invoiceUrl = `${env.CORS_ORIGIN}/invoice/${order.invoiceNumber}`;
+    const invoiceUrl = `${env.CORS_ORIGIN}/invoice/${encodeURIComponent(order.invoiceNumber)}`;
 
     const message = `*MAXPRESS LAUNDROMAT*
 Apartment Amethys, Jl. Rajawali Selatan II No. 6 B, Jakarta Pusat
