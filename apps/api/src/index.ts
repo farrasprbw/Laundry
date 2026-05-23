@@ -27,24 +27,16 @@ app.use(
     credentials: true,
   })
 );
-// ── Auth Route (Must be before express.json() for better-auth) ──
-app.use("/api/auth", authRoutes);
-
 app.use(express.json());
 
 // ── Health check ──
-app.get("/api/health", async (_req, res) => {
-  try {
-    await db.execute(sql`SELECT 1`);
-    res.json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    res.status(500).json({ status: "error", db: "failed", error: message });
-  }
-});
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
 
 // ── Routes ──
 app.use("/api/public", publicRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
