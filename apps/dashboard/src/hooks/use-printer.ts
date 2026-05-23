@@ -69,7 +69,8 @@ export function usePrinter() {
       const receiptBytes = buildLaundryReceipt(data);
       const success = await printer.print(receiptBytes);
       return success;
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       setError(`Gagal mencetak: ${err.message}`);
       return false;
     }

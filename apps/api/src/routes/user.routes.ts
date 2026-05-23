@@ -38,7 +38,8 @@ router.post("/", async (req: AuthRequest, res: Response) => {
     }
     const user = await userService.createUser({ name, username, password, role });
     res.status(201).json(user);
-  } catch (err: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     res.status(400).json({ error: err.message || "Failed to create user" });
   }
 });
@@ -57,7 +58,8 @@ router.patch("/:id/role", async (req: AuthRequest, res: Response) => {
     const user = await userService.updateUserRole(req.params.id as string, role);
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
     res.json(user);
-  } catch (err: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     res.status(400).json({ error: err.message || "Failed to update user role" });
   }
 });

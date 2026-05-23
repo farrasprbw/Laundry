@@ -19,7 +19,8 @@ export function Login() {
 
     try {
       await login(username, password);
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string; error?: string } }; message?: string };
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);

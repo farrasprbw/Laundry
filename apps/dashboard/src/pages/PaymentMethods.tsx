@@ -30,7 +30,8 @@ export function PaymentMethods() {
           await createMutation.mutateAsync({ name: newMethodName.trim() });
         }
         closeModal();
-      } catch (err: any) {
+      } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
         alert(err?.response?.data?.error || `Gagal ${editingMethod ? 'mengubah' : 'menambahkan'} metode pembayaran`);
       }
     }
@@ -44,7 +45,8 @@ export function PaymentMethods() {
   const toggleMethodStatus = async (id: string, currentActive: boolean) => {
     try {
       await updateMutation.mutateAsync({ id, isActive: !currentActive });
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       alert(err?.response?.data?.error || 'Gagal mengubah status');
     }
   };
@@ -58,7 +60,8 @@ export function PaymentMethods() {
     try {
       await deleteMutation.mutateAsync(confirmState.data.id);
       setConfirmState({ open: false, data: null });
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
       alert(err?.response?.data?.error || 'Gagal menghapus metode pembayaran');
     }
   };

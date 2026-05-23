@@ -20,8 +20,9 @@ router.get("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     const method = await paymentMethodService.getById(req.params.id as string);
     if (!method) { res.status(404).json({ error: "Payment method not found" }); return; }
     res.json(method);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to get payment method" });
+  } catch (error: unknown) {
+    const err = error as Error & { code?: string };
+    res.status(400).json({ error: err.message || "Failed to create payment method" });
   }
 });
 
@@ -34,7 +35,8 @@ router.post("/", requireAuth, requireRole("admin", "super_admin"), async (req: A
     }
     const method = await paymentMethodService.create({ name });
     res.status(201).json(method);
-  } catch (err: any) {
+  } catch (error: unknown) {
+    const err = error as Error & { code?: string };
     if (err?.code === "23505") {
       res.status(409).json({ error: "Payment method with this name already exists" }); return;
     }
@@ -47,7 +49,8 @@ router.put("/:id", requireAuth, requireRole("admin", "super_admin"), async (req:
     const method = await paymentMethodService.update(req.params.id as string, req.body);
     if (!method) { res.status(404).json({ error: "Payment method not found" }); return; }
     res.json(method);
-  } catch (err: any) {
+  } catch (error: unknown) {
+    const err = error as Error & { code?: string };
     if (err?.code === "23505") {
       res.status(409).json({ error: "Payment method with this name already exists" }); return;
     }
@@ -60,8 +63,9 @@ router.delete("/:id", requireAuth, requireRole("admin", "super_admin"), async (r
     const method = await paymentMethodService.delete(req.params.id as string);
     if (!method) { res.status(404).json({ error: "Payment method not found" }); return; }
     res.json({ message: "Payment method deleted", method });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete payment method" });
+  } catch (error: unknown) {
+    const err = error as Error;
+    res.status(400).json({ error: err.message || "Failed to update payment method" });
   }
 });
 

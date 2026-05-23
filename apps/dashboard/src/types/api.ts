@@ -39,6 +39,8 @@ export interface Order {
   quantity: string; // numeric stored as string
   totalPrice: number;
   status: "PROCESS" | "FINISHED" | "TAKEN";
+  paymentStatus: "UNPAID" | "PAID";
+  paymentMethodId: string | null;
   notes: string | null;
   discount: number;
   parfume: string | null;
@@ -59,6 +61,10 @@ export interface Order {
     name: string;
     unit: string;
     estimatedDurationDays?: number;
+  } | null;
+  paymentMethod?: {
+    id: string;
+    name: string;
   } | null;
 }
 

@@ -6,6 +6,7 @@ import {
   useDeleteOrder,
   useUpdatePaymentStatus,
 } from "../hooks/use-orders";
+import type { Order } from "../types/api";
 import { usePrinter } from "../hooks/use-printer";
 import type { ReceiptData } from "../utils/receipt-builder";
 import { ConfirmModal } from "../components/ui/ConfirmModal";
@@ -36,7 +37,7 @@ export function Orders() {
     data: string | null;
   }>({ open: false, data: null });
 
-  const { data, isLoading } = useOrders(
+  const { data, isLoading, refetch } = useOrders(
     {
       status: statusFilter || undefined,
       page,
@@ -79,20 +80,22 @@ export function Orders() {
       if (newStatus === "FINISHED") {
         handleSendWA(id);
       }
-    } catch (error: any) {
-      alert(error.response?.data?.error || "Gagal mengubah status");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      alert(err.response?.data?.error || "Gagal mengubah status");
     }
   };
 
   const handleUpdatePaymentStatus = async (id: string, newStatus: string) => {
     try {
       await updatePaymentStatus.mutateAsync({ id, paymentStatus: newStatus });
-    } catch (error: any) {
-      alert(error.response?.data?.error || "Gagal mengubah status pembayaran");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      alert(err.response?.data?.error || "Gagal mengubah status pembayaran");
     }
   };
 
-  const getDropdownItems = (order: any) => {
+  const getDropdownItems = (order: Order) => {
     const items = [];
     if (order.status === "PROCESS")
       items.push({
@@ -148,21 +151,22 @@ export function Orders() {
     try {
       await deleteOrder.mutateAsync(confirmState.data);
       setConfirmState({ open: false, data: null });
-    } catch (error: any) {
-      alert(error.response?.data?.error || "Gagal menghapus order");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      alert(err.response?.data?.error || "Gagal menghapus order");
     }
   };
 
-  const handleSendWA = async (id: string) => {
+  const handleSendWA = async (id: string, silent = false) => {
     try {
-      const response = await apiClient.get(`/orders/${id}/wa-link`);
-      window.open(response.data.waLink, "_blank");
-    } catch (error: any) {
-      alert("Gagal membuat link WhatsApp");
+      await apiClient.post(`/orders/${id}/wa-send`);
+      if (!silent) alert("Pesan WhatsApp berhasil dikirim di latar belakang!");
+    } catch (error: unknown) {
+      if (!silent) alert("Gagal mengirim notifikasi WhatsApp otomatis.");
     }
   };
 
-  const handlePrint = async (order: any) => {
+  const handlePrint = async (order: Order) => {
     if (!isPrinterConnected) {
       alert(
         'Printer belum terhubung. Klik "Hubungkan Printer" terlebih dahulu.',
@@ -194,8 +198,9 @@ export function Orders() {
       if (success) {
         // Brief visual feedback — no alert needed, printer status shows it
       }
-    } catch (error: any) {
-      alert("Gagal mencetak struk: " + (error.message || "Unknown error"));
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      alert("Gagal mencetak struk: " + (err.message || "Unknown error"));
     }
   };
 
@@ -398,7 +403,7 @@ export function Orders() {
       {/* Unnotified Finished Orders Banner */}
       {(() => {
         const unnotifiedOrders = orders.filter(
-          (o: any) => o.status === "FINISHED" && !o.waNotificationSent
+          (o: Order) => o.status === "FINISHED" && !o.waNotificationSent
         );
         if (unnotifiedOrders.length === 0) return null;
         return (
@@ -415,8 +420,10 @@ export function Orders() {
               startContent={<span className="material-symbols-outlined text-[16px]">send</span>}
               onPress={async () => {
                 for (const order of unnotifiedOrders) {
-                  await handleSendWA(order.id);
+                  await handleSendWA(order.id, true);
                 }
+                alert(`Berhasil mengirim ${unnotifiedOrders.length} pesan WhatsApp!`);
+                refetch();
               }}
             >
               Kirim Semua
@@ -468,7 +475,7 @@ export function Orders() {
               loadingContent={<Spinner label="Memuat order..." />}
               emptyContent="Tidak ada order ditemukan."
             >
-              {orders.map((order: any, index: number) => (
+              {orders.map((order: Order, index: number) => (
                 <TableRow
                   key={order.id}
                   className="hover:bg-surface-container-lowest transition-colors group"
@@ -647,7 +654,7 @@ export function Orders() {
                         variant="flat"
                         items={getDropdownItems(order)}
                       >
-                        {(item: any) => (
+                        {(item: { key: string; label: string; icon: string; action: () => void; isDanger?: boolean }) => (
                           <DropdownItem
                             key={item.key}
                             color={item.isDanger ? "danger" : "default"}
