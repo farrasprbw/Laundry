@@ -10,6 +10,8 @@ import {
 } from "@nextui-org/react";
 import type { Order } from "../../types/api";
 import { useAlert } from "../../contexts/AlertContext";
+import { usePrinter } from "../../hooks/use-printer";
+import type { ReceiptData } from "../../utils/receipt-builder";
 
 export function Scanner() {
   const [scannedResult, setScannedResult] = useState<string | null>(null);
@@ -20,6 +22,17 @@ export function Scanner() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const regionId = "qr-reader";
 
+  const {
+    deviceName,
+    isSupported: isPrinterSupported,
+    isConnected: isPrinterConnected,
+    isPrinting,
+    isConnecting,
+    connect: connectPrinter,
+    disconnect: disconnectPrinter,
+    printReceipt,
+  } = usePrinter();
+
   useEffect(() => {
     // Initialize scanner
     const html5QrCode = new Html5Qrcode(regionId);
@@ -27,9 +40,12 @@ export function Scanner() {
 
     return () => {
       if (scannerRef.current?.isScanning) {
-        scannerRef.current.stop().catch(console.error);
+        scannerRef.current.stop().then(() => {
+          scannerRef.current?.clear();
+        }).catch(console.error);
+      } else {
+        scannerRef.current?.clear();
       }
-      scannerRef.current?.clear();
     };
   }, []);
 
@@ -102,11 +118,119 @@ export function Scanner() {
     }
   };
 
+  const handleSendWA = async (id: string) => {
+    try {
+      await apiClient.post(`/orders/${id}/wa-send`);
+      showAlert("Pesan WhatsApp berhasil dikirim!", "success");
+    } catch (error: unknown) {
+      showAlert("Gagal mengirim notifikasi WhatsApp.", "danger");
+    }
+  };
+
+  const handlePrint = async (order: Order) => {
+    if (!isPrinterConnected) {
+      showAlert('Printer belum terhubung. Hubungkan terlebih dahulu.', "warning");
+      return;
+    }
+
+    try {
+      const response = await apiClient.get(`/orders/${order.id}`);
+      const fullOrder = response.data;
+
+      const receiptData: ReceiptData = {
+        invoiceNumber: fullOrder.invoiceNumber,
+        customerName: fullOrder.customer?.name || "Unknown",
+        items: fullOrder.items?.map((item: any) => ({
+          categoryName: item.category?.name || "Laundry",
+          quantity: parseFloat(item.quantity),
+          unit: item.category?.unit || "kg",
+          pricePerUnit: item.category?.pricePerUnit || 0,
+          subtotal: item.subtotal || (parseFloat(item.quantity) * (item.category?.pricePerUnit || 0)),
+        })) || [],
+        totalPrice: fullOrder.totalPrice,
+        paymentStatus: fullOrder.paymentStatus,
+        discount: fullOrder.discount || 0,
+        createdAt: fullOrder.createdAt,
+        estimatedDurationDays: Math.max(...(fullOrder.items?.map((i: any) => i.category?.estimatedDurationDays || 1) || [1])),
+        notes: fullOrder.notes,
+      };
+
+      await printReceipt(receiptData);
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      showAlert("Gagal mencetak struk: " + (err.message || "Unknown error"), "danger");
+    }
+  };
+
+  const getPrinterStatusBadge = () => {
+    if (!isPrinterSupported) {
+      return (
+        <Chip size="sm" color="danger" variant="flat" startContent={<span className="material-symbols-outlined text-[14px] mr-1">error</span>}>
+          Browser Tidak Support
+        </Chip>
+      );
+    }
+    if (isPrinting) {
+      return (
+        <Chip size="sm" color="warning" variant="flat" classNames={{ content: "animate-pulse" }}>
+          Mencetak...
+        </Chip>
+      );
+    }
+    if (isConnecting) {
+      return (
+        <Chip size="sm" color="primary" variant="flat" classNames={{ content: "animate-pulse" }}>
+          Menghubungkan...
+        </Chip>
+      );
+    }
+    if (isPrinterConnected) {
+      return (
+        <Chip size="sm" color="success" variant="flat" startContent={<span className="material-symbols-outlined text-[14px] mr-1">bluetooth_connected</span>}>
+          {deviceName || "Terhubung"}
+        </Chip>
+      );
+    }
+    return (
+      <Chip size="sm" color="default" variant="flat" startContent={<span className="material-symbols-outlined text-[14px] mr-1">bluetooth_disabled</span>}>
+        Tidak Terhubung
+      </Chip>
+    );
+  };
+
   return (
     <div className="pt-20 pb-24 px-4 w-full flex-1 flex flex-col items-center">
-      <div className="mb-6 w-full text-center">
+      <div className="mb-6 w-full text-center flex flex-col items-center">
         <h2 className="text-headline-md font-headline-md text-on-surface mb-2">Scanner QR</h2>
-        <p className="text-body-md text-on-surface-variant">Arahkan kamera ke struk untuk memindai.</p>
+        <p className="text-body-md text-on-surface-variant mb-4">Arahkan kamera ke struk untuk memindai.</p>
+        
+        {/* Printer Status & Controls */}
+        <div className="flex items-center gap-2 mt-2">
+          {getPrinterStatusBadge()}
+          {isPrinterSupported &&
+            (isPrinterConnected ? (
+              <Button
+                onPress={disconnectPrinter}
+                variant="bordered"
+                className="px-3 py-2 rounded-xl text-label-md font-label-md border-outline-variant/30 text-on-surface-variant hover:bg-error-container hover:text-error hover:border-error/30"
+                startContent={<span className="material-symbols-outlined text-[18px]">bluetooth_disabled</span>}
+                title="Putuskan Printer"
+              >
+                <span className="hidden sm:inline">Putuskan</span>
+              </Button>
+            ) : (
+              <Button
+                color="primary"
+                onPress={connectPrinter}
+                isDisabled={isConnecting}
+                className="px-3 py-2 rounded-xl text-label-md font-label-md shadow-sm text-white"
+                startContent={<span className="material-symbols-outlined text-[18px]">print</span>}
+                title="Hubungkan Printer Bluetooth"
+              >
+                <span className="hidden sm:inline">{isConnecting ? "Menghubungkan..." : "Hubungkan Printer"}</span>
+              </Button>
+            ))}
+        </div>
       </div>
 
       {!scannedResult && (
@@ -170,9 +294,17 @@ export function Scanner() {
                       </Button>
                     )}
                     {scannedOrder.status === 'FINISHED' && (
-                      <Button color="success" onPress={() => handleUpdateStatus(scannedOrder.id, 'TAKEN')}>
-                        Tandai Diambil
-                      </Button>
+                      <>
+                        <Button color="success" onPress={() => handleUpdateStatus(scannedOrder.id, 'TAKEN')}>
+                          Tandai Diambil
+                        </Button>
+                        <Button color="secondary" variant="flat" onPress={() => handleSendWA(scannedOrder.id)}>
+                          Kirim WA Ulang
+                        </Button>
+                        <Button color="default" variant="flat" onPress={() => handlePrint(scannedOrder)}>
+                          Cetak Struk
+                        </Button>
+                      </>
                     )}
                     {scannedOrder.status === 'TAKEN' && (
                       <p className="text-center text-label-sm text-on-surface-variant mt-2">Pesanan ini sudah diambil.</p>

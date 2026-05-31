@@ -13,6 +13,8 @@ import {
   Radio,
   Textarea,
   Button,
+  Autocomplete,
+  AutocompleteItem,
 } from "@nextui-org/react";
 import { Trash2, Plus } from "lucide-react";
 
@@ -38,7 +40,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     data: customersData,
     isLoading: isLoadingCustomers,
     refetch: refetchCustomers,
-  } = useCustomers({ limit: 100 });
+  } = useCustomers({ limit: 1000 });
   const {
     data: categoriesData,
     isLoading: isLoadingCategories,
@@ -144,24 +146,24 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
       isLoading={createOrder.isPending}
     >
       <div className="flex flex-col gap-4">
-        <Select
+        <Autocomplete
           label="Pilih Pelanggan"
-          placeholder="Pilih pelanggan..."
-          selectedKeys={customerId ? [customerId] : []}
-          onChange={(e) => setCustomerId(e.target.value)}
+          placeholder="Cari pelanggan..."
+          selectedKey={customerId}
+          onSelectionChange={(key) => setCustomerId((key as string) || "")}
           isLoading={isLoadingCustomers}
           variant="bordered"
         >
           {customers.map((c) => (
-            <SelectItem
+            <AutocompleteItem
               key={c.id}
               value={c.id}
               textValue={`${c.name} (${c.phone})`}
             >
               {c.name} ({c.phone})
-            </SelectItem>
+            </AutocompleteItem>
           ))}
-        </Select>
+        </Autocomplete>
 
         <div className="flex flex-col gap-2">
           {items.map((item, index) => {
