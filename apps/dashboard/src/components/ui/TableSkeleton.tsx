@@ -7,13 +7,7 @@ interface TableSkeletonProps {
 
 export function TableSkeleton({ rows = 5, columns = 5 }: TableSkeletonProps) {
   return (
-    <div className="w-full space-y-3">
-      {/* Header row */}
-      <div className="flex gap-3 px-4 py-3">
-        {Array.from({ length: columns }).map((_, i) => (
-          <Skeleton key={`header-${i}`} className="rounded-lg flex-1 h-4" />
-        ))}
-      </div>
+    <div className="w-full space-y-3 pt-2">
       {/* Body rows */}
       {Array.from({ length: rows }).map((_, rowIdx) => (
         <div
