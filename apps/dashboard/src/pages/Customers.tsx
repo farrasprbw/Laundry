@@ -223,7 +223,7 @@ export function Customers() {
             }
             variant={sortOrder === "asc" ? "flat" : "bordered"}
             color={sortOrder === "asc" ? "primary" : "default"}
-            className="rounded-lg text-label-md font-label-md whitespace-nowrap"
+            className="rounded-lg text-label-md font-label-md whitespace-nowrap w-full sm:w-auto"
             startContent={
               <span className="material-symbols-outlined text-[18px]">
                 {sortOrder === "desc" ? "arrow_downward" : "arrow_upward"}

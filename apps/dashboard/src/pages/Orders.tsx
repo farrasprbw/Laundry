@@ -399,6 +399,7 @@ export function Orders() {
             <label className="text-xs text-on-surface-variant font-medium mb-1 block">Dari Tanggal</label>
             <input
               type="date"
+              placeholder="Pilih Tanggal Awal"
               value={dateFromFilter}
               onChange={(e) => {
                 setDateFromFilter(e.target.value);
@@ -411,6 +412,7 @@ export function Orders() {
             <label className="text-xs text-on-surface-variant font-medium mb-1 block">Sampai Tanggal</label>
             <input
               type="date"
+              placeholder="Pilih Tanggal Akhir"
               value={dateToFilter}
               onChange={(e) => {
                 setDateToFilter(e.target.value);
