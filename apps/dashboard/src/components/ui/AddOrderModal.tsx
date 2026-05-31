@@ -12,7 +12,9 @@ import {
   RadioGroup,
   Radio,
   Textarea,
+  Button,
 } from "@nextui-org/react";
+import { Trash2, Plus } from "lucide-react";
 
 interface AddOrderModalProps {
   isOpen: boolean;
@@ -21,8 +23,9 @@ interface AddOrderModalProps {
 
 export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   const [customerId, setCustomerId] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [items, setItems] = useState<{ categoryId: string; quantity: string }[]>([
+    { categoryId: "", quantity: "" },
+  ]);
   const [notes, setNotes] = useState("");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"UNPAID" | "PAID">(
@@ -49,7 +52,6 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
 
   const createOrder = useCreateOrder();
 
-  // Refetch all data setiap kali modal dibuka agar data terbaru selalu tampil
   useEffect(() => {
     if (isOpen) {
       refetchCustomers();
@@ -62,22 +64,22 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   const categories = categoriesData || [];
   const paymentMethods = paymentMethodsData || [];
 
-  const selectedCategory = categories.find((c) => c.id === categoryId);
-  const subtotal =
-    selectedCategory && quantity
-      ? selectedCategory.pricePerUnit * Number(quantity)
-      : 0;
-  const totalPrice = subtotal;
+  const totalPrice = items.reduce((acc, item) => {
+    const category = categories.find((c) => c.id === item.categoryId);
+    if (category && item.quantity) {
+      return acc + category.pricePerUnit * Number(item.quantity);
+    }
+    return acc;
+  }, 0);
+
+  const isFormIncomplete =
+    !customerId ||
+    items.some((i) => !i.categoryId || !i.quantity || Number(i.quantity) <= 0) ||
+    !paymentMethodId ||
+    !paymentStatus;
 
   const handleSubmit = () => {
-    if (
-      !customerId ||
-      !categoryId ||
-      !quantity ||
-      Number(quantity) <= 0 ||
-      !paymentMethodId ||
-      !paymentStatus
-    ) {
+    if (isFormIncomplete) {
       showAlert(
         "Mohon lengkapi semua data wajib (Pelanggan, Layanan, Berat/Jumlah, dan Metode Pembayaran) dengan benar.",
         "warning"
@@ -88,8 +90,10 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     createOrder.mutate(
       {
         customerId,
-        categoryId,
-        quantity: Number(quantity),
+        items: items.map((i) => ({
+          categoryId: i.categoryId,
+          quantity: Number(i.quantity),
+        })),
         notes: notes || undefined,
         paymentMethodId: paymentMethodId || undefined,
         paymentStatus,
@@ -98,11 +102,9 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
       },
       {
         onSuccess: () => {
-          // WhatsApp notification is now handled automatically by the backend via Fonnte API
-
+          showAlert("Order berhasil dibuat!", "success");
           setCustomerId("");
-          setCategoryId("");
-          setQuantity("");
+          setItems([{ categoryId: "", quantity: "" }]);
           setNotes("");
           setPaymentMethodId("");
           setPaymentStatus("UNPAID");
@@ -117,13 +119,19 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     );
   };
 
-  const isFormIncomplete =
-    !customerId ||
-    !categoryId ||
-    !quantity ||
-    Number(quantity) <= 0 ||
-    !paymentMethodId ||
-    !paymentStatus;
+  const addItem = () => {
+    setItems([...items, { categoryId: "", quantity: "" }]);
+  };
+
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const updateItem = (index: number, field: "categoryId" | "quantity", value: string) => {
+    const newItems = [...items];
+    newItems[index][field] = value;
+    setItems(newItems);
+  };
 
   return (
     <Modal
@@ -155,51 +163,82 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           ))}
         </Select>
 
-        <Select
-          label="Layanan"
-          placeholder="Pilih layanan..."
-          selectedKeys={categoryId ? [categoryId] : []}
-          onChange={(e) => setCategoryId(e.target.value)}
-          isLoading={isLoadingCategories}
-          variant="bordered"
-        >
-          {categories.map((c) => (
-            <SelectItem
-              key={c.id}
-              value={c.id}
-              textValue={`${c.name} (Rp ${c.pricePerUnit.toLocaleString("id-ID")}/${c.unit})`}
-            >
-              {c.name} (Rp {c.pricePerUnit.toLocaleString("id-ID")}/{c.unit})
-            </SelectItem>
-          ))}
-        </Select>
+        <div className="flex flex-col gap-2">
+          {items.map((item, index) => {
+            const selectedCategory = categories.find((c) => c.id === item.categoryId);
+            return (
+              <div key={index} className="flex gap-2 items-start">
+                <Select
+                  label="Layanan"
+                  placeholder="Pilih layanan..."
+                  selectedKeys={item.categoryId ? [item.categoryId] : []}
+                  onChange={(e) => updateItem(index, "categoryId", e.target.value)}
+                  isLoading={isLoadingCategories}
+                  variant="bordered"
+                  className="flex-1"
+                >
+                  {categories.map((c) => (
+                    <SelectItem
+                      key={c.id}
+                      value={c.id}
+                      textValue={`${c.name} (Rp ${c.pricePerUnit.toLocaleString("id-ID")}/${c.unit})`}
+                    >
+                      {c.name} (Rp {c.pricePerUnit.toLocaleString("id-ID")}/{c.unit})
+                    </SelectItem>
+                  ))}
+                </Select>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            type="number"
-            label={`Berat / Jumlah ${selectedCategory ? `(${selectedCategory.unit})` : ""}`}
-            placeholder="0"
-            step="0.1"
-            min="0.1"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            variant="bordered"
-          />
+                <Input
+                  type="number"
+                  label={`Jumlah ${selectedCategory ? `(${selectedCategory.unit})` : ""}`}
+                  placeholder="0"
+                  step="0.1"
+                  min="0.1"
+                  value={item.quantity}
+                  onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                  variant="bordered"
+                  className="w-32"
+                />
 
-          <Input
-            type="text"
-            label="Total Harga"
-            value={totalPrice.toLocaleString("id-ID")}
-            isReadOnly
-            startContent={
-              <div className="pointer-events-none flex items-center">
-                <span className="text-default-400 text-small">Rp</span>
+                {items.length > 1 && (
+                  <Button
+                    isIconOnly
+                    color="danger"
+                    variant="light"
+                    onPress={() => removeItem(index)}
+                    className="mt-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
-            }
-            variant="bordered"
-            className="font-bold"
-          />
+            );
+          })}
+          
+          <Button 
+            variant="light" 
+            color="primary" 
+            onPress={addItem}
+            startContent={<Plus className="w-4 h-4" />}
+            className="self-start"
+          >
+            Tambah Layanan
+          </Button>
         </div>
+
+        <Input
+          type="text"
+          label="Total Harga"
+          value={totalPrice.toLocaleString("id-ID")}
+          isReadOnly
+          startContent={
+            <div className="pointer-events-none flex items-center">
+              <span className="text-default-400 text-small">Rp</span>
+            </div>
+          }
+          variant="bordered"
+          className="font-bold"
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <Select

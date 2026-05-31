@@ -93,6 +93,7 @@ export function Scanner() {
     try {
       await apiClient.patch(`/orders/${id}/status`, { status: newStatus });
       setScannedOrder((prev) => prev ? { ...prev, status: newStatus } : null);
+      showAlert("Status pesanan berhasil diperbarui", "success");
     } catch (err: unknown) {
       const error = err as import("axios").AxiosError<{ error: string }>;
       showAlert(error.response?.data?.error || "Gagal mengubah status", "danger");
@@ -149,7 +150,9 @@ export function Scanner() {
                   </div>
                   <div className="flex justify-between items-center border-b border-outline-variant/20 pb-2">
                     <span className="text-label-sm text-on-surface-variant">Layanan</span>
-                    <span className="text-body-md">{scannedOrder.category?.name} - {scannedOrder.quantity} {scannedOrder.category?.unit}</span>
+                    <span className="text-body-md text-right">
+                      {scannedOrder.items?.map(i => `${i.category?.name} - ${parseFloat(i.quantity)} ${i.category?.unit}`).join(", ") || "-"}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center pb-2">
                     <span className="text-label-sm text-on-surface-variant">Status Saat Ini</span>

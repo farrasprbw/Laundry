@@ -4,6 +4,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../hooks/use-categories';
 import type { Category } from '../types/api';
 import { Button, Input, Select, SelectItem, Spinner, Tooltip } from '@nextui-org/react';
+import { useAlert } from '../contexts/AlertContext';
 
 const CARD_THEMES = [
   { lightBg: 'bg-primary/5', containerBg: 'bg-primary-container', iconColor: 'text-primary' },
@@ -24,6 +25,7 @@ export function Categories() {
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
+  const { showAlert } = useAlert();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -78,14 +80,18 @@ export function Categories() {
     if (editingCategory) {
       updateCategory.mutate({ id: editingCategory.id, ...payload }, {
         onSuccess: () => {
+          showAlert("Kategori berhasil diperbarui", "success");
           setIsModalOpen(false);
-        }
+        },
+        onError: () => showAlert("Gagal memperbarui kategori", "danger")
       });
     } else {
       createCategory.mutate(payload, {
         onSuccess: () => {
+          showAlert("Kategori berhasil ditambahkan", "success");
           setIsModalOpen(false);
-        }
+        },
+        onError: () => showAlert("Gagal menambahkan kategori", "danger")
       });
     }
   };
@@ -94,9 +100,11 @@ export function Categories() {
     if (!deletingCategory) return;
     deleteCategory.mutate(deletingCategory.id, {
       onSuccess: () => {
+        showAlert("Kategori berhasil dihapus", "success");
         setIsDeleteModalOpen(false);
         setDeletingCategory(null);
-      }
+      },
+      onError: () => showAlert("Gagal menghapus kategori", "danger")
     });
   };
 

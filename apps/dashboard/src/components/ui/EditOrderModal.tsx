@@ -12,7 +12,9 @@ import {
   RadioGroup,
   Radio,
   Textarea,
+  Button,
 } from "@nextui-org/react";
+import { Trash2, Plus } from "lucide-react";
 
 interface EditOrderModalProps {
   isOpen: boolean;
@@ -25,7 +27,7 @@ export function EditOrderModal({
   onClose,
   order,
 }: EditOrderModalProps) {
-  const [quantity, setQuantity] = useState("");
+  const [items, setItems] = useState<{ categoryId: string; quantity: string }[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"UNPAID" | "PAID">(
@@ -36,7 +38,7 @@ export function EditOrderModal({
 
   const { showAlert } = useAlert();
 
-  const { data: categoriesData } = useCategories();
+  const { data: categoriesData, isLoading: isLoadingCategories } = useCategories();
 
   const { data: paymentMethodsData, isLoading: isLoadingPM } =
     usePaymentMethods();
@@ -45,7 +47,16 @@ export function EditOrderModal({
 
   useEffect(() => {
     if (isOpen && order) {
-      setQuantity(order.quantity || "");
+      if (order.items && order.items.length > 0) {
+        setItems(
+          order.items.map((i) => ({
+            categoryId: i.categoryId,
+            quantity: i.quantity,
+          }))
+        );
+      } else {
+        setItems([{ categoryId: "", quantity: "" }]);
+      }
       setNotes(order.notes || "");
       setPaymentMethodId(order.paymentMethodId || "");
       setPaymentStatus(order.paymentStatus || "UNPAID");
@@ -57,18 +68,25 @@ export function EditOrderModal({
   const categories = categoriesData || [];
   const paymentMethods = paymentMethodsData || [];
 
-  const selectedCategory = categories.find((c) => c.id === order?.categoryId);
-  const subtotal =
-    selectedCategory && quantity
-      ? selectedCategory.pricePerUnit * Number(quantity)
-      : 0;
+  const subtotal = items.reduce((acc, item) => {
+    const category = categories.find((c) => c.id === item.categoryId);
+    if (category && item.quantity) {
+      return acc + category.pricePerUnit * Number(item.quantity);
+    }
+    return acc;
+  }, 0);
+  
   const currentDiscount = Number(discount) || 0;
   const totalPrice = Math.max(0, subtotal - currentDiscount);
 
+  const isFormIncomplete =
+    items.some((i) => !i.categoryId || !i.quantity || Number(i.quantity) <= 0) ||
+    !paymentStatus;
+
   const handleSubmit = () => {
-    if (!order || !quantity || Number(quantity) <= 0 || !paymentStatus) {
+    if (!order || isFormIncomplete) {
       showAlert(
-        "Mohon lengkapi data wajib (Berat/Jumlah, Status Pembayaran) dengan benar.",
+        "Mohon lengkapi data wajib (Layanan, Jumlah, Status Pembayaran) dengan benar.",
         "warning"
       );
       return;
@@ -77,7 +95,7 @@ export function EditOrderModal({
     updateOrder.mutate(
       {
         id: order.id,
-        quantity: Number(quantity),
+        items: items.map(i => ({ categoryId: i.categoryId, quantity: Number(i.quantity) })),
         notes: notes || undefined,
         paymentMethodId: paymentMethodId || undefined,
         paymentStatus,
@@ -86,6 +104,7 @@ export function EditOrderModal({
       },
       {
         onSuccess: () => {
+          showAlert("Order berhasil diperbarui!", "success");
           onClose();
         },
         onError: (error: unknown) => {
@@ -94,6 +113,20 @@ export function EditOrderModal({
         },
       },
     );
+  };
+
+  const addItem = () => {
+    setItems([...items, { categoryId: "", quantity: "" }]);
+  };
+
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const updateItem = (index: number, field: "categoryId" | "quantity", value: string) => {
+    const newItems = [...items];
+    newItems[index][field] = value;
+    setItems(newItems);
   };
 
   if (!order) return null;
@@ -105,9 +138,7 @@ export function EditOrderModal({
       title={`Edit Order ${order.invoiceNumber}`}
       onSubmit={handleSubmit}
       submitText="Simpan Perubahan"
-      isSubmitDisabled={
-        !quantity || Number(quantity) <= 0 || updateOrder.isPending
-      }
+      isSubmitDisabled={isFormIncomplete || updateOrder.isPending}
       isLoading={updateOrder.isPending}
     >
       <div className="flex flex-col gap-4">
@@ -119,25 +150,70 @@ export function EditOrderModal({
           variant="flat"
         />
 
-        <Input
-          label="Layanan"
-          value={order.category?.name || "-"}
-          isReadOnly
-          variant="flat"
-        />
+        <div className="flex flex-col gap-2">
+          {items.map((item, index) => {
+            const selectedCategory = categories.find((c) => c.id === item.categoryId);
+            return (
+              <div key={index} className="flex gap-2 items-start">
+                <Select
+                  label="Layanan"
+                  placeholder="Pilih layanan..."
+                  selectedKeys={item.categoryId ? [item.categoryId] : []}
+                  onChange={(e) => updateItem(index, "categoryId", e.target.value)}
+                  isLoading={isLoadingCategories}
+                  variant="bordered"
+                  className="flex-1"
+                >
+                  {categories.map((c) => (
+                    <SelectItem
+                      key={c.id}
+                      value={c.id}
+                      textValue={`${c.name} (Rp ${c.pricePerUnit.toLocaleString("id-ID")}/${c.unit})`}
+                    >
+                      {c.name} (Rp {c.pricePerUnit.toLocaleString("id-ID")}/{c.unit})
+                    </SelectItem>
+                  ))}
+                </Select>
+
+                <Input
+                  type="number"
+                  label={`Jumlah ${selectedCategory ? `(${selectedCategory.unit})` : ""}`}
+                  placeholder="0"
+                  step="0.1"
+                  min="0.1"
+                  value={item.quantity}
+                  onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                  variant="bordered"
+                  className="w-32"
+                />
+
+                {items.length > 1 && (
+                  <Button
+                    isIconOnly
+                    color="danger"
+                    variant="light"
+                    onPress={() => removeItem(index)}
+                    className="mt-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+          
+          <Button 
+            variant="light" 
+            color="primary" 
+            onPress={addItem}
+            startContent={<Plus className="w-4 h-4" />}
+            className="self-start"
+          >
+            Tambah Layanan
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            type="number"
-            label={`Berat / Jumlah ${selectedCategory ? `(${selectedCategory.unit})` : ""}`}
-            placeholder="0"
-            step="0.1"
-            min="0.1"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            variant="bordered"
-          />
-
           <Input
             type="number"
             label="Diskon (Rp)"
@@ -147,21 +223,21 @@ export function EditOrderModal({
             onChange={(e) => setDiscount(e.target.value)}
             variant="bordered"
           />
-        </div>
 
-        <Input
-          type="text"
-          label="Total Harga Baru"
-          value={totalPrice.toLocaleString("id-ID")}
-          isReadOnly
-          startContent={
-            <div className="pointer-events-none flex items-center">
-              <span className="text-default-400 text-small">Rp</span>
-            </div>
-          }
-          variant="flat"
-          className="font-bold"
-        />
+          <Input
+            type="text"
+            label="Total Harga Baru"
+            value={totalPrice.toLocaleString("id-ID")}
+            isReadOnly
+            startContent={
+              <div className="pointer-events-none flex items-center">
+                <span className="text-default-400 text-small">Rp</span>
+              </div>
+            }
+            variant="flat"
+            className="font-bold"
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <Select

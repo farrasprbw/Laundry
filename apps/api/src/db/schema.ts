@@ -103,13 +103,9 @@ export const orders = pgTable("orders", {
   customerId: uuid("customer_id")
     .notNull()
     .references(() => customers.id),
-  categoryId: uuid("category_id")
-    .notNull()
-    .references(() => categories.id),
   createdById: text("created_by_id")
     .notNull()
     .references(() => user.id),
-  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
   totalPrice: integer("total_price").notNull(), // in Rupiah
   status: text("status").notNull().default("PROCESS"), // PROCESS | FINISHED | TAKEN
   paymentMethodId: uuid("payment_method_id")
@@ -125,6 +121,19 @@ export const orders = pgTable("orders", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"),
+});
+
+export const orderItems = pgTable("order_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => categories.id),
+  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
+  pricePerUnit: integer("price_per_unit").notNull(),
+  subtotal: integer("subtotal").notNull(),
 });
 
 export const expenses = pgTable("expenses", {
@@ -158,6 +167,7 @@ export type User = typeof user.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
 

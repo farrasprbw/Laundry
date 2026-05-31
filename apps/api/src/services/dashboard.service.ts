@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
 import { orders, expenses, customers, categories } from "../db/schema.js";
-import { eq, isNull, and, gte, lte, sql, desc } from "drizzle-orm";
+import { eq, isNull, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 
 export const dashboardService = {
   /**
@@ -87,33 +87,42 @@ export const dashboardService = {
    * Get the most recent orders with customer & category info.
    */
   async getRecentOrders(limit = 5) {
-    const result = await db
+    const data = await db
       .select({
-        id: orders.id,
-        invoiceNumber: orders.invoiceNumber,
-        quantity: orders.quantity,
-        totalPrice: orders.totalPrice,
-        status: orders.status,
-        createdAt: orders.createdAt,
-        customer: {
-          id: customers.id,
-          name: customers.name,
-          phone: customers.phone,
-        },
-        category: {
-          id: categories.id,
-          name: categories.name,
-          unit: categories.unit,
-        },
+        order: orders,
+        customer: customers,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
-      .leftJoin(categories, eq(orders.categoryId, categories.id))
       .where(isNull(orders.deletedAt))
       .orderBy(desc(orders.createdAt))
       .limit(limit);
 
-    return result;
+    const orderIds = data.map((d) => d.order.id);
+    let itemsData: any[] = [];
+    if (orderIds.length > 0) {
+      const { orderItems } = await import("../db/schema.js");
+      itemsData = await db
+        .select({
+          orderId: orderItems.orderId,
+          item: orderItems,
+          category: categories,
+        })
+        .from(orderItems)
+        .innerJoin(categories, eq(orderItems.categoryId, categories.id))
+        .where(inArray(orderItems.orderId, orderIds));
+    }
+
+    return data.map((row) => {
+      const items = itemsData
+        .filter((i) => i.orderId === row.order.id)
+        .map((i) => ({ ...i.item, category: i.category }));
+      return {
+        ...row.order,
+        customer: row.customer,
+        items,
+      };
+    });
   },
 
   /**
@@ -252,18 +261,20 @@ export const dashboardService = {
     .limit(5);
 
     // 3. Top Categories (This Month)
+    const { orderItems } = await import("../db/schema.js");
     const topCategories = await db.select({
       id: categories.id,
       name: categories.name,
       icon: categories.icon,
-      orderCount: sql<number>`COUNT(*)`,
-      totalRevenue: sql<number>`COALESCE(SUM(${orders.totalPrice}), 0)`,
+      orderCount: sql<number>`COUNT(DISTINCT ${orders.id})`,
+      totalRevenue: sql<number>`COALESCE(SUM(${orderItems.subtotal}), 0)`,
     })
-    .from(orders)
-    .innerJoin(categories, eq(orders.categoryId, categories.id))
+    .from(orderItems)
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .innerJoin(categories, eq(orderItems.categoryId, categories.id))
     .where(and(gte(orders.createdAt, currentMonthStart), isNull(orders.deletedAt)))
     .groupBy(categories.id, categories.name, categories.icon)
-    .orderBy(desc(sql`COUNT(*)`));
+    .orderBy(desc(sql`COUNT(DISTINCT ${orders.id})`));
 
     // 4. Average Rating
     const [ratingRes] = await db.select({

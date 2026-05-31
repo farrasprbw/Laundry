@@ -32,6 +32,7 @@ router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
   try {
     const invoiceNumber = decodeURIComponent(req.params.invoiceNumber as string);
 
+    const { orderItems } = await import("../db/schema.js");
     const [result] = await db
       .select({
         order: orders,
@@ -41,14 +42,6 @@ router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
           phone: customers.phone,
           address: customers.address,
         },
-        category: {
-          id: categories.id,
-          name: categories.name,
-          description: categories.description,
-          pricePerUnit: categories.pricePerUnit,
-          unit: categories.unit,
-          estimatedDurationDays: categories.estimatedDurationDays,
-        },
         paymentMethod: {
           id: paymentMethods.id,
           name: paymentMethods.name,
@@ -56,7 +49,6 @@ router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
-      .leftJoin(categories, eq(orders.categoryId, categories.id))
       .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
       .where(
         and(eq(orders.invoiceNumber, invoiceNumber), isNull(orders.deletedAt))
@@ -67,11 +59,27 @@ router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
       return;
     }
 
+    const itemsData = await db
+      .select({
+        item: orderItems,
+        category: {
+          id: categories.id,
+          name: categories.name,
+          description: categories.description,
+          pricePerUnit: categories.pricePerUnit,
+          unit: categories.unit,
+          estimatedDurationDays: categories.estimatedDurationDays,
+        },
+      })
+      .from(orderItems)
+      .innerJoin(categories, eq(orderItems.categoryId, categories.id))
+      .where(eq(orderItems.orderId, result.order.id));
+
     res.json({
       ...result.order,
       customer: result.customer,
-      category: result.category,
       paymentMethod: result.paymentMethod,
+      items: itemsData.map((i) => ({ ...i.item, category: i.category })),
     });
   } catch (err) {
     console.error("Failed to fetch invoice:", err);

@@ -1,4 +1,4 @@
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, inArray } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { orders, customers, categories } from "../db/schema.js";
 import { whatsappService } from "./whatsapp.service.js";
@@ -91,26 +91,46 @@ export const receivableService = {
 
   /** Get UNPAID orders for a specific customer */
   async getOrdersByCustomer(customerId: string) {
+    const { orderItems } = await import("../db/schema.js");
     const data = await db
       .select({
         id: orders.id,
         invoiceNumber: orders.invoiceNumber,
         totalPrice: orders.totalPrice,
         createdAt: orders.createdAt,
-        category: {
-          id: categories.id,
-          name: categories.name,
-        }
       })
       .from(orders)
-      .leftJoin(categories, eq(orders.categoryId, categories.id))
       .where(and(
         eq(orders.customerId, customerId),
         eq(orders.paymentStatus, "UNPAID")
       ))
       .orderBy(sql`${orders.createdAt} DESC`);
-      
-    return data;
+
+    const orderIds = data.map((d) => d.id);
+    let itemsData: any[] = [];
+    if (orderIds.length > 0) {
+      itemsData = await db
+        .select({
+          orderId: orderItems.orderId,
+          categoryName: categories.name,
+        })
+        .from(orderItems)
+        .innerJoin(categories, eq(orderItems.categoryId, categories.id))
+        .where(inArray(orderItems.orderId, orderIds));
+    }
+
+    return data.map((row) => {
+      const items = itemsData
+        .filter((i) => i.orderId === row.id)
+        .map((i) => i.categoryName);
+      return {
+        ...row,
+        category: {
+          id: "",
+          name: items.join(", "),
+        }
+      };
+    });
   },
 
   /** Send WhatsApp reminder to customer */

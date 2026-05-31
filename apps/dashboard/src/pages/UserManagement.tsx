@@ -59,6 +59,7 @@ export function UserManagement() {
       setFormPhone('');
       setFormPassword('');
       setFormRole('worker');
+      showAlert('Berhasil membuat user baru', 'success');
       setIsCreateModalOpen(false);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
@@ -92,6 +93,7 @@ export function UserManagement() {
         id: editUserId,
         input,
       });
+      showAlert('Berhasil memperbarui data user', 'success');
       setIsEditModalOpen(false);
       setEditUserId(null);
     } catch (error: unknown) {
@@ -110,6 +112,7 @@ export function UserManagement() {
     if (!selectedUserId) return;
     try {
       await updateRoleMutation.mutateAsync({ id: selectedUserId, role: selectedRole });
+      showAlert('Berhasil mengubah role user', 'success');
       setIsRoleModalOpen(false);
       setSelectedUserId(null);
     } catch (error: unknown) {
@@ -126,6 +129,7 @@ export function UserManagement() {
     if (!confirmState.data) return;
     try {
       await deleteMutation.mutateAsync(confirmState.data.id);
+      showAlert('Berhasil menghapus user', 'success');
       setConfirmState({ open: false, data: null });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };

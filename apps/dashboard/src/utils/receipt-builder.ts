@@ -63,10 +63,13 @@ export interface StoreConfig {
 export interface ReceiptData {
   invoiceNumber: string;
   customerName: string;
-  categoryName: string;
-  quantity: number;
-  unit: string;
-  pricePerUnit: number;
+  items: {
+    categoryName: string;
+    quantity: number;
+    unit: string;
+    pricePerUnit: number;
+    subtotal: number;
+  }[];
   totalPrice: number;
   paymentStatus: string;
   discount?: number;
@@ -301,14 +304,16 @@ export function buildLaundryReceipt(data: ReceiptData, storeConfig: StoreConfig)
 
   rb.separator();
 
-  // ── Category & Item ──
-  rb.bold(true)
-    .wrappedText(data.categoryName)
-    .bold(false);
+  // ── Categories & Items ──
+  data.items.forEach((item) => {
+    rb.bold(true)
+      .wrappedText(item.categoryName)
+      .bold(false);
 
-  const qtyLine = `${data.quantity} ${data.unit} x ${formatCurrency(data.pricePerUnit)}`;
-  const priceStr = formatCurrency(data.totalPrice);
-  rb.leftRight(qtyLine, priceStr);
+    const qtyLine = `${item.quantity} ${item.unit} x ${formatCurrency(item.pricePerUnit)}`;
+    const priceStr = formatCurrency(item.subtotal);
+    rb.leftRight(qtyLine, priceStr);
+  });
 
   rb.emptyLine();
 

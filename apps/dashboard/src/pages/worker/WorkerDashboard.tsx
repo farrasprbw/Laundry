@@ -57,9 +57,19 @@ export function WorkerDashboard() {
   const handleUpdateStatus = (id: string, newStatus: string) => {
     updateStatus.mutate({ id, status: newStatus }, {
       onSuccess: () => {
+        showAlert("Status cucian berhasil diperbarui", "success");
         setProcessedOrderIds(prev => new Set(prev).add(`${id}-${newStatus}`));
       }
     });
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "PROCESS": return "Sedang Dicuci";
+      case "FINISHED": return "Selesai";
+      case "TAKEN": return "Sudah Diambil";
+      default: return status;
+    }
   };
 
   const renderOrderCard = (
@@ -86,17 +96,17 @@ export function WorkerDashboard() {
               {order.customer?.name || "Unknown"}
             </p>
             <p className="text-label-sm text-on-surface-variant mt-1">
-              {order.category?.name || "Laundry"}
+              {order.items?.map(i => i.category?.name).join(", ") || "Laundry"}
             </p>
           </div>
           <Chip size="sm" color={isProcessed ? "default" : color} variant="flat">
-            {isProcessed ? nextStatus : order.status}
+            {getStatusLabel(isProcessed ? nextStatus : order.status)}
           </Chip>
         </div>
 
         <div className="flex justify-between items-center mt-2">
-          <p className="text-title-md font-bold">
-            {order.quantity} {order.category?.unit || "kg"}
+          <p className="text-title-md font-bold text-sm">
+            {order.items?.map(i => `${parseFloat(i.quantity)} ${i.category?.unit || "kg"}`).join(", ")}
           </p>
           <Button
             size="sm"

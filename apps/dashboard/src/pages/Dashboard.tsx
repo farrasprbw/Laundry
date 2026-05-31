@@ -716,10 +716,10 @@ export function Dashboard() {
                     {order.customer?.name ?? "-"}
                   </TableCell>
                   <TableCell className="py-4">
-                    {order.category?.name ?? "-"}
+                    {order.items?.map(i => i.category?.name).join(", ") ?? "-"}
                   </TableCell>
                   <TableCell className="py-4 text-on-surface-variant">
-                    {parseFloat(order.quantity)} {order.category?.unit ?? ""}
+                    {order.items?.map(i => `${parseFloat(i.quantity)} ${i.category?.unit ?? ""}`).join(", ")}
                   </TableCell>
                   <TableCell className="py-4">
                     <Chip

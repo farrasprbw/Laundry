@@ -129,6 +129,7 @@ export function Expenses() {
     if (!confirmState.data) return;
     try {
       await deleteExpense.mutateAsync(confirmState.data);
+      showAlert("Pengeluaran berhasil dihapus", "success");
       setConfirmState({ open: false, data: null });
     } catch (err) {
       console.error(err);
@@ -153,6 +154,12 @@ export function Expenses() {
       } else {
         await createExpense.mutateAsync(payload);
       }
+      showAlert(
+        editingExpense
+          ? "Pengeluaran berhasil diperbarui"
+          : "Pengeluaran berhasil ditambahkan",
+        "success",
+      );
       setIsModalOpen(false);
     } catch (error) {
       console.error("Failed to save expense:", error);

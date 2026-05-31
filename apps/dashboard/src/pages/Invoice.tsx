@@ -5,7 +5,6 @@ import { useParams } from 'react-router-dom';
 interface InvoiceData {
   id: string;
   invoiceNumber: string;
-  quantity: string;
   totalPrice: number;
   status: string;
   paymentStatus: string;
@@ -22,14 +21,20 @@ interface InvoiceData {
     phone: string;
     address: string | null;
   } | null;
-  category: {
+  items: {
     id: string;
-    name: string;
-    description: string | null;
+    quantity: string;
     pricePerUnit: number;
-    unit: string;
-    estimatedDurationDays: number;
-  } | null;
+    subtotal: number;
+    category: {
+      id: string;
+      name: string;
+      description: string | null;
+      pricePerUnit: number;
+      unit: string;
+      estimatedDurationDays: number;
+    } | null;
+  }[];
   paymentMethod: {
     id: string;
     name: string;
@@ -244,9 +249,7 @@ export function Invoice() {
     );
   }
 
-  const qty = Number(data.quantity);
-  const pricePerUnit = data.category?.pricePerUnit ?? 0;
-  const subTotal = data.totalPrice;
+  const subTotal = data.totalPrice + data.discount;
   const isDisabledRating = ratingSubmitted;
 
   return (
@@ -294,8 +297,8 @@ export function Invoice() {
             <div className="flex justify-between">
               <span className="text-gray-400">Est Selesai</span>
               <span className="font-medium text-gray-700 text-right">
-                {data.category
-                  ? getEstimatedFinish(data.createdAt, data.category.estimatedDurationDays)
+                {data.items?.length > 0
+                  ? getEstimatedFinish(data.createdAt, Math.max(...data.items.map(i => i.category?.estimatedDurationDays ?? 1)))
                   : '-'}
               </span>
             </div>
@@ -303,17 +306,26 @@ export function Invoice() {
 
           {/* Order Items */}
           <div className="mb-8 border-t border-b border-gray-100 py-4">
-            <div className="flex flex-col mb-1">
-              <span className="font-semibold text-gray-800 mb-1">
-                {data.category?.name ?? 'Layanan'}{data.category?.description ? ` (${data.category.description})` : ''}
-              </span>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">
-                  {qty} x {formatCurrency(pricePerUnit)}
+            {data.items?.map((item, index) => (
+              <div key={index} className="flex flex-col mb-3 last:mb-0">
+                <span className="font-semibold text-gray-800 mb-1">
+                  {item.category?.name ?? 'Layanan'}{item.category?.description ? ` (${item.category.description})` : ''}
                 </span>
-                <span className="font-medium text-gray-900">{formatCurrency(subTotal)}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">
+                    {Number(item.quantity)} {item.category?.unit ?? "kg"} x {formatCurrency(item.pricePerUnit)}
+                  </span>
+                  <span className="font-medium text-gray-900">{formatCurrency(item.subtotal)}</span>
+                </div>
               </div>
-            </div>
+            ))}
+            
+            {data.discount > 0 && (
+              <div className="flex justify-between text-sm pt-2 mt-2 border-t border-gray-50">
+                <span className="text-red-400">Diskon</span>
+                <span className="font-medium text-red-500">-{formatCurrency(data.discount)}</span>
+              </div>
+            )}
           </div>
 
           {/* Summary & Payment */}

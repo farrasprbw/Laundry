@@ -34,9 +34,7 @@ export interface Order {
   id: string;
   invoiceNumber: string;
   customerId: string;
-  categoryId: string;
   createdById: string;
-  quantity: string; // numeric stored as string
   totalPrice: number;
   status: "PROCESS" | "FINISHED" | "TAKEN";
   paymentStatus: "UNPAID" | "PAID";
@@ -56,12 +54,19 @@ export interface Order {
     phone: string;
     address?: string | null;
   } | null;
-  category?: {
+  items: {
     id: string;
-    name: string;
-    unit: string;
-    estimatedDurationDays?: number;
-  } | null;
+    categoryId: string;
+    quantity: string;
+    pricePerUnit: number;
+    subtotal: number;
+    category?: {
+      id: string;
+      name: string;
+      unit: string;
+      estimatedDurationDays?: number;
+    } | null;
+  }[];
   paymentMethod?: {
     id: string;
     name: string;
@@ -171,8 +176,7 @@ export interface CreateCategoryInput {
 
 export interface CreateOrderInput {
   customerId: string;
-  categoryId: string;
-  quantity: number;
+  items: { categoryId: string; quantity: number }[];
   notes?: string;
   paymentMethodId?: string;
   paymentStatus?: "UNPAID" | "PAID";
@@ -235,7 +239,6 @@ export interface CreateUserInput {
 export interface DashboardRecentOrder {
   id: string;
   invoiceNumber: string;
-  quantity: string;
   totalPrice: number;
   status: string;
   createdAt: string;
@@ -244,11 +247,15 @@ export interface DashboardRecentOrder {
     name: string;
     phone: string;
   } | null;
-  category: {
+  items: {
     id: string;
-    name: string;
-    unit: string;
-  } | null;
+    quantity: string;
+    category?: {
+      id: string;
+      name: string;
+      unit: string;
+    } | null;
+  }[];
 }
 
 export interface MonthComparison {

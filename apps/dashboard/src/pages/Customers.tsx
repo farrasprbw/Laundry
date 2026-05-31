@@ -97,15 +97,30 @@ export function Customers() {
     if (!formData.name || !formData.phone) return;
     try {
       if (isEditMode && selectedCustomerId) {
-        await updateCustomer.mutateAsync({ id: selectedCustomerId, ...formData });
+        await updateCustomer.mutateAsync({
+          id: selectedCustomerId,
+          ...formData,
+        });
       } else {
         await createCustomer.mutateAsync(formData);
       }
+      showAlert(
+        isEditMode
+          ? "Data pelanggan berhasil diperbarui"
+          : "Pelanggan berhasil ditambahkan",
+        "success",
+      );
       setIsModalOpen(false);
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      const err = error as {
+        response?: { data?: { error?: string } };
+        message?: string;
+      };
       console.error("Failed to save customer:", error);
-      showAlert(err.response?.data?.error || "Gagal menyimpan data pelanggan", "danger");
+      showAlert(
+        err.response?.data?.error || "Gagal menyimpan data pelanggan",
+        "danger",
+      );
     }
   };
 
@@ -119,6 +134,7 @@ export function Customers() {
     setDeletingId(confirmState.data);
     try {
       await deleteCustomer.mutateAsync(confirmState.data);
+      showAlert("Pelanggan berhasil dihapus", "success");
       setConfirmState({ open: false, data: null });
     } catch (error) {
       console.error("Failed to delete customer:", error);
@@ -405,7 +421,12 @@ export function Customers() {
         onClose={() => setIsModalOpen(false)}
         title={isEditMode ? "Edit Pelanggan" : "Tambah Pelanggan Baru"}
         onSubmit={handleSubmit}
-        isSubmitDisabled={!formData.name || !formData.phone || createCustomer.isPending || updateCustomer.isPending}
+        isSubmitDisabled={
+          !formData.name ||
+          !formData.phone ||
+          createCustomer.isPending ||
+          updateCustomer.isPending
+        }
         isLoading={createCustomer.isPending || updateCustomer.isPending}
       >
         <div className="flex flex-col gap-4">

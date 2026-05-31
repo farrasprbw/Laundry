@@ -90,6 +90,7 @@ export function Orders() {
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
       await updateStatus.mutateAsync({ id, status: newStatus });
+      showAlert("Status order berhasil diperbarui", "success");
       // Auto-trigger WA notification when order becomes FINISHED
       if (newStatus === "FINISHED") {
         handleSendWA(id);
@@ -103,6 +104,7 @@ export function Orders() {
   const handleUpdatePaymentStatus = async (id: string, newStatus: string) => {
     try {
       await updatePaymentStatus.mutateAsync({ id, paymentStatus: newStatus });
+      showAlert("Status pembayaran berhasil diperbarui", "success");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
       showAlert(err.response?.data?.error || "Gagal mengubah status pembayaran", "danger");
@@ -177,6 +179,7 @@ export function Orders() {
     if (!confirmState.data) return;
     try {
       await deleteOrder.mutateAsync(confirmState.data);
+      showAlert("Order berhasil dihapus", "success");
       setConfirmState({ open: false, data: null });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
@@ -210,15 +213,18 @@ export function Orders() {
       const receiptData: ReceiptData = {
         invoiceNumber: fullOrder.invoiceNumber,
         customerName: fullOrder.customer?.name || "Unknown",
-        categoryName: fullOrder.category?.name || "Laundry",
-        quantity: parseFloat(fullOrder.quantity),
-        unit: fullOrder.category?.unit || "kg",
-        pricePerUnit: fullOrder.category?.pricePerUnit || 0,
+        items: fullOrder.items?.map((item: any) => ({
+          categoryName: item.category?.name || "Laundry",
+          quantity: parseFloat(item.quantity),
+          unit: item.category?.unit || "kg",
+          pricePerUnit: item.category?.pricePerUnit || 0,
+          subtotal: item.subtotal || (parseFloat(item.quantity) * (item.category?.pricePerUnit || 0)),
+        })) || [],
         totalPrice: fullOrder.totalPrice,
         paymentStatus: fullOrder.paymentStatus,
-        discount: 0,
+        discount: fullOrder.discount || 0,
         createdAt: fullOrder.createdAt,
-        estimatedDurationDays: fullOrder.category?.estimatedDurationDays,
+        estimatedDurationDays: Math.max(...(fullOrder.items?.map((i: any) => i.category?.estimatedDurationDays || 1) || [1])),
         notes: fullOrder.notes,
       };
 
@@ -576,10 +582,10 @@ export function Orders() {
                     </div>
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface-variant">
-                    {order.category?.name || "-"}
+                    {order.items?.map(i => i.category?.name).join(", ") || "-"}
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface">
-                    {parseFloat(order.quantity)} {order.category?.unit || "kg"}
+                    {order.items?.map(i => `${parseFloat(i.quantity)} ${i.category?.unit || "kg"}`).join(", ")}
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface">
                     {formatCurrency(order.totalPrice)}
@@ -602,7 +608,7 @@ export function Orders() {
                   <TableCell>
                     {order.status === "PROCESS" &&
                       (() => {
-                        const estDays = order.category?.estimatedDurationDays;
+                        const estDays = Math.max(...(order.items?.map(i => i.category?.estimatedDurationDays || 1) || [1]));
                         if (estDays) {
                           const createdAtDate = new Date(order.createdAt);
                           const targetDate = new Date(createdAtDate);
