@@ -105,17 +105,24 @@ export function Orders() {
       showAlert("Status pembayaran berhasil diperbarui", "success");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
-      showAlert(err.response?.data?.error || "Gagal mengubah status pembayaran", "danger");
+      showAlert(
+        err.response?.data?.error || "Gagal mengubah status pembayaran",
+        "danger",
+      );
     }
   };
 
   const { data: session } = useSession();
-  const userRole = ((session?.user as { role?: string })?.role as UserRole) || 'worker';
+  const userRole =
+    ((session?.user as { role?: string })?.role as UserRole) || "worker";
 
   const getDropdownItems = (order: Order) => {
     const items = [];
-    const canEdit = userRole === 'super_admin' || userRole === 'admin' || order.status === 'PROCESS';
-    
+    const canEdit =
+      userRole === "super_admin" ||
+      userRole === "admin" ||
+      order.status === "PROCESS";
+
     if (canEdit) {
       items.push({
         key: "edit",
@@ -188,9 +195,14 @@ export function Orders() {
   const handleSendWA = async (id: string, silent = false) => {
     try {
       await apiClient.post(`/orders/${id}/wa-send`);
-      if (!silent) showAlert("Pesan WhatsApp berhasil dikirim di latar belakang!", "success");
+      if (!silent)
+        showAlert(
+          "Pesan WhatsApp berhasil dikirim di latar belakang!",
+          "success",
+        );
     } catch (error: unknown) {
-      if (!silent) showAlert("Gagal mengirim notifikasi WhatsApp otomatis.", "danger");
+      if (!silent)
+        showAlert("Gagal mengirim notifikasi WhatsApp otomatis.", "danger");
     }
   };
 
@@ -198,7 +210,7 @@ export function Orders() {
     if (!isPrinterConnected) {
       showAlert(
         'Printer belum terhubung. Klik "Hubungkan Printer" terlebih dahulu.',
-        "warning"
+        "warning",
       );
       return;
     }
@@ -211,20 +223,27 @@ export function Orders() {
       const receiptData: ReceiptData = {
         invoiceNumber: fullOrder.invoiceNumber,
         customerName: fullOrder.customer?.name || "Unknown",
-        items: fullOrder.items?.map((item: any) => ({
-          categoryName: item.category?.name || "Laundry",
-          quantity: parseFloat(item.quantity),
-          unit: item.category?.unit || "kg",
-          pricePerUnit: item.category?.pricePerUnit || 0,
-          subtotal: item.subtotal || (parseFloat(item.quantity) * (item.category?.pricePerUnit || 0)),
-        })) || [],
+        items:
+          fullOrder.items?.map((item: any) => ({
+            categoryName: item.category?.name || "Laundry",
+            quantity: parseFloat(item.quantity),
+            unit: item.category?.unit || "kg",
+            pricePerUnit: item.category?.pricePerUnit || 0,
+            subtotal:
+              item.subtotal ||
+              parseFloat(item.quantity) * (item.category?.pricePerUnit || 0),
+          })) || [],
         totalPrice: fullOrder.totalPrice,
         paymentStatus: fullOrder.paymentStatus,
         discount: fullOrder.discount || 0,
         pointsEarned: fullOrder.pointsEarned || 0,
         pointsUsed: fullOrder.pointsUsed || 0,
         createdAt: fullOrder.createdAt,
-        estimatedDurationDays: Math.max(...(fullOrder.items?.map((i: any) => i.category?.estimatedDurationDays || 1) || [1])),
+        estimatedDurationDays: Math.max(
+          ...(fullOrder.items?.map(
+            (i: any) => i.category?.estimatedDurationDays || 1,
+          ) || [1]),
+        ),
         notes: fullOrder.notes,
       };
 
@@ -234,64 +253,11 @@ export function Orders() {
       }
     } catch (error: unknown) {
       const err = error as { message?: string };
-      showAlert("Gagal mencetak struk: " + (err.message || "Unknown error"), "danger");
+      showAlert(
+        "Gagal mencetak struk: " + (err.message || "Unknown error"),
+        "danger",
+      );
     }
-  };
-
-  const handleExportCSV = () => {
-    if (!orders || orders.length === 0) {
-      showAlert("Tidak ada order untuk diexport", "warning");
-      return;
-    }
-    
-    const headers = [
-      "Invoice", 
-      "Pelanggan", 
-      "Layanan", 
-      "Total Berat/Qty", 
-      "Subtotal",
-      "Diskon (Rp)",
-      "Poin Digunakan",
-      "Poin Didapat",
-      "Total Bayar", 
-      "Tanggal", 
-      "Status Bayar", 
-      "Status Order"
-    ];
-    
-    const rows = orders.map((o: any) => {
-      const itemsStr = o.items?.map((i: any) => i.category?.name).join(", ") || "-";
-      const qtyStr = o.items?.map((i: any) => `${parseFloat(i.quantity)} ${i.category?.unit || "kg"}`).join(", ");
-      
-      const subtotal = o.totalPrice + (o.discount || 0); // basic back-calculation
-      
-      return [
-        `"${o.invoiceNumber}"`,
-        `"${o.customer?.name || 'Unknown'}"`,
-        `"${itemsStr}"`,
-        `"${qtyStr}"`,
-        subtotal,
-        o.discount || 0,
-        o.pointsUsed || 0,
-        o.pointsEarned || 0,
-        o.totalPrice,
-        `"${formatDate(o.createdAt)}"`,
-        o.paymentStatus,
-        o.status
-      ];
-    });
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-      
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Data_Orders_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showAlert("Data order berhasil diexport", "success");
   };
 
   const formatCurrency = (amount: number) => {
@@ -415,7 +381,11 @@ export function Orders() {
                   onPress={disconnectPrinter}
                   variant="bordered"
                   className="px-3 py-2 rounded-xl text-label-md font-label-md border-outline-variant/30 text-on-surface-variant hover:bg-error-container hover:text-error hover:border-error/30"
-                  startContent={<span className="material-symbols-outlined text-[18px]">bluetooth_disabled</span>}
+                  startContent={
+                    <span className="material-symbols-outlined text-[18px]">
+                      bluetooth_disabled
+                    </span>
+                  }
                   title="Putuskan Printer"
                 >
                   <span className="hidden sm:inline">Putuskan</span>
@@ -426,23 +396,18 @@ export function Orders() {
                   onPress={connectPrinter}
                   isDisabled={isConnecting}
                   className="px-3 py-2 rounded-xl text-label-md font-label-md shadow-sm text-white"
-                  startContent={<span className="material-symbols-outlined text-[18px]">print</span>}
+                  startContent={
+                    <span className="material-symbols-outlined text-[18px]">
+                      print
+                    </span>
+                  }
                   title="Hubungkan Printer Bluetooth"
                 >
-                  <span className="hidden sm:inline">{isConnecting ? "Menghubungkan..." : "Hubungkan Printer"}</span>
+                  <span className="hidden sm:inline">
+                    {isConnecting ? "Menghubungkan..." : "Hubungkan Printer"}
+                  </span>
                 </Button>
               ))}
-              
-            <Button
-              variant="flat"
-              color="secondary"
-              onPress={handleExportCSV}
-              startContent={<span className="material-symbols-outlined text-[18px]">download</span>}
-              className="px-3 py-2 rounded-xl text-label-md font-label-md shadow-sm"
-              title="Export Data Order CSV"
-            >
-              <span className="hidden sm:inline">Export CSV</span>
-            </Button>
           </div>
         </div>
       </div>
@@ -450,7 +415,9 @@ export function Orders() {
       {/* Filters Section */}
       <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-end bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/20">
         <div className="flex-1 w-full sm:w-auto min-w-[200px]">
-          <label className="text-xs text-on-surface-variant font-medium mb-1 block">Pencarian</label>
+          <label className="text-xs text-on-surface-variant font-medium mb-1 block">
+            Pencarian
+          </label>
           <input
             type="text"
             placeholder="Cari Invoice atau Pelanggan..."
@@ -462,10 +429,12 @@ export function Orders() {
             className="w-full h-10 px-3 rounded-lg border border-outline-variant/30 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
           />
         </div>
-        
+
         <div className="w-full sm:w-auto flex flex-col sm:flex-row flex-wrap gap-4">
           <div className="w-full sm:w-auto">
-            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Dari Tanggal</label>
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">
+              Dari Tanggal
+            </label>
             <input
               type="date"
               placeholder="Pilih Tanggal Awal"
@@ -478,7 +447,9 @@ export function Orders() {
             />
           </div>
           <div className="w-full sm:w-auto">
-            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Sampai Tanggal</label>
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">
+              Sampai Tanggal
+            </label>
             <input
               type="date"
               placeholder="Pilih Tanggal Akhir"
@@ -490,9 +461,11 @@ export function Orders() {
               className="w-full sm:w-auto h-10 px-3 rounded-lg border border-outline-variant/30 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
             />
           </div>
-          
+
           <div className="flex-1 min-w-[120px] w-full sm:w-32">
-            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Pembayaran</label>
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">
+              Pembayaran
+            </label>
             <Select
               aria-label="Filter Payment Status"
               placeholder="Semua"
@@ -505,14 +478,22 @@ export function Orders() {
               variant="bordered"
               size="sm"
             >
-              <SelectItem key="" value="">Semua</SelectItem>
-              <SelectItem key="PAID" value="PAID">Lunas</SelectItem>
-              <SelectItem key="UNPAID" value="UNPAID">Belum Lunas</SelectItem>
+              <SelectItem key="" value="">
+                Semua
+              </SelectItem>
+              <SelectItem key="PAID" value="PAID">
+                Lunas
+              </SelectItem>
+              <SelectItem key="UNPAID" value="UNPAID">
+                Belum Lunas
+              </SelectItem>
             </Select>
           </div>
 
           <div className="flex-1 min-w-[120px] w-full sm:w-32">
-            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Status Order</label>
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">
+              Status Order
+            </label>
             <Select
               aria-label="Filter Status"
               placeholder="Semua"
@@ -525,10 +506,18 @@ export function Orders() {
               variant="bordered"
               size="sm"
             >
-              <SelectItem key="" value="">Semua</SelectItem>
-              <SelectItem key="PROCESS" value="PROCESS">Process</SelectItem>
-              <SelectItem key="FINISHED" value="FINISHED">Finished</SelectItem>
-              <SelectItem key="TAKEN" value="TAKEN">Taken</SelectItem>
+              <SelectItem key="" value="">
+                Semua
+              </SelectItem>
+              <SelectItem key="PROCESS" value="PROCESS">
+                Process
+              </SelectItem>
+              <SelectItem key="FINISHED" value="FINISHED">
+                Finished
+              </SelectItem>
+              <SelectItem key="TAKEN" value="TAKEN">
+                Taken
+              </SelectItem>
             </Select>
           </div>
         </div>
@@ -556,26 +545,36 @@ export function Orders() {
       {/* Unnotified Finished Orders Banner */}
       {(() => {
         const unnotifiedOrders = orders.filter(
-          (o: Order) => o.status === "FINISHED" && !o.waNotificationSent
+          (o: Order) => o.status === "FINISHED" && !o.waNotificationSent,
         );
         if (unnotifiedOrders.length === 0) return null;
         return (
           <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary-container/30 border border-secondary/20 text-secondary">
-            <span className="material-symbols-outlined text-[20px]">notifications_active</span>
+            <span className="material-symbols-outlined text-[20px]">
+              notifications_active
+            </span>
             <span className="text-body-md font-body-md flex-1">
-              <strong>{unnotifiedOrders.length} order</strong> selesai dan belum dikirim notifikasi WhatsApp.
+              <strong>{unnotifiedOrders.length} order</strong> selesai dan belum
+              dikirim notifikasi WhatsApp.
             </span>
             <Button
               size="sm"
               color="secondary"
               variant="flat"
               className="whitespace-nowrap"
-              startContent={<span className="material-symbols-outlined text-[16px]">send</span>}
+              startContent={
+                <span className="material-symbols-outlined text-[16px]">
+                  send
+                </span>
+              }
               onPress={async () => {
                 for (const order of unnotifiedOrders) {
                   await handleSendWA(order.id, true);
                 }
-                showAlert(`Berhasil mengirim ${unnotifiedOrders.length} pesan WhatsApp!`, "success");
+                showAlert(
+                  `Berhasil mengirim ${unnotifiedOrders.length} pesan WhatsApp!`,
+                  "success",
+                );
                 refetch();
               }}
             >
@@ -586,7 +585,11 @@ export function Orders() {
       })()}
 
       {error && (
-        <QueryErrorState error={error as Error} onRetry={() => window.location.reload()} compact />
+        <QueryErrorState
+          error={error as Error}
+          onRetry={() => window.location.reload()}
+          compact
+        />
       )}
 
       {/* Data Table */}
@@ -662,10 +665,16 @@ export function Orders() {
                     </div>
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface-variant">
-                    {order.items?.map(i => i.category?.name).join(", ") || "-"}
+                    {order.items?.map((i) => i.category?.name).join(", ") ||
+                      "-"}
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface">
-                    {order.items?.map(i => `${parseFloat(i.quantity)} ${i.category?.unit || "kg"}`).join(", ")}
+                    {order.items
+                      ?.map(
+                        (i) =>
+                          `${parseFloat(i.quantity)} ${i.category?.unit || "kg"}`,
+                      )
+                      .join(", ")}
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface">
                     {formatCurrency(order.totalPrice)}
@@ -688,7 +697,11 @@ export function Orders() {
                   <TableCell>
                     {order.status === "PROCESS" &&
                       (() => {
-                        const estDays = Math.max(...(order.items?.map(i => i.category?.estimatedDurationDays || 1) || [1]));
+                        const estDays = Math.max(
+                          ...(order.items?.map(
+                            (i) => i.category?.estimatedDurationDays || 1,
+                          ) || [1]),
+                        );
                         if (estDays) {
                           const createdAtDate = new Date(order.createdAt);
                           const targetDate = new Date(createdAtDate);
@@ -818,7 +831,13 @@ export function Orders() {
                         variant="flat"
                         items={getDropdownItems(order)}
                       >
-                        {(item: { key: string; label: string; icon: string; action: () => void; isDanger?: boolean }) => (
+                        {(item: {
+                          key: string;
+                          label: string;
+                          icon: string;
+                          action: () => void;
+                          isDanger?: boolean;
+                        }) => (
                           <DropdownItem
                             key={item.key}
                             color={item.isDanger ? "danger" : "default"}
