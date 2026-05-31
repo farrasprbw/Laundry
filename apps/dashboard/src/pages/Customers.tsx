@@ -180,7 +180,7 @@ export function Customers() {
       </div>
 
       {/* Filters & Search Bar Section */}
-      <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col sm:flex-row gap-4 items-center justify-between w-full">
         {/* Specific Customer Search */}
         <Input
           className="w-full sm:w-96"
@@ -196,7 +196,7 @@ export function Customers() {
           variant="bordered"
         />
         {/* Auxiliary Filters */}
-        <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button
             onPress={() =>
               setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))

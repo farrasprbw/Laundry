@@ -10,6 +10,7 @@ import { Login } from './pages/Login';
 import { PaymentMethods } from './pages/PaymentMethods';
 import { UserManagement } from './pages/UserManagement';
 import { Invoice } from './pages/Invoice';
+import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/expenses" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Expenses /></RoleProtectedRoute>} />
           <Route path="/payment-methods" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><PaymentMethods /></RoleProtectedRoute>} />
           <Route path="/reports" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Reports /></RoleProtectedRoute>} />
+          <Route path="/settings" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Settings /></RoleProtectedRoute>} />
 
           {/* Super Admin only */}
           <Route path="/user-management" element={<RoleProtectedRoute roles={['super_admin']}><UserManagement /></RoleProtectedRoute>} />

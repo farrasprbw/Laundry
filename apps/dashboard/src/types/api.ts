@@ -135,6 +135,7 @@ export interface ListCustomersParams {
 
 export interface ListOrdersParams {
   status?: string;
+  paymentStatus?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -250,9 +251,66 @@ export interface DashboardRecentOrder {
   } | null;
 }
 
+export interface MonthComparison {
+  currentMonthIncome: number;
+  lastMonthIncome: number;
+  incomeChangePercent: number;
+  currentMonthExpenses: number;
+  lastMonthExpenses: number;
+  expenseChangePercent: number;
+  currentMonthOrders: number;
+  lastMonthOrders: number;
+  orderChangePercent: number;
+}
+
+export interface TopCustomer {
+  id: string;
+  name: string;
+  phone: string;
+  totalSpent: number;
+  orderCount: number;
+}
+
+export interface TopCategory {
+  id: string;
+  name: string;
+  icon: string;
+  orderCount: number;
+  totalRevenue: number;
+}
+
+export interface OrdersByHour {
+  hour: number;
+  count: number;
+}
+
+export interface DashboardAnalytics {
+  monthComparison: MonthComparison;
+  topCustomers: TopCustomer[];
+  topCategories: TopCategory[];
+  averageRating: number | null;
+  totalRatings: number;
+  ordersByHour: OrdersByHour[];
+}
+
 // ── API Error ──
 
 export interface ApiError {
   error: string;
   message?: string;
 }
+
+// ── Settings Types ──
+
+export interface StoreSettings {
+  store_name: string;
+  store_address: string;
+  store_address_full: string;
+  store_phone: string;
+  store_logo_url: string;
+  bank_account: string;
+  store_maps_url: string;
+  store_disclaimer: string;
+}
+
+export type UpdateSettingsInput = Record<string, string>;

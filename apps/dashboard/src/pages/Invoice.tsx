@@ -36,6 +36,15 @@ interface InvoiceData {
   } | null;
 }
 
+interface PublicSettings {
+  store_name?: string;
+  store_address?: string;
+  store_address_full?: string;
+  store_phone?: string;
+  store_logo_url?: string;
+  store_maps_url?: string;
+}
+
 // ── Helpers ──
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('id-ID', {
@@ -125,6 +134,7 @@ const API_BASE = import.meta.env.VITE_API_URL
 export function Invoice() {
   const { invoiceNumber } = useParams<{ invoiceNumber: string }>();
   const [data, setData] = useState<InvoiceData | null>(null);
+  const [settings, setSettings] = useState<PublicSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,20 +149,31 @@ export function Invoice() {
   useEffect(() => {
     if (!invoiceNumber) return;
 
-    const fetchInvoice = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const fullInvoiceNumber = invoiceNumber.startsWith('#') ? invoiceNumber : `#${invoiceNumber}`;
-        const res = await fetch(`${API_BASE}/invoice/${encodeURIComponent(fullInvoiceNumber)}`);
-        if (!res.ok) {
-          throw new Error(res.status === 404 ? 'Invoice tidak ditemukan' : 'Gagal memuat invoice');
+        
+        const [invoiceRes, settingsRes] = await Promise.all([
+          fetch(`${API_BASE}/invoice/${encodeURIComponent(fullInvoiceNumber)}`),
+          fetch(`${API_BASE}/settings`)
+        ]);
+
+        if (!invoiceRes.ok) {
+          throw new Error(invoiceRes.status === 404 ? 'Invoice tidak ditemukan' : 'Gagal memuat invoice');
         }
-        const json: InvoiceData = await res.json();
-        setData(json);
+        
+        const invoiceJson: InvoiceData = await invoiceRes.json();
+        setData(invoiceJson);
+
+        if (settingsRes.ok) {
+          const settingsJson: PublicSettings = await settingsRes.json();
+          setSettings(settingsJson);
+        }
 
         // If already rated, pre-fill and lock
-        if (json.rating !== null) {
-          setSelectedRating(json.rating);
+        if (invoiceJson.rating !== null) {
+          setSelectedRating(invoiceJson.rating);
           setRatingSubmitted(true);
         }
       } catch (error: unknown) {
@@ -163,7 +184,7 @@ export function Invoice() {
       }
     };
 
-    fetchInvoice();
+    fetchData();
   }, [invoiceNumber]);
 
   // Submit rating
@@ -244,13 +265,13 @@ export function Invoice() {
           <div className="flex flex-col items-center text-center space-y-4 mb-8">
             <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-50">
               <img
-                alt="Maxpress Laundromat Logo"
+                alt={`${settings?.store_name || 'Laundry'} Logo`}
                 className="w-48 h-auto object-contain"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhrzp-W4ozW4lZpDP4eG4GSW54uKBMSDllMwHxZtohnes0K0aIwDDOAlbY0j2mbWf4OfPPBZ9J5IX9J-jPvzw2DiapMq-XdJEs3k2IKRlv_8Qmr4Nt2PiCyHvexc7qdXFw26qEVqP8aTKG5O44NItuFKHaKLkH3I22uMD_ldbMhR3c8BKBfJrJDIldRJ7xX5ANeBSR1XQj1_GunfxpePSy0Zl_dZe0qwRLtDnH5Dx6-K0wn31qpEjQYOT_33-37jbja_geINNSh2A7"
+                src={settings?.store_logo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuBhrzp-W4ozW4lZpDP4eG4GSW54uKBMSDllMwHxZtohnes0K0aIwDDOAlbY0j2mbWf4OfPPBZ9J5IX9J-jPvzw2DiapMq-XdJEs3k2IKRlv_8Qmr4Nt2PiCyHvexc7qdXFw26qEVqP8aTKG5O44NItuFKHaKLkH3I22uMD_ldbMhR3c8BKBfJrJDIldRJ7xX5ANeBSR1XQj1_GunfxpePSy0Zl_dZe0qwRLtDnH5Dx6-K0wn31qpEjQYOT_33-37jbja_geINNSh2A7"}
               />
             </div>
             <p className="text-xs text-gray-400 leading-relaxed max-w-xs mx-auto mt-2">
-              Apartment Amethys Jalan Rajawali Selatan II No. 6 B, Cnt Utara, Kel Gunung Sahari, Sawah Besar KOTA JAKARTA PUSAT, ID, 10710
+              {settings?.store_address_full || "Apartment Amethys Jalan Rajawali Selatan II No. 6 B, Cnt Utara, Kel Gunung Sahari, Sawah Besar KOTA JAKARTA PUSAT, ID, 10710"}
             </p>
           </div>
 
@@ -337,7 +358,7 @@ export function Invoice() {
             <div className="flex gap-2">
               <span className="text-gray-400 w-24 flex-shrink-0">Notes:</span>
               <span className="font-medium text-gray-800 whitespace-pre-line">
-                {[data.paymentMethod?.name, 'BCA 6565125439 a/n NUR PUJI LESTARI'].filter(Boolean).join('\n')}
+                {data.notes || '-'}
               </span>
             </div>
           </div>
@@ -411,7 +432,7 @@ export function Invoice() {
 
         {/* Footer */}
         <footer className="text-center pb-8">
-          <p className="text-xs text-gray-400">Copyright © 2024 Maxpress Laundromat - All rights reserved</p>
+          <p className="text-xs text-gray-400">Copyright © {new Date().getFullYear()} {settings?.store_name || 'Laundromat'} - All rights reserved</p>
         </footer>
       </main>
     </div>

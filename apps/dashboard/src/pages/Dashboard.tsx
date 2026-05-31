@@ -4,6 +4,7 @@ import {
   useDashboardStats,
   useDashboardRecentOrders,
   useDashboardFinancialTrend,
+  useDashboardAnalytics,
 } from "../hooks/use-dashboard";
 import {
   Button,
@@ -15,10 +16,15 @@ import {
   TableCell,
   Chip,
   Spinner,
+  Avatar,
+  ButtonGroup,
 } from "@nextui-org/react";
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -54,7 +60,9 @@ function ChartTooltip({
             />
             <span className="text-on-surface-variant">{entry.name}:</span>
             <span className="font-semibold text-on-background">
-              Rp {Number(entry.value).toLocaleString("id-ID")}
+              {entry.name === "Orders"
+                ? entry.value
+                : `Rp ${Number(entry.value).toLocaleString("id-ID")}`}
             </span>
           </div>
         ),
@@ -63,13 +71,35 @@ function ChartTooltip({
   );
 }
 
+function ChangeBadge({ percent }: { percent: number }) {
+  if (percent === 0)
+    return (
+      <span className="text-label-sm text-on-surface-variant ml-2">
+        • 0% vs last month
+      </span>
+    );
+  const isPositive = percent > 0;
+  return (
+    <span
+      className={`text-label-sm ml-2 font-medium ${isPositive ? "text-success" : "text-error"}`}
+    >
+      {isPositive ? "▲" : "▼"} {Math.abs(percent)}%{" "}
+      <span className="text-on-surface-variant font-normal">vs last month</span>
+    </span>
+  );
+}
+
 export function Dashboard() {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [trendPeriod, setTrendPeriod] = useState<7 | 14 | 30>(7);
+
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: recentOrders = [], isLoading: ordersLoading } =
     useDashboardRecentOrders(5);
   const { data: trend = [], isLoading: trendLoading } =
-    useDashboardFinancialTrend(7);
+    useDashboardFinancialTrend(trendPeriod);
+  const { data: analytics, isLoading: analyticsLoading } =
+    useDashboardAnalytics();
 
   const today = new Date().toLocaleDateString("id-ID", {
     day: "numeric",
@@ -97,7 +127,7 @@ export function Dashboard() {
   };
 
   return (
-    <main className="flex-1 pt-24 px-container-padding-desktop pb-container-padding-desktop w-full">
+    <main className="flex-1 pt-24 px-container-padding-desktop pb-container-padding-desktop w-full overflow-y-auto">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-gutter gap-4">
         <div>
@@ -132,7 +162,7 @@ export function Dashboard() {
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
           <div className="flex justify-between items-start mb-4">
             <p className="text-label-md font-label-md text-on-surface-variant">
-              Income
+              Income Today
             </p>
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-primary text-[18px]">
@@ -148,12 +178,19 @@ export function Dashboard() {
                 {formatRupiah(stats?.todayIncome ?? 0)}
               </h3>
             )}
-            <p className="text-label-sm font-label-sm text-secondary mt-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">
-                today
-              </span>
-              Today
-            </p>
+            <div className="mt-1 flex items-center">
+              <p className="text-label-sm font-label-sm text-secondary flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">
+                  today
+                </span>
+                Today
+              </p>
+              {analytics && (
+                <ChangeBadge
+                  percent={analytics.monthComparison.incomeChangePercent}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -161,7 +198,7 @@ export function Dashboard() {
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
           <div className="flex justify-between items-start mb-4">
             <p className="text-label-md font-label-md text-on-surface-variant">
-              Expenses
+              Expenses Today
             </p>
             <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-error text-[18px]">
@@ -177,12 +214,19 @@ export function Dashboard() {
                 {formatRupiah(stats?.todayExpenses ?? 0)}
               </h3>
             )}
-            <p className="text-label-sm font-label-sm text-on-surface-variant mt-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">
-                today
-              </span>
-              Today
-            </p>
+            <div className="mt-1 flex items-center">
+              <p className="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">
+                  today
+                </span>
+                Today
+              </p>
+              {analytics && (
+                <ChangeBadge
+                  percent={analytics.monthComparison.expenseChangePercent}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -233,12 +277,19 @@ export function Dashboard() {
                 {stats?.todayOrderCount ?? 0}
               </h3>
             )}
-            <p className="text-label-sm font-label-sm text-secondary mt-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">
-                today
-              </span>
-              Today
-            </p>
+            <div className="mt-1 flex items-center">
+              <p className="text-label-sm font-label-sm text-secondary flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">
+                  today
+                </span>
+                Today
+              </p>
+              {analytics && (
+                <ChangeBadge
+                  percent={analytics.monthComparison.orderChangePercent}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -272,19 +323,39 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Main Content Area: Charts & Monthly Income */}
+      {/* Main Content Area: Charts & Monthly Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
         {/* Financial Trend Chart */}
         <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] p-stack-md flex flex-col">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div>
               <h3 className="text-headline-md font-headline-md text-on-background">
                 Financial Trend
               </h3>
               <p className="text-label-md font-label-md text-on-surface-variant">
-                Income vs Expenses over the last 7 days
+                Income vs Expenses
               </p>
             </div>
+            <ButtonGroup size="sm" variant="flat">
+              <Button
+                color={trendPeriod === 7 ? "primary" : "default"}
+                onPress={() => setTrendPeriod(7)}
+              >
+                7 Hari
+              </Button>
+              <Button
+                color={trendPeriod === 14 ? "primary" : "default"}
+                onPress={() => setTrendPeriod(14)}
+              >
+                14 Hari
+              </Button>
+              <Button
+                color={trendPeriod === 30 ? "primary" : "default"}
+                onPress={() => setTrendPeriod(30)}
+              >
+                30 Hari
+              </Button>
+            </ButtonGroup>
           </div>
 
           <div className="flex-1 min-h-[300px] relative w-full bg-surface-bright rounded-lg overflow-hidden border border-outline-variant/10 p-4">
@@ -355,18 +426,6 @@ export function Dashboard() {
                     stroke="#ba1a1a"
                     strokeWidth={1.5}
                     fill="url(#expenseGradient)"
-                    dot={{
-                      r: 3,
-                      fill: "#ba1a1a",
-                      stroke: "#fff",
-                      strokeWidth: 1.5,
-                    }}
-                    activeDot={{
-                      r: 5,
-                      stroke: "#ba1a1a",
-                      strokeWidth: 2,
-                      fill: "#fff",
-                    }}
                   />
                   <Area
                     type="monotone"
@@ -374,18 +433,6 @@ export function Dashboard() {
                     stroke="#0058be"
                     strokeWidth={2.5}
                     fill="url(#incomeGradient)"
-                    dot={{
-                      r: 3.5,
-                      fill: "#0058be",
-                      stroke: "#fff",
-                      strokeWidth: 1.5,
-                    }}
-                    activeDot={{
-                      r: 5,
-                      stroke: "#0058be",
-                      strokeWidth: 2,
-                      fill: "#fff",
-                    }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -393,7 +440,7 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Monthly Income Card */}
+        {/* Monthly Summary & Rating Card */}
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] p-stack-md flex flex-col h-full">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-headline-md font-headline-md text-on-background">
@@ -413,31 +460,210 @@ export function Dashboard() {
                 </h3>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-primary/5 rounded-lg p-4 text-center border border-primary/10">
-                <span className="material-symbols-outlined text-primary text-[24px] mb-1">
-                  trending_up
-                </span>
-                <p className="text-label-sm text-on-surface-variant">
-                  Income Today
+
+            <div className="bg-surface-bright rounded-lg p-6 border border-outline-variant/20 flex flex-col items-center justify-center">
+              <p className="text-label-md font-label-md text-on-surface-variant mb-3">
+                Customer Satisfaction
+              </p>
+              {analyticsLoading ? (
+                <Spinner size="sm" />
+              ) : analytics?.averageRating ? (
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-display-sm font-bold text-on-background">
+                      {analytics.averageRating}
+                    </span>
+                    <span
+                      className="material-symbols-outlined text-[#eab308] text-[32px]"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      star
+                    </span>
+                  </div>
+                  <p className="text-label-sm text-on-surface-variant">
+                    Dari {analytics.totalRatings} ulasan
+                  </p>
+                </div>
+              ) : (
+                <p className="text-label-md text-on-surface-variant italic">
+                  Belum ada ulasan
                 </p>
-                <p className="text-label-md font-bold text-on-background">
-                  {formatRupiah(stats?.todayIncome ?? 0)}
-                </p>
-              </div>
-              <div className="bg-error/5 rounded-lg p-4 text-center border border-error/10">
-                <span className="material-symbols-outlined text-error text-[24px] mb-1">
-                  trending_down
-                </span>
-                <p className="text-label-sm text-on-surface-variant">
-                  Expense Today
-                </p>
-                <p className="text-label-md font-bold text-on-background">
-                  {formatRupiah(stats?.todayExpenses ?? 0)}
-                </p>
-              </div>
+              )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Analytics Lists: Top Customers & Categories */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter mt-gutter">
+        {/* Top 5 Customers */}
+        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] p-stack-md">
+          <h3 className="text-headline-md font-headline-md text-on-background mb-4">
+            Top 5 Pelanggan Bulan Ini
+          </h3>
+          {analyticsLoading ? (
+            <div className="flex justify-center p-8">
+              <Spinner />
+            </div>
+          ) : analytics?.topCustomers?.length === 0 ? (
+            <p className="text-on-surface-variant italic text-center p-8">
+              Belum ada pelanggan bulan ini.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {analytics?.topCustomers.map((customer, idx) => (
+                <div
+                  key={customer.id}
+                  className="flex items-center gap-4 bg-surface-bright p-3 rounded-lg border border-outline-variant/10"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm shrink-0">
+                    {idx + 1}
+                  </div>
+                  <Avatar name={customer.name} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-label-lg font-bold text-on-background truncate">
+                      {customer.name}
+                    </p>
+                    <p className="text-label-sm text-on-surface-variant truncate">
+                      {customer.orderCount} pesanan
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-label-md font-bold text-primary">
+                      {formatRupiah(customer.totalSpent)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Top Categories */}
+        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] p-stack-md">
+          <h3 className="text-headline-md font-headline-md text-on-background mb-4">
+            Kategori Terlaris Bulan Ini
+          </h3>
+          {analyticsLoading ? (
+            <div className="flex justify-center p-8">
+              <Spinner />
+            </div>
+          ) : analytics?.topCategories?.length === 0 ? (
+            <p className="text-on-surface-variant italic text-center p-8">
+              Belum ada order bulan ini.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {analytics?.topCategories.slice(0, 5).map((category) => (
+                <div
+                  key={category.id}
+                  className="flex items-center gap-4 bg-surface-bright p-3 rounded-lg border border-outline-variant/10"
+                >
+                  <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-secondary">
+                      {category.icon}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-label-lg font-bold text-on-background truncate">
+                      {category.name}
+                    </p>
+                    <div className="w-full bg-surface-container-high h-2 rounded-full mt-2 overflow-hidden">
+                      <div
+                        className="bg-secondary h-full rounded-full"
+                        style={{
+                          width: `${Math.max(5, (category.orderCount / Math.max(...analytics.topCategories.map((c) => c.orderCount))) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right min-w-[80px]">
+                    <p className="text-label-md font-bold text-on-background">
+                      {category.orderCount}x
+                    </p>
+                    <p className="text-label-sm text-secondary">
+                      {formatRupiah(category.totalRevenue)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Peak Hours Chart */}
+      <div className="mt-gutter bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] p-stack-md">
+        <h3 className="text-headline-md font-headline-md text-on-background mb-1">
+          Jam Sibuk
+        </h3>
+        <p className="text-label-md text-on-surface-variant mb-6">
+          Distribusi waktu pemesanan bulan ini
+        </p>
+
+        <div className="h-[250px] w-full">
+          {analyticsLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <Spinner />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={analytics?.ordersByHour ?? []}
+                margin={{ top: 5, right: 0, left: -20, bottom: 5 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#e2e8f0"
+                />
+                <XAxis
+                  dataKey="hour"
+                  tickFormatter={(val) => `${String(val).padStart(2, "0")}:00`}
+                  tick={{ fontSize: 11, fill: "#6b7280" }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={5}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 11, fill: "#6b7280" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(0,0,0,0.05)" }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg shadow-lg p-3 text-sm">
+                        <p className="text-on-surface-variant font-medium mb-1">
+                          {String(payload[0].payload.hour).padStart(2, "0")}:00
+                        </p>
+                        <p className="text-on-background font-bold">
+                          {payload[0].value} pesanan
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {analytics?.ordersByHour.map((entry, index) => {
+                    const max = Math.max(
+                      ...(analytics?.ordersByHour.map((h) => h.count) ?? [0]),
+                    );
+                    const isPeak = entry.count === max && max > 0;
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={isPeak ? "#0058be" : "#94a3b8"}
+                      />
+                    );
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 

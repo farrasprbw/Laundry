@@ -160,3 +160,12 @@ export type Category = typeof categories.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
+
+export const storeSettings = pgTable("store_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type StoreSetting = typeof storeSettings.$inferSelect;

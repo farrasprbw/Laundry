@@ -8,9 +8,11 @@ router.use(requireAuth);
 
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { status, search, page, limit, dateFrom, dateTo } = req.query;
+    const { status, paymentStatus, search, page, limit, dateFrom, dateTo } = req.query;
     const result = await orderService.list({
-      status: status as string, search: search as string,
+      status: status as string, 
+      paymentStatus: paymentStatus as string,
+      search: search as string,
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
       dateFrom: dateFrom as string, dateTo: dateTo as string,

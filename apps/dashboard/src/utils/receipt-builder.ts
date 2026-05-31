@@ -50,19 +50,14 @@ const CMD = {
 /** Line width for 58mm paper in characters */
 const LINE_WIDTH = 32;
 
-// ── Store Configuration ──
-export const STORE_CONFIG = {
-  name: 'MAXPRESS LAUNDROMAT',
-  address: 'Apartemen Rajawali, Jakarta Pusat',
-  phone: 'HP : 0812-9678-8330',
-  disclaimer: [
-    'Pengambilan barang harus disertai invoice.',
-    'Klaim berlaku 24 jam setelah barang diambil.',
-    'Kain luntur, berkerut karna sifat kain diluar tanggung jawab kami.',
-    'Cucian yang tidak diambil dalam waktu 1 bulan bila rusak / hilang bukan tanggung jawab kami.',
-  ],
-  qrCodeUrl: 'https://maps.app.goo.gl/6EtkVKWEwRKrLwSK6',
-};
+// ── Store Configuration Type ──
+export interface StoreConfig {
+  name: string;
+  address: string;
+  phone: string;
+  disclaimer: string[];
+  qrCodeUrl: string;
+}
 
 // ── Receipt Data Interface ──
 export interface ReceiptData {
@@ -260,21 +255,21 @@ function formatDateTime(dateString: string): string {
 /**
  * Build a complete laundry receipt matching the reference photo layout.
  */
-export function buildLaundryReceipt(data: ReceiptData): Uint8Array {
+export function buildLaundryReceipt(data: ReceiptData, storeConfig: StoreConfig): Uint8Array {
   const rb = new ReceiptBuilder();
   const discount = data.discount ?? 0;
-  const subTotal = data.totalPrice;
-  const total = subTotal - discount;
+  const total = data.totalPrice - discount;
 
   // ── Header: Store Info ──
   rb.align('center')
     .bold(true)
     .fontSize('double-h')
-    .line(STORE_CONFIG.name)
+    .line(storeConfig.name)
     .fontSize('normal')
-    .bold(false)
-    .line(STORE_CONFIG.address)
-    .line(STORE_CONFIG.phone)
+    .bold(false);
+
+  rb.line(storeConfig.address)
+    .line(storeConfig.phone)
     .doubleSeparator();
 
   // ── Customer Name ──
@@ -306,35 +301,30 @@ export function buildLaundryReceipt(data: ReceiptData): Uint8Array {
     .wrappedText(data.categoryName)
     .bold(false);
 
-  const qtyLine = `  ${data.quantity} ${data.unit} x ${formatCurrency(data.pricePerUnit)}`;
+  const qtyLine = `${data.quantity} ${data.unit} x ${formatCurrency(data.pricePerUnit)}`;
   const priceStr = formatCurrency(data.totalPrice);
   rb.leftRight(qtyLine, priceStr);
 
   rb.emptyLine();
 
-  // ── Payment Status & Totals ──
-  const statusLabel = data.paymentStatus === 'PAID' ? 'LUNAS' : 'BELUM BAYAR';
-  rb.bold(true)
-    .text(statusLabel)
-    .bold(false);
+  // ── Totals ──
+  rb.leftRight('Diskon', formatCurrency(discount));
 
-  // Pad to align totals on the right side
-  const subtotalLine = `SubTotal`;
-  const subtotalVal = formatCurrency(subTotal);
-  const padStatus = LINE_WIDTH - statusLabel.length - subtotalLine.length - subtotalVal.length;
-  rb.line(' '.repeat(Math.max(1, padStatus)) + subtotalLine + ' '.repeat(Math.max(1, LINE_WIDTH - statusLabel.length - Math.max(1, padStatus) - subtotalLine.length - subtotalVal.length)) + subtotalVal);
-
-  // Diskon line
-  const diskonLabel = 'Diskon';
-  const diskonVal = formatCurrency(discount);
-  rb.leftRight(' '.repeat(statusLabel.length + 1) + diskonLabel, diskonVal);
-
-  // Total line
   rb.bold(true);
-  const totalLabel = 'Total';
-  const totalVal = formatCurrency(total);
-  rb.leftRight(' '.repeat(statusLabel.length + 1) + totalLabel, totalVal);
+  rb.leftRight('Total', formatCurrency(total));
   rb.bold(false);
+
+  rb.emptyLine();
+
+  // ── Payment Status ──
+  const statusLabel = data.paymentStatus === 'PAID' ? 'LUNAS' : 'BELUM BAYAR';
+  rb.align('center')
+    .bold(true)
+    .fontSize('double-h')
+    .line(`[ ${statusLabel} ]`)
+    .fontSize('normal')
+    .bold(false)
+    .align('left');
 
   rb.separator();
 
@@ -350,7 +340,7 @@ export function buildLaundryReceipt(data: ReceiptData): Uint8Array {
   rb.emptyLine();
 
   // Disclaimer items
-  STORE_CONFIG.disclaimer.forEach((item) => {
+  storeConfig.disclaimer.forEach((item) => {
     rb.wrappedText(`- ${item}`, 2);
   });
 
@@ -365,7 +355,7 @@ export function buildLaundryReceipt(data: ReceiptData): Uint8Array {
 
   // ── QR Code ──
   rb.align('center')
-    .qrCode(STORE_CONFIG.qrCodeUrl, 6)
+    .qrCode(storeConfig.qrCodeUrl, 6)
     .emptyLine();
 
   // Feed and cut
@@ -373,3 +363,4 @@ export function buildLaundryReceipt(data: ReceiptData): Uint8Array {
 
   return rb.build();
 }
+

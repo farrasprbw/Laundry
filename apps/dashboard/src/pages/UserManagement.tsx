@@ -324,10 +324,10 @@ export function UserManagement() {
             variant="bordered"
           />
           <Input
-            type="text"
+            type="tel"
             label="No. HP"
             value={formPhone}
-            onChange={(e) => setFormPhone(e.target.value)}
+            onChange={(e) => setFormPhone(e.target.value.replace(/\D/g, ''))}
             placeholder="Contoh: 081234567890"
             variant="bordered"
           />
@@ -435,10 +435,10 @@ export function UserManagement() {
             variant="bordered"
           />
           <Input
-            type="text"
+            type="tel"
             label="No. HP"
             value={editPhone}
-            onChange={(e) => setEditPhone(e.target.value)}
+            onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, ''))}
             placeholder="Contoh: 081234567890"
             variant="bordered"
           />

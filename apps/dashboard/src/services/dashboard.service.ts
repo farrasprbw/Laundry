@@ -1,5 +1,5 @@
 import apiClient from "../lib/api-client";
-import type { DashboardStats, FinancialTrendDay, DashboardRecentOrder } from "../types/api";
+import type { DashboardStats, FinancialTrendDay, DashboardRecentOrder, DashboardAnalytics } from "../types/api";
 
 /**
  * Dashboard API service — raw HTTP calls, no React dependencies.
@@ -24,6 +24,12 @@ export const dashboardService = {
     const { data } = await apiClient.get<FinancialTrendDay[]>("/dashboard/financial-trend", {
       params: { days },
     });
+    return data;
+  },
+
+  /** Get deep dashboard analytics. */
+  async getAnalytics(): Promise<DashboardAnalytics> {
+    const { data } = await apiClient.get<DashboardAnalytics>("/dashboard/analytics");
     return data;
   },
 };

@@ -6,10 +6,12 @@ import {
   useDeleteOrder,
   useUpdatePaymentStatus,
 } from "../hooks/use-orders";
-import type { Order } from "../types/api";
+import type { Order, UserRole } from "../types/api";
 import { usePrinter } from "../hooks/use-printer";
 import type { ReceiptData } from "../utils/receipt-builder";
 import { ConfirmModal } from "../components/ui/ConfirmModal";
+import { EditOrderModal } from "../components/ui/EditOrderModal";
+import { useSession } from "../hooks/use-auth";
 import {
   Button,
   Select,
@@ -31,15 +33,24 @@ import {
 
 export function Orders() {
   const [statusFilter, setStatusFilter] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
+  const [searchFilter, setSearchFilter] = useState("");
+  const [dateFromFilter, setDateFromFilter] = useState("");
+  const [dateToFilter, setDateToFilter] = useState("");
   const [page, setPage] = useState(1);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     data: string | null;
   }>({ open: false, data: null });
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
 
   const { data, isLoading, refetch } = useOrders(
     {
       status: statusFilter || undefined,
+      paymentStatus: paymentStatusFilter || undefined,
+      search: searchFilter || undefined,
+      dateFrom: dateFromFilter || undefined,
+      dateTo: dateToFilter || undefined,
       page,
       limit: 10,
     },
@@ -95,8 +106,21 @@ export function Orders() {
     }
   };
 
+  const { data: session } = useSession();
+  const userRole = ((session?.user as { role?: string })?.role as UserRole) || 'worker';
+
   const getDropdownItems = (order: Order) => {
     const items = [];
+    const canEdit = userRole === 'super_admin' || userRole === 'admin' || order.status === 'PROCESS';
+    
+    if (canEdit) {
+      items.push({
+        key: "edit",
+        label: "Edit Order",
+        icon: "edit",
+        action: () => setEditOrder(order),
+      });
+    }
     if (order.status === "PROCESS")
       items.push({
         key: "finish",
@@ -315,7 +339,7 @@ export function Orders() {
             Manage and track all laundry processing phases.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Printer Status & Controls */}
           <div className="flex items-center gap-2">
             {getPrinterStatusBadge()}
@@ -325,11 +349,7 @@ export function Orders() {
                   onPress={disconnectPrinter}
                   variant="bordered"
                   className="px-3 py-2 rounded-xl text-label-md font-label-md border-outline-variant/30 text-on-surface-variant hover:bg-error-container hover:text-error hover:border-error/30"
-                  startContent={
-                    <span className="material-symbols-outlined text-[18px]">
-                      bluetooth_disabled
-                    </span>
-                  }
+                  startContent={<span className="material-symbols-outlined text-[18px]">bluetooth_disabled</span>}
                   title="Putuskan Printer"
                 >
                   <span className="hidden sm:inline">Putuskan</span>
@@ -340,44 +360,98 @@ export function Orders() {
                   onPress={connectPrinter}
                   isDisabled={isConnecting}
                   className="px-3 py-2 rounded-xl text-label-md font-label-md shadow-sm text-white"
-                  startContent={
-                    <span className="material-symbols-outlined text-[18px]">
-                      print
-                    </span>
-                  }
+                  startContent={<span className="material-symbols-outlined text-[18px]">print</span>}
                   title="Hubungkan Printer Bluetooth"
                 >
-                  <span className="hidden sm:inline">
-                    {isConnecting ? "Menghubungkan..." : "Hubungkan Printer"}
-                  </span>
+                  <span className="hidden sm:inline">{isConnecting ? "Menghubungkan..." : "Hubungkan Printer"}</span>
                 </Button>
               ))}
           </div>
-          <Select
-            aria-label="Filter Status"
-            placeholder="All Status"
-            selectedKeys={statusFilter ? [statusFilter] : []}
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-end bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/20">
+        <div className="flex-1 w-full sm:w-auto min-w-[200px]">
+          <label className="text-xs text-on-surface-variant font-medium mb-1 block">Pencarian</label>
+          <input
+            type="text"
+            placeholder="Cari Invoice atau Pelanggan..."
+            value={searchFilter}
             onChange={(e) => {
-              setStatusFilter(e.target.value);
+              setSearchFilter(e.target.value);
               setPage(1);
             }}
-            className="w-40"
-            variant="bordered"
-            size="sm"
-          >
-            <SelectItem key="" value="">
-              All Status
-            </SelectItem>
-            <SelectItem key="PROCESS" value="PROCESS">
-              Process
-            </SelectItem>
-            <SelectItem key="FINISHED" value="FINISHED">
-              Finished
-            </SelectItem>
-            <SelectItem key="TAKEN" value="TAKEN">
-              Taken
-            </SelectItem>
-          </Select>
+            className="w-full h-10 px-3 rounded-lg border border-outline-variant/30 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+          />
+        </div>
+        
+        <div className="w-full sm:w-auto flex flex-col sm:flex-row flex-wrap gap-4">
+          <div className="w-full sm:w-auto">
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Dari Tanggal</label>
+            <input
+              type="date"
+              value={dateFromFilter}
+              onChange={(e) => {
+                setDateFromFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full sm:w-auto h-10 px-3 rounded-lg border border-outline-variant/30 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+            />
+          </div>
+          <div className="w-full sm:w-auto">
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Sampai Tanggal</label>
+            <input
+              type="date"
+              value={dateToFilter}
+              onChange={(e) => {
+                setDateToFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full sm:w-auto h-10 px-3 rounded-lg border border-outline-variant/30 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+            />
+          </div>
+          
+          <div className="flex-1 min-w-[120px] w-full sm:w-32">
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Pembayaran</label>
+            <Select
+              aria-label="Filter Payment Status"
+              placeholder="Semua"
+              selectedKeys={paymentStatusFilter ? [paymentStatusFilter] : []}
+              onChange={(e) => {
+                setPaymentStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full"
+              variant="bordered"
+              size="sm"
+            >
+              <SelectItem key="" value="">Semua</SelectItem>
+              <SelectItem key="PAID" value="PAID">Lunas</SelectItem>
+              <SelectItem key="UNPAID" value="UNPAID">Belum Lunas</SelectItem>
+            </Select>
+          </div>
+
+          <div className="flex-1 min-w-[120px] w-full sm:w-32">
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Status Order</label>
+            <Select
+              aria-label="Filter Status"
+              placeholder="Semua"
+              selectedKeys={statusFilter ? [statusFilter] : []}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full"
+              variant="bordered"
+              size="sm"
+            >
+              <SelectItem key="" value="">Semua</SelectItem>
+              <SelectItem key="PROCESS" value="PROCESS">Process</SelectItem>
+              <SelectItem key="FINISHED" value="FINISHED">Finished</SelectItem>
+              <SelectItem key="TAKEN" value="TAKEN">Taken</SelectItem>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -702,6 +776,11 @@ export function Orders() {
         onConfirm={onConfirmDelete}
         isLoading={deleteOrder.isPending}
         confirmText="Hapus Order"
+      />
+      <EditOrderModal
+        isOpen={!!editOrder}
+        onClose={() => setEditOrder(null)}
+        order={editOrder}
       />
     </div>
   );

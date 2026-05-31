@@ -2,9 +2,30 @@ import { Router } from "express";
 import { db } from "../db/index.js";
 import { orders, customers, categories, paymentMethods } from "../db/schema.js";
 import { eq, and, isNull } from "drizzle-orm";
+import { settingsService } from "../services/settings.service.js";
 import type { Request, Response } from "express";
 
 const router = Router();
+
+// GET /api/public/settings — fetch public store settings (no auth)
+router.get("/settings", async (_req: Request, res: Response) => {
+  try {
+    const settings = await settingsService.getAll();
+    // Only return safe public settings
+    const publicSettings = {
+      store_name: settings.store_name,
+      store_address: settings.store_address,
+      store_address_full: settings.store_address_full,
+      store_phone: settings.store_phone,
+      store_logo_url: settings.store_logo_url,
+      store_maps_url: settings.store_maps_url,
+    };
+    res.json(publicSettings);
+  } catch (err) {
+    console.error("Failed to fetch public settings:", err);
+    res.status(500).json({ error: "Failed to fetch settings" });
+  }
+});
 
 // GET /api/public/invoice/:invoiceNumber — fetch full order details (no auth)
 router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {

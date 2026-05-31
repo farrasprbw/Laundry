@@ -12,12 +12,13 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', icon: 'dashboard', label: 'Dashboard', roles: ['super_admin', 'admin'] },
-  { to: '/orders', icon: 'receipt_long', label: 'Orders', roles: ['super_admin', 'admin', 'worker'] },
+  { to: '/orders', icon: 'receipt_long', label: 'Orders', roles: ['super_admin', 'admin'] },
   { to: '/customers', icon: 'group', label: 'Customers', roles: ['super_admin', 'admin'] },
   { to: '/categories', icon: 'category', label: 'Categories', roles: ['super_admin', 'admin'] },
   { to: '/expenses', icon: 'payments', label: 'Expenses', roles: ['super_admin', 'admin'] },
   { to: '/payment-methods', icon: 'account_balance_wallet', label: 'Payment Methods', roles: ['super_admin', 'admin'] },
   { to: '/reports', icon: 'analytics', label: 'Reports', roles: ['super_admin', 'admin'] },
+  { to: '/settings', icon: 'settings', label: 'Settings', roles: ['super_admin', 'admin'] },
   { to: '/user-management', icon: 'admin_panel_settings', label: 'User Management', roles: ['super_admin'] },
 ];
 

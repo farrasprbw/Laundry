@@ -29,6 +29,7 @@ interface CreateOrderInput {
 
 interface ListOrdersParams {
   status?: string;
+  paymentStatus?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -39,6 +40,7 @@ interface ListOrdersParams {
 export const orderService = {
   async list({
     status,
+    paymentStatus,
     search,
     page = 1,
     limit = 20,
@@ -53,6 +55,10 @@ export const orderService = {
 
     if (status) {
       conditions.push(sql`${eq(orders.status, status)}`);
+    }
+
+    if (paymentStatus) {
+      conditions.push(sql`${eq(orders.paymentStatus, paymentStatus)}`);
     }
 
     if (search) {
@@ -187,15 +193,27 @@ export const orderService = {
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
 
     if (input.notes !== undefined) updateData.notes = input.notes;
-    if (input.quantity !== undefined) {
-      updateData.quantity = String(input.quantity);
+    if (input.paymentMethodId !== undefined) updateData.paymentMethodId = input.paymentMethodId;
+    if (input.paymentStatus !== undefined) updateData.paymentStatus = input.paymentStatus;
+    if (input.parfume !== undefined) updateData.parfume = input.parfume;
 
-      // Recalculate total if quantity changes
+    if (input.quantity !== undefined || input.discount !== undefined) {
       const existing = await this.getById(id);
-      if (existing?.category) {
-        updateData.totalPrice = Math.round(
-          input.quantity * existing.category.pricePerUnit
-        );
+      if (existing) {
+        if (input.quantity !== undefined) {
+          updateData.quantity = String(input.quantity);
+        }
+        if (input.discount !== undefined) {
+          updateData.discount = input.discount;
+        }
+
+        const currentQty = input.quantity !== undefined ? input.quantity : Number(existing.quantity);
+        const currentDiscount = input.discount !== undefined ? input.discount : existing.discount;
+
+        if (existing.category) {
+          const subtotal = Math.round(currentQty * existing.category.pricePerUnit);
+          updateData.totalPrice = Math.max(0, subtotal - currentDiscount);
+        }
       }
     }
 
@@ -279,6 +297,9 @@ export const orderService = {
     const order = await this.getById(id);
     if (!order || !order.customer) return null;
 
+    const { settingsService } = await import("./settings.service.js");
+    const settings = await settingsService.getAll();
+
     const phone = order.customer.phone.replace(/\D/g, "");
     // Convert 0xxx to 62xxx for Indonesian numbers
     const intlPhone = phone.startsWith("0") ? `62${phone.slice(1)}` : phone;
@@ -289,6 +310,9 @@ export const orderService = {
     const totalAmount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(order.totalPrice);
     const statusLabel = order.paymentStatus === 'PAID' ? 'LUNAS ✅' : 'BELUM BAYAR ❌';
 
+    // Parse disclaimers
+    const disclaimers = settings.store_disclaimer.split('|').map(d => `⚠️ ${d.trim()}`).join('\n');
+
     const message = `Halo Kak *${order.customer.name}*! 👋✨
 
 Pakaian bersih dan wangi sudah menanti! Cucian Kakak dengan detail berikut telah *SELESAI* dan siap untuk dijemput:
@@ -298,14 +322,11 @@ Pakaian bersih dan wangi sudah menanti! Cucian Kakak dengan detail berikut telah
 💰 *Total Tagihan:* ${totalAmount}
 💳 *Status Pembayaran:* ${statusLabel}
 
-Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏✨
+Terima kasih telah mempercayakan cucian Kakak kepada *${settings.store_name}*! 🙏✨
 
 ---
 *Syarat & Ketentuan Pengambilan:*
-⚠️ Pengambilan barang harus disertai invoice.
-⚠️ Komplain berlaku maksimal 24 jam setelah barang diambil.
-⚠️ Kain luntur/berkerut karena sifat kain di luar tanggung jawab kami.
-⚠️ Cucian yang tidak diambil dalam waktu 1 bulan, bila rusak/hilang bukan tanggung jawab kami.`;
+${disclaimers}`;
 
     const waLink = `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}`;
 
@@ -329,6 +350,9 @@ Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
   async sendNewOrderWhatsAppNotification(id: string) {
     const order = await this.getById(id);
     if (!order || !order.customer) return false;
+
+    const { settingsService } = await import("./settings.service.js");
+    const settings = await settingsService.getAll();
 
     const phone = order.customer.phone.replace(/\D/g, "");
     const intlPhone = phone.startsWith("0") ? `62${phone.slice(1)}` : phone;
@@ -369,9 +393,9 @@ Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
 
     const invoiceUrl = `${env.CORS_ORIGIN}/invoice/${encodeURIComponent(order.invoiceNumber)}`;
 
-    const message = `*MAXPRESS LAUNDROMAT*
-Apartment Amethys, Jl. Rajawali Selatan II No. 6 B, Jakarta Pusat
-HP : 0812-9678-8330
+    const message = `*${settings.store_name}*
+${settings.store_address_full}
+HP : ${settings.store_phone}
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -394,14 +418,14 @@ Est Selesai : ${estSelesai}
 📌 Status     : SEDANG DIPROSES
 🌸 Parfum     : ${parfumeLabel}
 📝 Notes      : ${order.notes || "-"}
-   BCA 6565125439 a/n NUR PUJI LESTARI
+   ${settings.bank_account.replace(/\n/g, '\n   ')}
 
 ━━━━━━━━━━━━━━━━━━━━
 
 📄 *Lihat Invoice Online:*
 ${invoiceUrl}
 
-Terima kasih telah mempercayakan cucian Kakak kepada *Maxpress Laundromat*! 🙏
+Terima kasih telah mempercayakan cucian Kakak kepada *${settings.store_name}*! 🙏
 Cucian sedang kami proses, kami akan hubungi kembali setelah selesai.`;
 
     return await whatsappService.sendMessage(intlPhone, message);
