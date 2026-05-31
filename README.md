@@ -1,6 +1,6 @@
 # 🧺 Laundry — Laundry Management System
 
-Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST API**, dibangun menggunakan arsitektur monorepo.
+Aplikasi manajemen laundry berbasis web dengan **dashboard admin**, **worker panel**, dan **REST API**, dibangun menggunakan arsitektur monorepo.
 
 ---
 
@@ -16,6 +16,7 @@ Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST AP
 - [Registrasi Admin Pertama](#-registrasi-admin-pertama)
 - [Deploy ke Production](#-deploy-ke-production)
 - [Struktur Proyek](#-struktur-proyek)
+- [Role & Akses](#-role--akses)
 - [Script yang Tersedia](#-script-yang-tersedia)
 - [Troubleshooting](#-troubleshooting)
 
@@ -23,32 +24,43 @@ Aplikasi manajemen laundry berbasis web dengan **dashboard admin** dan **REST AP
 
 ## ✨ Fitur
 
+### Admin Dashboard
 - 📊 **Dashboard** — Ringkasan statistik pendapatan, pesanan, dan pelanggan
 - 📦 **Manajemen Pesanan** — CRUD pesanan dengan status tracking (PROCESS → FINISHED → TAKEN)
-- 👥 **Manajemen Pelanggan** — Data pelanggan dengan integrasi WhatsApp
+- 👥 **Manajemen Pelanggan** — Data pelanggan dengan pencarian dan integrasi WhatsApp
 - 🏷️ **Kategori Layanan** — Kelola kategori laundry beserta harga dan estimasi waktu
 - 💰 **Metode Pembayaran** — Kelola metode pembayaran (tunai, transfer, dll)
 - 💸 **Pencatatan Pengeluaran** — Tracking pengeluaran operasional
-- 📈 **Laporan** — Laporan pendapatan dengan export Excel
+- 📈 **Laporan** — Laporan pendapatan, arus kas, dan export Excel
+- 💳 **Piutang** — Tracking piutang pelanggan dengan reminder WhatsApp
 - 🧾 **Invoice Publik** — Halaman invoice yang bisa diakses pelanggan via link
 - ⭐ **Rating** — Pelanggan bisa memberi rating melalui halaman invoice
-- 🖨️ **Thermal Printing** — Cetak struk via printer Bluetooth (ESC/POS)
-- 📱 **Notifikasi WhatsApp** — Kirim notifikasi status pesanan ke pelanggan (menggunakan API Fonnte)
-- ⏱️ **Auto-Finish** — Pesanan otomatis selesai berdasarkan estimasi waktu kategori (via cron-job.org)
-- 👤 **Manajemen User** — Kelola akun staff dengan role-based access
+- 🖨️ **Thermal Printing** — Cetak struk via printer Bluetooth 58mm (ESC/POS)
+- 📱 **Notifikasi WhatsApp** — Kirim notifikasi status pesanan dan order baru ke pelanggan
+- ⏱️ **Auto-Finish** — Pesanan otomatis selesai berdasarkan estimasi waktu kategori
+- 👤 **Manajemen User** — Kelola akun staff dengan role-based access (super_admin, admin, worker)
+- ⚙️ **Pengaturan Toko** — Konfigurasi nama, alamat, telepon, disclaimer, dan rekening toko
 - 📱 **Responsive** — Tampilan optimal di desktop dan mobile
+
+### Worker Panel
+- 📱 **Worker Dashboard** — Ringkasan pesanan harian untuk pekerja
+- 📷 **QR Scanner** — Scan QR code struk untuk lihat detail & update status pesanan
+- 🖨️ **Cetak Struk** — Worker bisa langsung cetak struk dari halaman scanner
+- 💬 **Kirim WA** — Worker bisa kirim ulang notifikasi WhatsApp ke pelanggan
+- 🔒 **Akses Terbatas** — Worker hanya bisa akses fitur operasional, tidak bisa edit/hapus data master
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer        | Teknologi                                                        |
-| ------------ | ---------------------------------------------------------------- |
-| **Frontend** | React 19, Vite, TailwindCSS, React Router, TanStack React Query |
-| **Backend**  | Express 5, TypeScript, Drizzle ORM, Better Auth, Zod             |
-| **Database** | PostgreSQL 16 (via Docker)                                       |
-| **Integrations**| Fonnte API (WhatsApp), cron-job.org (Scheduler)                  |
-| **Tooling**  | npm Workspaces, Concurrently, tsx                                |
+| Layer            | Teknologi                                                        |
+| ---------------- | ---------------------------------------------------------------- |
+| **Frontend**     | React 19, Vite, TailwindCSS, NextUI, React Router, TanStack React Query |
+| **Backend**      | Express 5, TypeScript, Drizzle ORM, Better Auth, Zod             |
+| **Database**     | PostgreSQL 16 (via Docker)                                       |
+| **Printing**     | Web Bluetooth API, ESC/POS thermal printer 58mm                  |
+| **Integrations** | Fonnte API (WhatsApp), cron-job.org (Scheduler)                  |
+| **Tooling**      | npm Workspaces, Concurrently, tsx                                |
 
 ---
 
@@ -121,6 +133,9 @@ BETTER_AUTH_URL=http://localhost:3001
 # ── Server ─────────────────────────────────────────────────────
 PORT=3001
 CORS_ORIGIN=http://localhost:5173
+
+# ── WhatsApp (Opsional) ───────────────────────────────────────
+FONNTE_TOKEN=<your-fonnte-api-token>
 ```
 
 > 💡 **Generate secret key:**
@@ -300,6 +315,7 @@ DATABASE_URL="<connection-string-dari-neon>" npx drizzle-kit push
    | `BETTER_AUTH_SECRET` | Random secret (lihat cara generate di atas) |
    | `BETTER_AUTH_URL` | URL API setelah deploy |
    | `CORS_ORIGIN` | URL Dashboard setelah deploy |
+   | `FONNTE_TOKEN` | Token API Fonnte (opsional, untuk WhatsApp) |
    | `NODE_ENV` | `production` |
 
 5. Klik **Deploy**
@@ -383,10 +399,21 @@ laundry/
 │   │   ├── src/
 │   │   │   ├── auth/           # Konfigurasi Better Auth
 │   │   │   ├── db/             # Schema & koneksi Drizzle ORM
-│   │   │   ├── lib/            # Utility helpers
+│   │   │   ├── lib/            # Utility helpers (invoice generator)
 │   │   │   ├── routes/         # Express route handlers
 │   │   │   ├── services/       # Business logic layer
-│   │   │   ├── env.ts          # Environment validation
+│   │   │   │   ├── order       # CRUD order + status transitions
+│   │   │   │   ├── customer    # CRUD pelanggan
+│   │   │   │   ├── category    # CRUD kategori layanan
+│   │   │   │   ├── expense     # CRUD pengeluaran
+│   │   │   │   ├── report      # Laporan & statistik
+│   │   │   │   ├── receivable  # Piutang pelanggan
+│   │   │   │   ├── whatsapp    # Integrasi Fonnte API
+│   │   │   │   ├── auto-finish # Cron auto-finish orders
+│   │   │   │   ├── dashboard   # Data dashboard
+│   │   │   │   ├── settings    # Pengaturan toko
+│   │   │   │   └── user        # Manajemen user & role
+│   │   │   ├── env.ts          # Environment validation (Zod)
 │   │   │   └── index.ts        # Entry point server
 │   │   ├── drizzle/            # Migration files
 │   │   ├── .env.example        # Template environment variables
@@ -395,22 +422,29 @@ laundry/
 │   │
 │   └── dashboard/              # Frontend React Dashboard
 │       ├── src/
-│       │   ├── components/     # UI Components (Sidebar, Modal, Tables)
-│       │   ├── hooks/          # Custom React hooks
-│       │   ├── lib/            # Auth client & utilities
+│       │   ├── components/     # UI Components (Modal, Tables, Sidebar)
+│       │   ├── contexts/       # React contexts (Alert, dll)
+│       │   ├── hooks/          # Custom React hooks (use-orders, use-auth, use-printer)
+│       │   ├── lib/            # Auth client & API client (axios)
 │       │   ├── pages/          # Halaman aplikasi
 │       │   │   ├── Dashboard   # Ringkasan & statistik
-│       │   │   ├── Orders      # Manajemen pesanan
+│       │   │   ├── Orders      # Manajemen pesanan + printer + WA
 │       │   │   ├── Customers   # Manajemen pelanggan
 │       │   │   ├── Categories  # Kategori layanan
 │       │   │   ├── Expenses    # Pencatatan pengeluaran
-│       │   │   ├── Reports     # Laporan & export
+│       │   │   ├── Reports     # Laporan & export Excel
+│       │   │   ├── Receivables # Piutang pelanggan
 │       │   │   ├── Invoice     # Invoice publik & rating
-│       │   │   └── ...         # Login, UserManagement, dll
-│       │   ├── providers/      # Context providers (Auth, Query)
-│       │   ├── services/       # API service layer (axios)
+│       │   │   ├── Settings    # Pengaturan toko
+│       │   │   ├── Login       # Halaman login
+│       │   │   ├── UserManagement  # Kelola user & role
+│       │   │   ├── PaymentMethods  # Metode pembayaran
+│       │   │   └── worker/     # Halaman khusus worker
+│       │   │       ├── WorkerDashboard  # Dashboard pekerja
+│       │   │       └── Scanner          # QR Scanner + printer + WA
+│       │   ├── routes/         # Protected routes & role guards
 │       │   ├── types/          # TypeScript type definitions
-│       │   ├── utils/          # Thermal printer & receipt builder
+│       │   ├── utils/          # Thermal printer & receipt builder (ESC/POS)
 │       │   ├── App.tsx         # Main app & routing
 │       │   └── main.tsx        # React entry point
 │       ├── tailwind.config.js  # Tailwind configuration
@@ -421,6 +455,29 @@ laundry/
 ├── package.json                # Root monorepo config
 └── .gitignore
 ```
+
+---
+
+## 🔐 Role & Akses
+
+Aplikasi mendukung 3 role dengan hak akses berbeda:
+
+| Fitur | Super Admin | Admin | Worker |
+|-------|:-----------:|:-----:|:------:|
+| Dashboard | ✅ | ✅ | ❌ |
+| Kelola Pesanan | ✅ | ✅ | ✅ (view & status saja) |
+| Kelola Pelanggan | ✅ | ✅ | ❌ |
+| Kelola Kategori | ✅ | ✅ | ❌ |
+| Kelola Pengeluaran | ✅ | ✅ | ❌ |
+| Metode Pembayaran | ✅ | ✅ | ❌ |
+| Piutang | ✅ | ✅ | ❌ |
+| Laporan | ✅ | ✅ | ❌ |
+| Pengaturan Toko | ✅ | ✅ | ❌ |
+| Manajemen User | ✅ | ❌ | ❌ |
+| Worker Dashboard | ✅ | ✅ | ✅ |
+| QR Scanner | ✅ | ✅ | ✅ |
+| Cetak Struk (Bluetooth) | ✅ | ✅ | ✅ |
+| Kirim WA Notifikasi | ✅ | ✅ | ✅ |
 
 ---
 
@@ -477,6 +534,18 @@ docker ps
 # Re-push schema
 npm run db:push
 ```
+
+### ❌ Printer tidak terdeteksi
+
+1. Pastikan menggunakan browser berbasis Chromium (Chrome, Edge) — Web Bluetooth tidak didukung Firefox/Safari
+2. Pastikan Bluetooth aktif di perangkat
+3. Printer thermal 58mm harus sudah dinyalakan dan dalam mode pairing
+
+### ❌ WhatsApp notifikasi tidak terkirim
+
+1. Pastikan `FONNTE_TOKEN` sudah diisi di environment variables
+2. Cek saldo/kuota Fonnte di dashboard Fonnte
+3. Pastikan nomor HP pelanggan dalam format yang benar (diawali `0` atau `62`)
 
 ---
 
