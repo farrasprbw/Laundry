@@ -33,7 +33,7 @@ export const promotionService = {
     const [promotion] = await db
       .select()
       .from(promotions)
-      .where(sql`${eq(promotions.id, id)} AND ${isNull(promotions.deletedAt)}`);
+      .where(and(eq(promotions.id, id), isNull(promotions.deletedAt)));
 
     return promotion ?? null;
   },
@@ -42,7 +42,7 @@ export const promotionService = {
     const [promotion] = await db
       .select()
       .from(promotions)
-      .where(sql`${eq(promotions.code, code)} AND ${isNull(promotions.deletedAt)} AND ${eq(promotions.isActive, true)}`);
+      .where(and(eq(promotions.code, code), isNull(promotions.deletedAt), eq(promotions.isActive, true)));
 
     return promotion ?? null;
   },
@@ -74,7 +74,7 @@ export const promotionService = {
         code: input.code?.toUpperCase(),
         updatedAt: new Date(),
       })
-      .where(sql`${eq(promotions.id, id)} AND ${isNull(promotions.deletedAt)}`)
+      .where(and(eq(promotions.id, id), isNull(promotions.deletedAt)))
       .returning();
 
     return promotion ?? null;
@@ -84,7 +84,7 @@ export const promotionService = {
     const [promotion] = await db
       .update(promotions)
       .set({ deletedAt: new Date(), isActive: false })
-      .where(sql`${eq(promotions.id, id)} AND ${isNull(promotions.deletedAt)}`)
+      .where(and(eq(promotions.id, id), isNull(promotions.deletedAt)))
       .returning();
 
     return promotion ?? null;

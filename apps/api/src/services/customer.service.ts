@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
 import { customers } from "../db/schema.js";
-import { eq, isNull, ilike, or, sql, asc, desc } from "drizzle-orm";
+import { eq, isNull, ilike, or, sql, asc, desc, and } from "drizzle-orm";
 import { orders } from "../db/schema.js";
 
 interface CreateCustomerInput {
@@ -78,7 +78,7 @@ export const customerService = {
     const [customer] = await db
       .select()
       .from(customers)
-      .where(sql`${eq(customers.id, id)} AND ${isNull(customers.deletedAt)}`);
+      .where(and(eq(customers.id, id), isNull(customers.deletedAt)));
 
     if (!customer) return null;
 
@@ -117,7 +117,7 @@ export const customerService = {
         ...input,
         updatedAt: new Date(),
       })
-      .where(sql`${eq(customers.id, id)} AND ${isNull(customers.deletedAt)}`)
+      .where(and(eq(customers.id, id), isNull(customers.deletedAt)))
       .returning();
 
     return customer ?? null;
@@ -127,7 +127,7 @@ export const customerService = {
     const [customer] = await db
       .update(customers)
       .set({ deletedAt: new Date() })
-      .where(sql`${eq(customers.id, id)} AND ${isNull(customers.deletedAt)}`)
+      .where(and(eq(customers.id, id), isNull(customers.deletedAt)))
       .returning();
 
     return customer ?? null;

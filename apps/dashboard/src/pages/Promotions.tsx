@@ -213,14 +213,15 @@ export function Promotions() {
           removeWrapper
           shadow="none"
           className="min-w-max w-full"
+          classNames={{ thead: isLoading ? "hidden" : "" }}
         >
           <TableHeader>
-            <TableColumn>KODE PROMO</TableColumn>
-            <TableColumn>JENIS DISKON</TableColumn>
-            <TableColumn>NILAI DISKON</TableColumn>
-            <TableColumn>MIN. ORDER</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn className="text-right">AKSI</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">KODE PROMO</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">JENIS DISKON</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">NILAI DISKON</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">MIN. ORDER</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">STATUS</TableColumn>
+            <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">AKSI</TableColumn>
           </TableHeader>
           <TableBody
             isLoading={isLoading}
