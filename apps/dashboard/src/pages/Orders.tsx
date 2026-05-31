@@ -93,10 +93,6 @@ export function Orders() {
     try {
       await updateStatus.mutateAsync({ id, status: newStatus });
       showAlert("Status order berhasil diperbarui", "success");
-      // Auto-trigger WA notification when order becomes FINISHED
-      if (newStatus === "FINISHED") {
-        handleSendWA(id);
-      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
       showAlert(err.response?.data?.error || "Gagal mengubah status", "danger");
