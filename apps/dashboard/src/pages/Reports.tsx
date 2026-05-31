@@ -385,9 +385,9 @@ export function Reports() {
                     width={100}
                     tick={{ fontSize: 11, fill: "#6b7280" }}
                   />
-                  <Tooltip formatter={(value: number) => formatRupiah(value)} />
+                  <Tooltip formatter={(value: any) => formatRupiah(Number(value))} />
                   <Bar dataKey="totalRevenue" radius={[0, 4, 4, 0]}>
-                    {(categoryData || []).map((entry, index) => (
+                    {(categoryData || []).map((entry: any, index: number) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={entry.color || COLORS[index % COLORS.length]}
@@ -426,14 +426,14 @@ export function Reports() {
                     dataKey="totalRevenue"
                     nameKey="name"
                   >
-                    {(paymentData || []).map((_, index) => (
+                    {(paymentData || []).map((_: any, index: number) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={COLORS[index % COLORS.length]}
                       />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => formatRupiah(value)} />
+                  <Tooltip formatter={(value: any) => formatRupiah(Number(value))} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -474,7 +474,7 @@ export function Reports() {
                   tickFormatter={(val) => `Rp ${val / 1000000}M`}
                   tick={{ fontSize: 11, fill: "#6b7280" }}
                 />
-                <Tooltip formatter={(value: number) => formatRupiah(value)} />
+                <Tooltip formatter={(value: any) => formatRupiah(Number(value))} />
                 <Legend />
                 <Bar
                   dataKey="income"

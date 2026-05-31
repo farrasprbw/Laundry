@@ -249,7 +249,7 @@ export function Invoice() {
     );
   }
 
-  const subTotal = data.totalPrice + data.discount;
+  // Removed unused subTotal
   const isDisabledRating = ratingSubmitted;
 
   return (
