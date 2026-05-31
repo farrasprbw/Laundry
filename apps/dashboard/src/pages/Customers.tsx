@@ -17,11 +17,14 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Spinner,
   Pagination,
   Tooltip,
   Textarea,
 } from "@nextui-org/react";
+import { TableSkeleton } from "../components/ui/TableSkeleton";
+import { EmptyState } from "../components/ui/EmptyState";
+import { QueryErrorState } from "../components/ui/QueryErrorState";
+import { useAlert } from "../contexts/AlertContext";
 
 interface Customer {
   id: string;
@@ -37,6 +40,7 @@ export function Customers() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
+  const { showAlert } = useAlert();
 
   // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,7 +69,7 @@ export function Customers() {
   }, [searchQuery]);
 
   // React Query hooks
-  const { data: customersData, isLoading } = useCustomers({
+  const { data: customersData, isLoading, error } = useCustomers({
     search: debouncedSearch || undefined,
     page,
     limit: 10,
@@ -95,15 +99,30 @@ export function Customers() {
     if (!formData.name || !formData.phone) return;
     try {
       if (isEditMode && selectedCustomerId) {
-        await updateCustomer.mutateAsync({ id: selectedCustomerId, ...formData });
+        await updateCustomer.mutateAsync({
+          id: selectedCustomerId,
+          ...formData,
+        });
       } else {
         await createCustomer.mutateAsync(formData);
       }
+      showAlert(
+        isEditMode
+          ? "Data pelanggan berhasil diperbarui"
+          : "Pelanggan berhasil ditambahkan",
+        "success",
+      );
       setIsModalOpen(false);
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      const err = error as {
+        response?: { data?: { error?: string } };
+        message?: string;
+      };
       console.error("Failed to save customer:", error);
-      alert(err.response?.data?.error || "Gagal menyimpan data pelanggan");
+      showAlert(
+        err.response?.data?.error || "Gagal menyimpan data pelanggan",
+        "danger",
+      );
     }
   };
 
@@ -117,10 +136,11 @@ export function Customers() {
     setDeletingId(confirmState.data);
     try {
       await deleteCustomer.mutateAsync(confirmState.data);
+      showAlert("Pelanggan berhasil dihapus", "success");
       setConfirmState({ open: false, data: null });
     } catch (error) {
       console.error("Failed to delete customer:", error);
-      alert("Gagal menghapus data pelanggan");
+      showAlert("Gagal menghapus data pelanggan", "danger");
     } finally {
       setDeletingId(null);
     }
@@ -180,7 +200,7 @@ export function Customers() {
       </div>
 
       {/* Filters & Search Bar Section */}
-      <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col sm:flex-row gap-4 items-center justify-between w-full">
         {/* Specific Customer Search */}
         <Input
           className="w-full sm:w-96"
@@ -196,7 +216,7 @@ export function Customers() {
           variant="bordered"
         />
         {/* Auxiliary Filters */}
-        <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button
             onPress={() =>
               setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
@@ -214,6 +234,10 @@ export function Customers() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <QueryErrorState error={error as Error} onRetry={() => window.location.reload()} compact />
+      )}
 
       {/* Data Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col p-6">
@@ -243,22 +267,15 @@ export function Customers() {
             </TableHeader>
             <TableBody
               isLoading={isLoading}
-              loadingContent={<Spinner label="Memuat pelanggan..." />}
+              loadingContent={<TableSkeleton rows={5} columns={5} />}
               emptyContent={
-                <div
-                  className="flex flex-col items-center justify-center gap-2 text-on-surface-variant cursor-pointer group"
-                  onClick={openCreateModal}
-                >
-                  <span className="material-symbols-outlined text-[32px] opacity-70 group-hover:text-primary transition-colors">
-                    person_add
-                  </span>
-                  <p className="text-body-md font-body-md font-medium group-hover:text-primary transition-colors">
-                    Belum menemukan pelanggan?
-                  </p>
-                  <span className="text-label-sm font-label-sm text-primary">
-                    Tambah pelanggan baru sekarang
-                  </span>
-                </div>
+                <EmptyState
+                  icon="person_add"
+                  title="Belum ada pelanggan"
+                  description="Tambah pelanggan baru untuk memulai."
+                  actionLabel="Tambah Pelanggan"
+                  onAction={openCreateModal}
+                />
               }
             >
               {customers.map((customer, index) => (
@@ -403,7 +420,12 @@ export function Customers() {
         onClose={() => setIsModalOpen(false)}
         title={isEditMode ? "Edit Pelanggan" : "Tambah Pelanggan Baru"}
         onSubmit={handleSubmit}
-        isSubmitDisabled={!formData.name || !formData.phone || createCustomer.isPending || updateCustomer.isPending}
+        isSubmitDisabled={
+          !formData.name ||
+          !formData.phone ||
+          createCustomer.isPending ||
+          updateCustomer.isPending
+        }
         isLoading={createCustomer.isPending || updateCustomer.isPending}
       >
         <div className="flex flex-col gap-4">

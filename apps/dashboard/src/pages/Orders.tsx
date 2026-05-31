@@ -6,10 +6,12 @@ import {
   useDeleteOrder,
   useUpdatePaymentStatus,
 } from "../hooks/use-orders";
-import type { Order } from "../types/api";
+import type { Order, UserRole } from "../types/api";
 import { usePrinter } from "../hooks/use-printer";
 import type { ReceiptData } from "../utils/receipt-builder";
 import { ConfirmModal } from "../components/ui/ConfirmModal";
+import { EditOrderModal } from "../components/ui/EditOrderModal";
+import { useSession } from "../hooks/use-auth";
 import {
   Button,
   Select,
@@ -21,25 +23,39 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Spinner,
   Pagination,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
 } from "@nextui-org/react";
+import { TableSkeleton } from "../components/ui/TableSkeleton";
+import { EmptyState } from "../components/ui/EmptyState";
+import { QueryErrorState } from "../components/ui/QueryErrorState";
+import { useAlert } from "../contexts/AlertContext";
 
 export function Orders() {
   const [statusFilter, setStatusFilter] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
+  const [searchFilter, setSearchFilter] = useState("");
+  const [dateFromFilter, setDateFromFilter] = useState("");
+  const [dateToFilter, setDateToFilter] = useState("");
   const [page, setPage] = useState(1);
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     data: string | null;
   }>({ open: false, data: null });
 
-  const { data, isLoading, refetch } = useOrders(
+  const { showAlert } = useAlert();
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
+
+  const { data, isLoading, error, refetch } = useOrders(
     {
       status: statusFilter || undefined,
+      paymentStatus: paymentStatusFilter || undefined,
+      search: searchFilter || undefined,
+      dateFrom: dateFromFilter || undefined,
+      dateTo: dateToFilter || undefined,
       page,
       limit: 10,
     },
@@ -76,27 +92,38 @@ export function Orders() {
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
       await updateStatus.mutateAsync({ id, status: newStatus });
-      // Auto-trigger WA notification when order becomes FINISHED
-      if (newStatus === "FINISHED") {
-        handleSendWA(id);
-      }
+      showAlert("Status order berhasil diperbarui", "success");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
-      alert(err.response?.data?.error || "Gagal mengubah status");
+      showAlert(err.response?.data?.error || "Gagal mengubah status", "danger");
     }
   };
 
   const handleUpdatePaymentStatus = async (id: string, newStatus: string) => {
     try {
       await updatePaymentStatus.mutateAsync({ id, paymentStatus: newStatus });
+      showAlert("Status pembayaran berhasil diperbarui", "success");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
-      alert(err.response?.data?.error || "Gagal mengubah status pembayaran");
+      showAlert(err.response?.data?.error || "Gagal mengubah status pembayaran", "danger");
     }
   };
 
+  const { data: session } = useSession();
+  const userRole = ((session?.user as { role?: string })?.role as UserRole) || 'worker';
+
   const getDropdownItems = (order: Order) => {
     const items = [];
+    const canEdit = userRole === 'super_admin' || userRole === 'admin' || order.status === 'PROCESS';
+    
+    if (canEdit) {
+      items.push({
+        key: "edit",
+        label: "Edit Order",
+        icon: "edit",
+        action: () => setEditOrder(order),
+      });
+    }
     if (order.status === "PROCESS")
       items.push({
         key: "finish",
@@ -150,26 +177,28 @@ export function Orders() {
     if (!confirmState.data) return;
     try {
       await deleteOrder.mutateAsync(confirmState.data);
+      showAlert("Order berhasil dihapus", "success");
       setConfirmState({ open: false, data: null });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
-      alert(err.response?.data?.error || "Gagal menghapus order");
+      showAlert(err.response?.data?.error || "Gagal menghapus order", "danger");
     }
   };
 
   const handleSendWA = async (id: string, silent = false) => {
     try {
       await apiClient.post(`/orders/${id}/wa-send`);
-      if (!silent) alert("Pesan WhatsApp berhasil dikirim di latar belakang!");
+      if (!silent) showAlert("Pesan WhatsApp berhasil dikirim di latar belakang!", "success");
     } catch (error: unknown) {
-      if (!silent) alert("Gagal mengirim notifikasi WhatsApp otomatis.");
+      if (!silent) showAlert("Gagal mengirim notifikasi WhatsApp otomatis.", "danger");
     }
   };
 
   const handlePrint = async (order: Order) => {
     if (!isPrinterConnected) {
-      alert(
+      showAlert(
         'Printer belum terhubung. Klik "Hubungkan Printer" terlebih dahulu.',
+        "warning"
       );
       return;
     }
@@ -182,15 +211,18 @@ export function Orders() {
       const receiptData: ReceiptData = {
         invoiceNumber: fullOrder.invoiceNumber,
         customerName: fullOrder.customer?.name || "Unknown",
-        categoryName: fullOrder.category?.name || "Laundry",
-        quantity: parseFloat(fullOrder.quantity),
-        unit: fullOrder.category?.unit || "kg",
-        pricePerUnit: fullOrder.category?.pricePerUnit || 0,
+        items: fullOrder.items?.map((item: any) => ({
+          categoryName: item.category?.name || "Laundry",
+          quantity: parseFloat(item.quantity),
+          unit: item.category?.unit || "kg",
+          pricePerUnit: item.category?.pricePerUnit || 0,
+          subtotal: item.subtotal || (parseFloat(item.quantity) * (item.category?.pricePerUnit || 0)),
+        })) || [],
         totalPrice: fullOrder.totalPrice,
         paymentStatus: fullOrder.paymentStatus,
-        discount: 0,
+        discount: fullOrder.discount || 0,
         createdAt: fullOrder.createdAt,
-        estimatedDurationDays: fullOrder.category?.estimatedDurationDays,
+        estimatedDurationDays: Math.max(...(fullOrder.items?.map((i: any) => i.category?.estimatedDurationDays || 1) || [1])),
         notes: fullOrder.notes,
       };
 
@@ -200,7 +232,7 @@ export function Orders() {
       }
     } catch (error: unknown) {
       const err = error as { message?: string };
-      alert("Gagal mencetak struk: " + (err.message || "Unknown error"));
+      showAlert("Gagal mencetak struk: " + (err.message || "Unknown error"), "danger");
     }
   };
 
@@ -315,7 +347,7 @@ export function Orders() {
             Manage and track all laundry processing phases.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Printer Status & Controls */}
           <div className="flex items-center gap-2">
             {getPrinterStatusBadge()}
@@ -325,11 +357,7 @@ export function Orders() {
                   onPress={disconnectPrinter}
                   variant="bordered"
                   className="px-3 py-2 rounded-xl text-label-md font-label-md border-outline-variant/30 text-on-surface-variant hover:bg-error-container hover:text-error hover:border-error/30"
-                  startContent={
-                    <span className="material-symbols-outlined text-[18px]">
-                      bluetooth_disabled
-                    </span>
-                  }
+                  startContent={<span className="material-symbols-outlined text-[18px]">bluetooth_disabled</span>}
                   title="Putuskan Printer"
                 >
                   <span className="hidden sm:inline">Putuskan</span>
@@ -340,44 +368,98 @@ export function Orders() {
                   onPress={connectPrinter}
                   isDisabled={isConnecting}
                   className="px-3 py-2 rounded-xl text-label-md font-label-md shadow-sm text-white"
-                  startContent={
-                    <span className="material-symbols-outlined text-[18px]">
-                      print
-                    </span>
-                  }
+                  startContent={<span className="material-symbols-outlined text-[18px]">print</span>}
                   title="Hubungkan Printer Bluetooth"
                 >
-                  <span className="hidden sm:inline">
-                    {isConnecting ? "Menghubungkan..." : "Hubungkan Printer"}
-                  </span>
+                  <span className="hidden sm:inline">{isConnecting ? "Menghubungkan..." : "Hubungkan Printer"}</span>
                 </Button>
               ))}
           </div>
-          <Select
-            aria-label="Filter Status"
-            placeholder="All Status"
-            selectedKeys={statusFilter ? [statusFilter] : []}
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-end bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/20">
+        <div className="flex-1 w-full sm:w-auto min-w-[200px]">
+          <label className="text-xs text-on-surface-variant font-medium mb-1 block">Pencarian</label>
+          <input
+            type="text"
+            placeholder="Cari Invoice atau Pelanggan..."
+            value={searchFilter}
             onChange={(e) => {
-              setStatusFilter(e.target.value);
+              setSearchFilter(e.target.value);
               setPage(1);
             }}
-            className="w-40"
-            variant="bordered"
-            size="sm"
-          >
-            <SelectItem key="" value="">
-              All Status
-            </SelectItem>
-            <SelectItem key="PROCESS" value="PROCESS">
-              Process
-            </SelectItem>
-            <SelectItem key="FINISHED" value="FINISHED">
-              Finished
-            </SelectItem>
-            <SelectItem key="TAKEN" value="TAKEN">
-              Taken
-            </SelectItem>
-          </Select>
+            className="w-full h-10 px-3 rounded-lg border border-outline-variant/30 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+          />
+        </div>
+        
+        <div className="w-full sm:w-auto flex flex-col sm:flex-row flex-wrap gap-4">
+          <div className="w-full sm:w-auto">
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Dari Tanggal</label>
+            <input
+              type="date"
+              value={dateFromFilter}
+              onChange={(e) => {
+                setDateFromFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full sm:w-auto h-10 px-3 rounded-lg border border-outline-variant/30 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+            />
+          </div>
+          <div className="w-full sm:w-auto">
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Sampai Tanggal</label>
+            <input
+              type="date"
+              value={dateToFilter}
+              onChange={(e) => {
+                setDateToFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full sm:w-auto h-10 px-3 rounded-lg border border-outline-variant/30 bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
+            />
+          </div>
+          
+          <div className="flex-1 min-w-[120px] w-full sm:w-32">
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Pembayaran</label>
+            <Select
+              aria-label="Filter Payment Status"
+              placeholder="Semua"
+              selectedKeys={paymentStatusFilter ? [paymentStatusFilter] : []}
+              onChange={(e) => {
+                setPaymentStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full"
+              variant="bordered"
+              size="sm"
+            >
+              <SelectItem key="" value="">Semua</SelectItem>
+              <SelectItem key="PAID" value="PAID">Lunas</SelectItem>
+              <SelectItem key="UNPAID" value="UNPAID">Belum Lunas</SelectItem>
+            </Select>
+          </div>
+
+          <div className="flex-1 min-w-[120px] w-full sm:w-32">
+            <label className="text-xs text-on-surface-variant font-medium mb-1 block">Status Order</label>
+            <Select
+              aria-label="Filter Status"
+              placeholder="Semua"
+              selectedKeys={statusFilter ? [statusFilter] : []}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full"
+              variant="bordered"
+              size="sm"
+            >
+              <SelectItem key="" value="">Semua</SelectItem>
+              <SelectItem key="PROCESS" value="PROCESS">Process</SelectItem>
+              <SelectItem key="FINISHED" value="FINISHED">Finished</SelectItem>
+              <SelectItem key="TAKEN" value="TAKEN">Taken</SelectItem>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -422,7 +504,7 @@ export function Orders() {
                 for (const order of unnotifiedOrders) {
                   await handleSendWA(order.id, true);
                 }
-                alert(`Berhasil mengirim ${unnotifiedOrders.length} pesan WhatsApp!`);
+                showAlert(`Berhasil mengirim ${unnotifiedOrders.length} pesan WhatsApp!`, "success");
                 refetch();
               }}
             >
@@ -431,6 +513,10 @@ export function Orders() {
           </div>
         );
       })()}
+
+      {error && (
+        <QueryErrorState error={error as Error} onRetry={() => window.location.reload()} compact />
+      )}
 
       {/* Data Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col p-6">
@@ -472,8 +558,14 @@ export function Orders() {
             </TableHeader>
             <TableBody
               isLoading={isLoading}
-              loadingContent={<Spinner label="Memuat order..." />}
-              emptyContent="Tidak ada order ditemukan."
+              loadingContent={<TableSkeleton rows={6} columns={7} />}
+              emptyContent={
+                <EmptyState
+                  icon="local_laundry_service"
+                  title="Tidak ada order"
+                  description="Belum ada pesanan yang sesuai dengan filter."
+                />
+              }
             >
               {orders.map((order: Order, index: number) => (
                 <TableRow
@@ -498,10 +590,10 @@ export function Orders() {
                     </div>
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface-variant">
-                    {order.category?.name || "-"}
+                    {order.items?.map(i => i.category?.name).join(", ") || "-"}
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface">
-                    {parseFloat(order.quantity)} {order.category?.unit || "kg"}
+                    {order.items?.map(i => `${parseFloat(i.quantity)} ${i.category?.unit || "kg"}`).join(", ")}
                   </TableCell>
                   <TableCell className="text-body-md font-body-md text-on-surface">
                     {formatCurrency(order.totalPrice)}
@@ -524,7 +616,7 @@ export function Orders() {
                   <TableCell>
                     {order.status === "PROCESS" &&
                       (() => {
-                        const estDays = order.category?.estimatedDurationDays;
+                        const estDays = Math.max(...(order.items?.map(i => i.category?.estimatedDurationDays || 1) || [1]));
                         if (estDays) {
                           const createdAtDate = new Date(order.createdAt);
                           const targetDate = new Date(createdAtDate);
@@ -702,6 +794,11 @@ export function Orders() {
         onConfirm={onConfirmDelete}
         isLoading={deleteOrder.isPending}
         confirmText="Hapus Order"
+      />
+      <EditOrderModal
+        isOpen={!!editOrder}
+        onClose={() => setEditOrder(null)}
+        order={editOrder}
       />
     </div>
   );

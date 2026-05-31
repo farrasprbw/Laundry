@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useSession } from "../hooks/use-auth";
 import { Layout } from "../components/layout/Layout";
+import { WorkerLayout } from "../components/layout/WorkerLayout";
 import { authClient } from "../lib/auth-client";
 import type { UserRole } from "../types/api";
 
@@ -60,6 +61,12 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
+  const userRole = ((session?.user as { role?: UserRole })?.role) || "worker";
+
+  if (userRole === "worker") {
+    return <WorkerLayout />;
+  }
+
   return (
     <Layout />
   );
@@ -89,9 +96,9 @@ export function RoleProtectedRoute({
   const userRole = ((session?.user as { role?: UserRole })?.role) || "worker";
 
   if (!roles.includes(userRole)) {
-    // If worker, they don't have dashboard access, so redirect to orders
+    // If worker, they don't have dashboard access, so redirect to worker dashboard
     if (userRole === "worker") {
-      return <Navigate to="/orders" replace />;
+      return <Navigate to="/worker/dashboard" replace />;
     }
     return <Navigate to="/dashboard" replace />;
   }
@@ -120,7 +127,7 @@ export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   if (session) {
     const userRole = ((session?.user as { role?: UserRole })?.role) || "worker";
     if (userRole === "worker") {
-      return <Navigate to="/orders" replace />;
+      return <Navigate to="/worker/dashboard" replace />;
     }
     return <Navigate to="/dashboard" replace />;
   }

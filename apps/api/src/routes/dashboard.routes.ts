@@ -38,4 +38,14 @@ router.get("/financial-trend", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/dashboard/analytics — deep analytics (month comparison, top customers, etc)
+router.get("/analytics", async (_req: AuthRequest, res: Response) => {
+  try {
+    const analytics = await dashboardService.getAnalytics();
+    res.json(analytics);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get dashboard analytics" });
+  }
+});
+
 export default router;

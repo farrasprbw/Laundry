@@ -34,9 +34,7 @@ export interface Order {
   id: string;
   invoiceNumber: string;
   customerId: string;
-  categoryId: string;
   createdById: string;
-  quantity: string; // numeric stored as string
   totalPrice: number;
   status: "PROCESS" | "FINISHED" | "TAKEN";
   paymentStatus: "UNPAID" | "PAID";
@@ -56,12 +54,19 @@ export interface Order {
     phone: string;
     address?: string | null;
   } | null;
-  category?: {
+  items: {
     id: string;
-    name: string;
-    unit: string;
-    estimatedDurationDays?: number;
-  } | null;
+    categoryId: string;
+    quantity: string;
+    pricePerUnit: number;
+    subtotal: number;
+    category?: {
+      id: string;
+      name: string;
+      unit: string;
+      estimatedDurationDays?: number;
+    } | null;
+  }[];
   paymentMethod?: {
     id: string;
     name: string;
@@ -135,6 +140,7 @@ export interface ListCustomersParams {
 
 export interface ListOrdersParams {
   status?: string;
+  paymentStatus?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -170,8 +176,7 @@ export interface CreateCategoryInput {
 
 export interface CreateOrderInput {
   customerId: string;
-  categoryId: string;
-  quantity: number;
+  items: { categoryId: string; quantity: number }[];
   notes?: string;
   paymentMethodId?: string;
   paymentStatus?: "UNPAID" | "PAID";
@@ -234,7 +239,6 @@ export interface CreateUserInput {
 export interface DashboardRecentOrder {
   id: string;
   invoiceNumber: string;
-  quantity: string;
   totalPrice: number;
   status: string;
   createdAt: string;
@@ -243,11 +247,104 @@ export interface DashboardRecentOrder {
     name: string;
     phone: string;
   } | null;
-  category: {
+  items: {
     id: string;
-    name: string;
-    unit: string;
-  } | null;
+    quantity: string;
+    category?: {
+      id: string;
+      name: string;
+      unit: string;
+    } | null;
+  }[];
+}
+
+export interface MonthComparison {
+  currentMonthIncome: number;
+  lastMonthIncome: number;
+  incomeChangePercent: number;
+  currentMonthExpenses: number;
+  lastMonthExpenses: number;
+  expenseChangePercent: number;
+  currentMonthOrders: number;
+  lastMonthOrders: number;
+  orderChangePercent: number;
+}
+
+export interface TopCustomer {
+  id: string;
+  name: string;
+  phone: string;
+  totalSpent: number;
+  orderCount: number;
+}
+
+export interface TopCategory {
+  id: string;
+  name: string;
+  icon: string;
+  orderCount: number;
+  totalRevenue: number;
+}
+
+export interface OrdersByHour {
+  hour: number;
+  count: number;
+}
+
+export interface DashboardAnalytics {
+  monthComparison: MonthComparison;
+  topCustomers: TopCustomer[];
+  topCategories: TopCategory[];
+  averageRating: number | null;
+  totalRatings: number;
+  ordersByHour: OrdersByHour[];
+}
+
+// ── Receivables Types ──
+
+export interface ReceivableSummary {
+  totalAmount: number;
+  unpaidCount: number;
+  customerCount: number;
+}
+
+export interface AgingBucket {
+  label: string;
+  count: number;
+  amount: number;
+}
+
+export interface CustomerReceivable {
+  id: string;
+  name: string;
+  phone: string | null;
+  totalAmount: number;
+  orderCount: number;
+  oldestOrderDate: string;
+}
+
+// ── Enhanced Report Types ──
+
+export interface CategoryBreakdown {
+  id: string;
+  name: string;
+  color?: string;
+  orderCount: number;
+  totalRevenue: number;
+}
+
+export interface PaymentBreakdown {
+  id: string;
+  name: string;
+  provider?: string;
+  orderCount: number;
+  totalRevenue: number;
+}
+
+export interface MonthlyComparison {
+  month: string;
+  income: number;
+  expenses: number;
 }
 
 // ── API Error ──
@@ -256,3 +353,18 @@ export interface ApiError {
   error: string;
   message?: string;
 }
+
+// ── Settings Types ──
+
+export interface StoreSettings {
+  store_name: string;
+  store_address: string;
+  store_address_full: string;
+  store_phone: string;
+  store_logo_url: string;
+  bank_account: string;
+  store_maps_url: string;
+  store_disclaimer: string;
+}
+
+export type UpdateSettingsInput = Record<string, string>;

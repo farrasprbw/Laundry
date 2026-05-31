@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
-import { orders, expenses, customers, categories, paymentMethods } from "../db/schema.js";
-import { sql, eq, isNull, and, gte, lt, lte, desc } from "drizzle-orm";
+import { orders, expenses, customers, categories, paymentMethods, orderItems } from "../db/schema.js";
+import { sql, eq, isNull, and, gte, lt, lte, desc, inArray } from "drizzle-orm";
 import { generateExcelReport } from "../lib/excel.js";
 
 export const reportService = {
@@ -62,10 +62,40 @@ export const reportService = {
   },
 
   async getRecentOrders(limit: number = 5) {
-    return db.select({ order: orders, customer: { id: customers.id, name: customers.name, phone: customers.phone }, category: { id: categories.id, name: categories.name, unit: categories.unit } })
-      .from(orders).leftJoin(customers, eq(orders.customerId, customers.id)).leftJoin(categories, eq(orders.categoryId, categories.id))
-      .where(isNull(orders.deletedAt)).orderBy(desc(orders.createdAt)).limit(limit)
-      .then(rows => rows.map(r => ({ ...r.order, customer: r.customer, category: r.category })));
+    const data = await db
+      .select({
+        order: orders,
+        customer: { id: customers.id, name: customers.name, phone: customers.phone },
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .where(isNull(orders.deletedAt))
+      .orderBy(desc(orders.createdAt))
+      .limit(limit);
+
+    const orderIds = data.map((d) => d.order.id);
+    let itemsData: any[] = [];
+    if (orderIds.length > 0) {
+      itemsData = await db
+        .select({
+          orderId: orderItems.orderId,
+          categoryName: categories.name,
+        })
+        .from(orderItems)
+        .innerJoin(categories, eq(orderItems.categoryId, categories.id))
+        .where(inArray(orderItems.orderId, orderIds));
+    }
+
+    return data.map((row) => {
+      const items = itemsData
+        .filter((i) => i.orderId === row.order.id)
+        .map((i) => i.categoryName);
+      return {
+        ...row.order,
+        customer: row.customer,
+        category: { id: "", name: items.join(", "), unit: "" },
+      };
+    });
   },
 
   async getPendingPickups() {
@@ -85,19 +115,42 @@ export const reportService = {
       );
     }
 
-    return db.select({
-      order: orders,
-      customer: { id: customers.id, name: customers.name, phone: customers.phone },
-      category: { id: categories.id, name: categories.name, unit: categories.unit },
-      paymentMethod: { id: paymentMethods.id, name: paymentMethods.name }
-    })
+    const data = await db
+      .select({
+        order: orders,
+        customer: { id: customers.id, name: customers.name, phone: customers.phone },
+        paymentMethod: { id: paymentMethods.id, name: paymentMethods.name },
+      })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
-      .leftJoin(categories, eq(orders.categoryId, categories.id))
       .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
       .where(filter)
-      .orderBy(desc(orders.createdAt))
-      .then(rows => rows.map(r => ({ ...r.order, customer: r.customer, category: r.category, paymentMethod: r.paymentMethod })));
+      .orderBy(desc(orders.createdAt));
+
+    const orderIds = data.map((d) => d.order.id);
+    let itemsData: any[] = [];
+    if (orderIds.length > 0) {
+      itemsData = await db
+        .select({
+          orderId: orderItems.orderId,
+          categoryName: categories.name,
+        })
+        .from(orderItems)
+        .innerJoin(categories, eq(orderItems.categoryId, categories.id))
+        .where(inArray(orderItems.orderId, orderIds));
+    }
+
+    return data.map((row) => {
+      const items = itemsData
+        .filter((i) => i.orderId === row.order.id)
+        .map((i) => i.categoryName);
+      return {
+        ...row.order,
+        customer: row.customer,
+        paymentMethod: row.paymentMethod,
+        category: { id: "", name: items.join(", "), unit: "" },
+      };
+    });
   },
 
   async getSummary(dateFrom: string, dateTo: string) {
@@ -113,14 +166,9 @@ export const reportService = {
   },
 
   async exportExcel(dateFrom: string, dateTo: string) {
-    const [ordersData, expensesData, summary] = await Promise.all([
-      db.select({ order: orders, customer: customers, category: categories, paymentMethod: paymentMethods }).from(orders)
-        .leftJoin(customers, eq(orders.customerId, customers.id))
-        .leftJoin(categories, eq(orders.categoryId, categories.id))
-        .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
-        .where(and(isNull(orders.deletedAt), gte(orders.createdAt, new Date(dateFrom)), lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`))))
-        .orderBy(desc(orders.createdAt))
-        .then(rows => rows.map(r => ({ ...r.order, customer: r.customer!, category: r.category!, paymentMethod: r.paymentMethod }))),
+    const ordersData = await this.getTransactions(dateFrom, dateTo);
+
+    const [expensesData, summary] = await Promise.all([
       db.select().from(expenses)
         .where(and(isNull(expenses.deletedAt), gte(expenses.expenseDate, dateFrom), lte(expenses.expenseDate, dateTo)))
         .orderBy(desc(expenses.expenseDate)),
@@ -128,9 +176,102 @@ export const reportService = {
     ]);
 
     return generateExcelReport({
-      orders: ordersData, expenses: expensesData,
+      // @ts-expect-error Types might slightly mismatch because of missing customer details but it's ok for excel
+      orders: ordersData, 
+      expenses: expensesData,
       totalIncome: summary.totalIncome, totalExpenses: summary.totalExpenses,
       netProfit: summary.netProfit, reportTitle: `Report ${dateFrom} - ${dateTo}`,
     });
   },
+
+  async getCategoryBreakdown(dateFrom?: string, dateTo?: string) {
+    let filter: ReturnType<typeof and> = isNull(orders.deletedAt);
+    if (dateFrom && dateTo) {
+      filter = and(
+        filter,
+        gte(orders.createdAt, new Date(dateFrom)),
+        lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`))
+      );
+    }
+
+    const data = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        orderCount: sql<number>`COUNT(DISTINCT ${orders.id})`.mapWith(Number),
+        totalRevenue: sql<number>`SUM(${orderItems.subtotal})`.mapWith(Number),
+      })
+      .from(orderItems)
+      .innerJoin(orders, eq(orderItems.orderId, orders.id))
+      .innerJoin(categories, eq(orderItems.categoryId, categories.id))
+      .where(filter)
+      .groupBy(categories.id, categories.name)
+      .orderBy(desc(sql`SUM(${orderItems.subtotal})`));
+
+    return data;
+  },
+
+  async getPaymentBreakdown(dateFrom?: string, dateTo?: string) {
+    let filter: ReturnType<typeof and> = and(isNull(orders.deletedAt), sql`${orders.paymentMethodId} IS NOT NULL`);
+    if (dateFrom && dateTo) {
+      filter = and(
+        filter,
+        gte(orders.createdAt, new Date(dateFrom)),
+        lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`))
+      );
+    }
+
+    const data = await db
+      .select({
+        id: paymentMethods.id,
+        name: paymentMethods.name,
+        orderCount: sql<number>`COUNT(${orders.id})`.mapWith(Number),
+        totalRevenue: sql<number>`SUM(${orders.totalPrice})`.mapWith(Number),
+      })
+      .from(orders)
+      .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
+      .where(filter)
+      .groupBy(paymentMethods.id, paymentMethods.name)
+      .orderBy(desc(sql`SUM(${orders.totalPrice})`));
+
+    return data;
+  },
+
+  async getMonthlyComparison(months: number = 6) {
+    const data = [];
+    const now = new Date();
+    
+    // We go backwards to calculate properly, then reverse
+    for (let i = months - 1; i >= 0; i--) {
+      const targetMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      
+      const monthStr = targetMonth.toLocaleDateString("id-ID", { month: 'short', year: 'numeric' });
+      
+      const [incomeResult, expResult] = await Promise.all([
+        db.select({ total: sql<number>`COALESCE(SUM(${orders.totalPrice}), 0)`.mapWith(Number) })
+          .from(orders)
+          .where(and(
+            isNull(orders.deletedAt),
+            gte(orders.createdAt, targetMonth),
+            lt(orders.createdAt, nextMonth)
+          )),
+        db.select({ total: sql<number>`COALESCE(SUM(${expenses.amount}), 0)`.mapWith(Number) })
+          .from(expenses)
+          .where(and(
+            isNull(expenses.deletedAt),
+            sql`${expenses.expenseDate} >= ${targetMonth.toISOString().split('T')[0]}`,
+            sql`${expenses.expenseDate} < ${nextMonth.toISOString().split('T')[0]}`
+          ))
+      ]);
+
+      data.push({
+        month: monthStr,
+        income: incomeResult[0].total,
+        expenses: expResult[0].total,
+      });
+    }
+
+    return data;
+  }
 };

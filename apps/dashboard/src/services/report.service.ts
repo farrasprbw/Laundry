@@ -55,4 +55,28 @@ export const reportService = {
     });
     return data;
   },
+
+  /** Get category breakdown. */
+  async getCategoryBreakdown(dateFrom?: string, dateTo?: string) {
+    const { data } = await apiClient.get("/reports/category-breakdown", {
+      params: { dateFrom, dateTo },
+    });
+    return data;
+  },
+
+  /** Get payment method breakdown. */
+  async getPaymentBreakdown(dateFrom?: string, dateTo?: string) {
+    const { data } = await apiClient.get("/reports/payment-breakdown", {
+      params: { dateFrom, dateTo },
+    });
+    return data;
+  },
+
+  /** Get monthly comparison. */
+  async getMonthlyComparison(months = 6) {
+    const { data } = await apiClient.get("/reports/monthly-comparison", {
+      params: { months },
+    });
+    return data;
+  },
 };

@@ -28,14 +28,13 @@ export const autoFinishService = {
         orderId: orders.id,
       })
       .from(orders)
-      .innerJoin(categories, eq(orders.categoryId, categories.id))
       .where(
         and(
           eq(orders.status, "PROCESS"),
           isNull(orders.deletedAt),
           sql`(NOW() AT TIME ZONE 'Asia/Jakarta') >= (
             (${orders.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')::date
-            + make_interval(days => (${categories.estimatedDurationDays} - 1))
+            + make_interval(days => ((SELECT MAX(c.estimated_duration_days) FROM order_items oi JOIN categories c ON oi.category_id = c.id WHERE oi.order_id = ${orders.id}) - 1))
             + INTERVAL '17 hours'
           )`
         )

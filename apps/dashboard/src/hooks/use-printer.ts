@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { printer, BluetoothPrinter, type PrinterStatus } from '../utils/thermal-printer';
 import { buildLaundryReceipt, type ReceiptData } from '../utils/receipt-builder';
+import { useSettings } from './use-settings';
 
 /**
  * Custom hook for managing Bluetooth thermal printer state.
@@ -41,6 +42,8 @@ export function usePrinter() {
     };
   }, []);
 
+  const { data: settings } = useSettings();
+
   /** Connect to a Bluetooth printer */
   const connect = useCallback(async () => {
     setError(null);
@@ -64,9 +67,20 @@ export function usePrinter() {
       return false;
     }
 
+    if (!settings) {
+      setError('Pengaturan toko belum dimuat. Coba lagi.');
+      return false;
+    }
+
     try {
       setError(null);
-      const receiptBytes = buildLaundryReceipt(data);
+      const receiptBytes = buildLaundryReceipt(data, {
+        name: settings.store_name,
+        address: settings.store_address,
+        phone: settings.store_phone,
+        qrCodeUrl: settings.store_maps_url,
+        disclaimer: settings.store_disclaimer ? settings.store_disclaimer.split('|') : []
+      });
       const success = await printer.print(receiptBytes);
       return success;
     } catch (error: unknown) {
@@ -74,7 +88,7 @@ export function usePrinter() {
       setError(`Gagal mencetak: ${err.message}`);
       return false;
     }
-  }, []);
+  }, [settings]);
 
   /** Dismiss current error */
   const clearError = useCallback(() => {

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Modal } from "./Modal";
 import { useAlert } from "../../contexts/AlertContext";
-import { useCustomers } from "../../hooks/use-customers";
 import { useCategories } from "../../hooks/use-categories";
-import { useCreateOrder } from "../../hooks/use-orders";
+import { useUpdateOrder } from "../../hooks/use-orders";
 import { usePaymentMethods } from "../../hooks/use-payment-methods";
+import type { Order } from "../../types/api";
 import {
   Select,
   SelectItem,
@@ -16,104 +16,100 @@ import {
 } from "@nextui-org/react";
 import { Trash2, Plus } from "lucide-react";
 
-interface AddOrderModalProps {
+interface EditOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
+  order: Order | null;
 }
 
-export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
-  const [customerId, setCustomerId] = useState("");
-  const [items, setItems] = useState<{ categoryId: string; quantity: string }[]>([
-    { categoryId: "", quantity: "" },
-  ]);
+export function EditOrderModal({
+  isOpen,
+  onClose,
+  order,
+}: EditOrderModalProps) {
+  const [items, setItems] = useState<{ categoryId: string; quantity: string }[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"UNPAID" | "PAID">(
     "UNPAID",
   );
   const [parfume, setParfume] = useState("");
+  const [discount, setDiscount] = useState("");
+
   const { showAlert } = useAlert();
 
-  const {
-    data: customersData,
-    isLoading: isLoadingCustomers,
-    refetch: refetchCustomers,
-  } = useCustomers({ limit: 100 });
-  const {
-    data: categoriesData,
-    isLoading: isLoadingCategories,
-    refetch: refetchCategories,
-  } = useCategories();
-  const {
-    data: paymentMethodsData,
-    isLoading: isLoadingPM,
-    refetch: refetchPM,
-  } = usePaymentMethods();
+  const { data: categoriesData, isLoading: isLoadingCategories } = useCategories();
 
-  const createOrder = useCreateOrder();
+  const { data: paymentMethodsData, isLoading: isLoadingPM } =
+    usePaymentMethods();
+
+  const updateOrder = useUpdateOrder();
 
   useEffect(() => {
-    if (isOpen) {
-      refetchCustomers();
-      refetchCategories();
-      refetchPM();
+    if (isOpen && order) {
+      if (order.items && order.items.length > 0) {
+        setItems(
+          order.items.map((i) => ({
+            categoryId: i.categoryId,
+            quantity: i.quantity,
+          }))
+        );
+      } else {
+        setItems([{ categoryId: "", quantity: "" }]);
+      }
+      setNotes(order.notes || "");
+      setPaymentMethodId(order.paymentMethodId || "");
+      setPaymentStatus(order.paymentStatus || "UNPAID");
+      setParfume(order.parfume || "");
+      setDiscount(order.discount ? String(order.discount) : "");
     }
-  }, [isOpen, refetchCustomers, refetchCategories, refetchPM]);
+  }, [isOpen, order]);
 
-  const customers = customersData?.data || [];
   const categories = categoriesData || [];
   const paymentMethods = paymentMethodsData || [];
 
-  const totalPrice = items.reduce((acc, item) => {
+  const subtotal = items.reduce((acc, item) => {
     const category = categories.find((c) => c.id === item.categoryId);
     if (category && item.quantity) {
       return acc + category.pricePerUnit * Number(item.quantity);
     }
     return acc;
   }, 0);
+  
+  const currentDiscount = Number(discount) || 0;
+  const totalPrice = Math.max(0, subtotal - currentDiscount);
 
   const isFormIncomplete =
-    !customerId ||
     items.some((i) => !i.categoryId || !i.quantity || Number(i.quantity) <= 0) ||
-    !paymentMethodId ||
     !paymentStatus;
 
   const handleSubmit = () => {
-    if (isFormIncomplete) {
+    if (!order || isFormIncomplete) {
       showAlert(
-        "Mohon lengkapi semua data wajib (Pelanggan, Layanan, Berat/Jumlah, dan Metode Pembayaran) dengan benar.",
+        "Mohon lengkapi data wajib (Layanan, Jumlah, Status Pembayaran) dengan benar.",
         "warning"
       );
       return;
     }
 
-    createOrder.mutate(
+    updateOrder.mutate(
       {
-        customerId,
-        items: items.map((i) => ({
-          categoryId: i.categoryId,
-          quantity: Number(i.quantity),
-        })),
+        id: order.id,
+        items: items.map(i => ({ categoryId: i.categoryId, quantity: Number(i.quantity) })),
         notes: notes || undefined,
         paymentMethodId: paymentMethodId || undefined,
         paymentStatus,
-        discount: 0,
+        discount: currentDiscount,
         parfume: parfume || undefined,
       },
       {
         onSuccess: () => {
-          showAlert("Order berhasil dibuat!", "success");
-          setCustomerId("");
-          setItems([{ categoryId: "", quantity: "" }]);
-          setNotes("");
-          setPaymentMethodId("");
-          setPaymentStatus("UNPAID");
-          setParfume("");
+          showAlert("Order berhasil diperbarui!", "success");
           onClose();
         },
         onError: (error: unknown) => {
           const err = error as { message?: string };
-          showAlert(err?.message || "Gagal membuat order", "danger");
+          showAlert(err?.message || "Gagal mengupdate order", "danger");
         },
       },
     );
@@ -133,35 +129,26 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     setItems(newItems);
   };
 
+  if (!order) return null;
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Buat Order Baru"
+      title={`Edit Order ${order.invoiceNumber}`}
       onSubmit={handleSubmit}
-      submitText="Buat Order"
-      isSubmitDisabled={isFormIncomplete || createOrder.isPending}
-      isLoading={createOrder.isPending}
+      submitText="Simpan Perubahan"
+      isSubmitDisabled={isFormIncomplete || updateOrder.isPending}
+      isLoading={updateOrder.isPending}
     >
       <div className="flex flex-col gap-4">
-        <Select
-          label="Pilih Pelanggan"
-          placeholder="Pilih pelanggan..."
-          selectedKeys={customerId ? [customerId] : []}
-          onChange={(e) => setCustomerId(e.target.value)}
-          isLoading={isLoadingCustomers}
-          variant="bordered"
-        >
-          {customers.map((c) => (
-            <SelectItem
-              key={c.id}
-              value={c.id}
-              textValue={`${c.name} (${c.phone})`}
-            >
-              {c.name} ({c.phone})
-            </SelectItem>
-          ))}
-        </Select>
+        {/* Read-only customer info */}
+        <Input
+          label="Pelanggan"
+          value={order.customer?.name || "-"}
+          isReadOnly
+          variant="flat"
+        />
 
         <div className="flex flex-col gap-2">
           {items.map((item, index) => {
@@ -226,19 +213,31 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           </Button>
         </div>
 
-        <Input
-          type="text"
-          label="Total Harga"
-          value={totalPrice.toLocaleString("id-ID")}
-          isReadOnly
-          startContent={
-            <div className="pointer-events-none flex items-center">
-              <span className="text-default-400 text-small">Rp</span>
-            </div>
-          }
-          variant="bordered"
-          className="font-bold"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            type="number"
+            label="Diskon (Rp)"
+            placeholder="0"
+            min="0"
+            value={discount}
+            onChange={(e) => setDiscount(e.target.value)}
+            variant="bordered"
+          />
+
+          <Input
+            type="text"
+            label="Total Harga Baru"
+            value={totalPrice.toLocaleString("id-ID")}
+            isReadOnly
+            startContent={
+              <div className="pointer-events-none flex items-center">
+                <span className="text-default-400 text-small">Rp</span>
+              </div>
+            }
+            variant="flat"
+            className="font-bold"
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <Select
@@ -250,7 +249,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
             variant="bordered"
           >
             {paymentMethods
-              .filter((pm) => pm.isActive)
+              .filter((pm) => pm.isActive || pm.id === order.paymentMethodId)
               .map((pm) => (
                 <SelectItem key={pm.id} value={pm.id} textValue={pm.name}>
                   {pm.name}

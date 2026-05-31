@@ -2,15 +2,37 @@ import { Router } from "express";
 import { db } from "../db/index.js";
 import { orders, customers, categories, paymentMethods } from "../db/schema.js";
 import { eq, and, isNull } from "drizzle-orm";
+import { settingsService } from "../services/settings.service.js";
 import type { Request, Response } from "express";
 
 const router = Router();
+
+// GET /api/public/settings — fetch public store settings (no auth)
+router.get("/settings", async (_req: Request, res: Response) => {
+  try {
+    const settings = await settingsService.getAll();
+    // Only return safe public settings
+    const publicSettings = {
+      store_name: settings.store_name,
+      store_address: settings.store_address,
+      store_address_full: settings.store_address_full,
+      store_phone: settings.store_phone,
+      store_logo_url: settings.store_logo_url,
+      store_maps_url: settings.store_maps_url,
+    };
+    res.json(publicSettings);
+  } catch (err) {
+    console.error("Failed to fetch public settings:", err);
+    res.status(500).json({ error: "Failed to fetch settings" });
+  }
+});
 
 // GET /api/public/invoice/:invoiceNumber — fetch full order details (no auth)
 router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
   try {
     const invoiceNumber = decodeURIComponent(req.params.invoiceNumber as string);
 
+    const { orderItems } = await import("../db/schema.js");
     const [result] = await db
       .select({
         order: orders,
@@ -20,14 +42,6 @@ router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
           phone: customers.phone,
           address: customers.address,
         },
-        category: {
-          id: categories.id,
-          name: categories.name,
-          description: categories.description,
-          pricePerUnit: categories.pricePerUnit,
-          unit: categories.unit,
-          estimatedDurationDays: categories.estimatedDurationDays,
-        },
         paymentMethod: {
           id: paymentMethods.id,
           name: paymentMethods.name,
@@ -35,7 +49,6 @@ router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
-      .leftJoin(categories, eq(orders.categoryId, categories.id))
       .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
       .where(
         and(eq(orders.invoiceNumber, invoiceNumber), isNull(orders.deletedAt))
@@ -46,11 +59,27 @@ router.get("/invoice/:invoiceNumber", async (req: Request, res: Response) => {
       return;
     }
 
+    const itemsData = await db
+      .select({
+        item: orderItems,
+        category: {
+          id: categories.id,
+          name: categories.name,
+          description: categories.description,
+          pricePerUnit: categories.pricePerUnit,
+          unit: categories.unit,
+          estimatedDurationDays: categories.estimatedDurationDays,
+        },
+      })
+      .from(orderItems)
+      .innerJoin(categories, eq(orderItems.categoryId, categories.id))
+      .where(eq(orderItems.orderId, result.order.id));
+
     res.json({
       ...result.order,
       customer: result.customer,
-      category: result.category,
       paymentMethod: result.paymentMethod,
+      items: itemsData.map((i) => ({ ...i.item, category: i.category })),
     });
   } catch (err) {
     console.error("Failed to fetch invoice:", err);

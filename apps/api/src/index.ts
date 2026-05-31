@@ -14,8 +14,10 @@ import reportRoutes from "./routes/report.routes.js";
 import paymentMethodRoutes from "./routes/payment-method.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import settingsRoutes from "./routes/settings.routes.js";
 import publicRoutes from "./routes/public.routes.js";
 import cronRoutes from "./routes/cron.routes.js";
+import receivableRoutes from "./routes/receivable.routes.js";
 import { autoFinishService } from "./services/auto-finish.service.js";
 
 const app = express();
@@ -45,7 +47,9 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/settings", settingsRoutes);
 app.use("/api/cron", cronRoutes);
+app.use("/api/receivables", receivableRoutes);
 
 // ── Export for Vercel serverless ──
 export default app;

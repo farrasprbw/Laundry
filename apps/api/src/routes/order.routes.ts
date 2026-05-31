@@ -8,9 +8,11 @@ router.use(requireAuth);
 
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { status, search, page, limit, dateFrom, dateTo } = req.query;
+    const { status, paymentStatus, search, page, limit, dateFrom, dateTo } = req.query;
     const result = await orderService.list({
-      status: status as string, search: search as string,
+      status: status as string, 
+      paymentStatus: paymentStatus as string,
+      search: search as string,
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
       dateFrom: dateFrom as string, dateTo: dateTo as string,
@@ -33,11 +35,11 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
 
 router.post("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { customerId, categoryId, quantity, notes, paymentMethodId, paymentStatus, discount, parfume } = req.body;
-    if (!customerId || !categoryId || !quantity) {
-      res.status(400).json({ error: "customerId, categoryId, and quantity are required" }); return;
+    const { customerId, items, notes, paymentMethodId, paymentStatus, discount, parfume } = req.body;
+    if (!customerId || !items || !Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: "customerId and at least one item are required" }); return;
     }
-    const order = await orderService.create({ customerId, categoryId, quantity: Number(quantity), notes, paymentMethodId, paymentStatus, discount: discount ? Number(discount) : 0, parfume }, req.user!.id);
+    const order = await orderService.create({ customerId, items, notes, paymentMethodId, paymentStatus, discount: discount ? Number(discount) : 0, parfume }, req.user!.id);
     res.status(201).json(order);
   } catch (error: unknown) {
     const err = error as Error;
@@ -47,7 +49,8 @@ router.post("/", async (req: AuthRequest, res: Response) => {
 
 router.put("/:id", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
-    const order = await orderService.update(req.params.id as string, req.body);
+    const { items, notes, paymentMethodId, paymentStatus, discount, parfume } = req.body;
+    const order = await orderService.update(req.params.id as string, { items, notes, paymentMethodId, paymentStatus, discount: discount ? Number(discount) : 0, parfume });
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
     res.json(order);
   } catch (err) {

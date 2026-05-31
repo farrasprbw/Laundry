@@ -3,7 +3,10 @@ import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../hooks/use-categories';
 import type { Category } from '../types/api';
-import { Button, Input, Select, SelectItem, Spinner, Tooltip } from '@nextui-org/react';
+import { Button, Input, Select, SelectItem, Tooltip } from '@nextui-org/react';
+import { CardSkeleton } from '../components/ui/CardSkeleton';
+import { EmptyState } from '../components/ui/EmptyState';
+import { useAlert } from '../contexts/AlertContext';
 
 const CARD_THEMES = [
   { lightBg: 'bg-primary/5', containerBg: 'bg-primary-container', iconColor: 'text-primary' },
@@ -24,6 +27,7 @@ export function Categories() {
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
+  const { showAlert } = useAlert();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -78,14 +82,18 @@ export function Categories() {
     if (editingCategory) {
       updateCategory.mutate({ id: editingCategory.id, ...payload }, {
         onSuccess: () => {
+          showAlert("Kategori berhasil diperbarui", "success");
           setIsModalOpen(false);
-        }
+        },
+        onError: () => showAlert("Gagal memperbarui kategori", "danger")
       });
     } else {
       createCategory.mutate(payload, {
         onSuccess: () => {
+          showAlert("Kategori berhasil ditambahkan", "success");
           setIsModalOpen(false);
-        }
+        },
+        onError: () => showAlert("Gagal menambahkan kategori", "danger")
       });
     }
   };
@@ -94,9 +102,11 @@ export function Categories() {
     if (!deletingCategory) return;
     deleteCategory.mutate(deletingCategory.id, {
       onSuccess: () => {
+        showAlert("Kategori berhasil dihapus", "success");
         setIsDeleteModalOpen(false);
         setDeletingCategory(null);
-      }
+      },
+      onError: () => showAlert("Gagal menghapus kategori", "danger")
     });
   };
 
@@ -132,14 +142,15 @@ export function Categories() {
 
       {/* Bento Grid Canvas for Categories */}
       {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Spinner label="Memuat kategori..." />
-        </div>
+        <CardSkeleton count={4} layout="vertical" />
       ) : categories.length === 0 ? (
-        <div className="text-center py-10 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">sell</span>
-          <p className="text-body-lg text-on-surface-variant">Belum ada kategori. Silakan tambah kategori baru.</p>
-        </div>
+        <EmptyState
+          icon="sell"
+          title="Belum ada kategori"
+          description="Silakan tambah kategori layanan baru."
+          actionLabel="Tambah Kategori"
+          onAction={() => { setEditingCategory(null); setIsModalOpen(true); }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {categories.map((category, index) => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { useAlert } from '../contexts/AlertContext';
 import {
   useExpenses,
   useCreateExpense,
@@ -8,7 +9,9 @@ import {
   useDeleteExpense
 } from '../hooks/use-expenses';
 import type { Expense } from '../types/api';
-import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Pagination, Tooltip, Textarea } from '@nextui-org/react';
+import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Pagination, Tooltip, Textarea } from '@nextui-org/react';
+import { TableSkeleton } from '../components/ui/TableSkeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 
 const CATEGORIES = [
   { value: "detergent", label: "Detergent & Supplies", icon: "water_drop", color: "bg-primary-fixed-dim/30 text-on-primary-fixed-variant" },
@@ -80,6 +83,7 @@ export function Expenses() {
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
+  const { showAlert } = useAlert();
 
   // Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -127,10 +131,11 @@ export function Expenses() {
     if (!confirmState.data) return;
     try {
       await deleteExpense.mutateAsync(confirmState.data);
+      showAlert("Pengeluaran berhasil dihapus", "success");
       setConfirmState({ open: false, data: null });
     } catch (err) {
       console.error(err);
-      alert("Failed to delete expense.");
+      showAlert("Failed to delete expense.", "danger");
     }
   };
 
@@ -151,10 +156,16 @@ export function Expenses() {
       } else {
         await createExpense.mutateAsync(payload);
       }
+      showAlert(
+        editingExpense
+          ? "Pengeluaran berhasil diperbarui"
+          : "Pengeluaran berhasil ditambahkan",
+        "success",
+      );
       setIsModalOpen(false);
     } catch (error) {
       console.error("Failed to save expense:", error);
-      alert("Failed to save expense. Please try again.");
+      showAlert("Failed to save expense. Please try again.", "danger");
     } finally {
       setIsSubmitting(false);
     }
@@ -228,17 +239,17 @@ export function Expenses() {
       {/* Data Table Card */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col p-6 relative min-h-[400px]">
         {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-surface/50 z-10 rounded-2xl">
-            <Spinner label="Memuat data..." />
+          <div className="p-6">
+            <TableSkeleton rows={6} columns={5} />
           </div>
         ) : expenses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[400px] text-center px-4 rounded-2xl">
-            <span className="material-symbols-outlined text-[64px] text-outline-variant mb-4">receipt_long</span>
-            <h3 className="text-title-lg font-title-lg text-on-surface mb-2">No Expenses Found</h3>
-            <p className="text-body-md font-body-md text-on-surface-variant max-w-md">
-              {search || selectedMonthYear ? "Try adjusting your search or filters to find what you're looking for." : "You haven't recorded any expenses yet. Click 'Add Expense' to get started."}
-            </p>
-          </div>
+          <EmptyState
+            icon="receipt_long"
+            title="Tidak ada pengeluaran"
+            description={search || selectedMonthYear ? "Coba sesuaikan pencarian atau filter Anda." : "Anda belum mencatat pengeluaran apapun."}
+            actionLabel="Tambah Pengeluaran"
+            onAction={openAddModal}
+          />
         ) : (
           <>
             <div className="overflow-x-auto w-full">

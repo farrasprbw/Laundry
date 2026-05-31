@@ -27,3 +27,12 @@ export function useDashboardFinancialTrend(days = 7) {
     refetchInterval: 60_000,
   });
 }
+
+/** Fetch deep dashboard analytics. */
+export function useDashboardAnalytics() {
+  return useQuery({
+    queryKey: ["dashboard", "analytics"],
+    queryFn: () => dashboardService.getAnalytics(),
+    refetchInterval: 60_000,
+  });
+}

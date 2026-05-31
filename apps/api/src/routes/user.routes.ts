@@ -32,11 +32,11 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
 // POST /api/users — create a new user
 router.post("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { name, username, password, role } = req.body;
+    const { name, username, password, role, phone } = req.body;
     if (!name || !username || !password || !role) {
       res.status(400).json({ error: "Missing required fields: name, username, password, role" }); return;
     }
-    const user = await userService.createUser({ name, username, password, role });
+    const user = await userService.createUser({ name, username, password, role, phone });
     res.status(201).json(user);
   } catch (error: unknown) {
     const err = error as Error;

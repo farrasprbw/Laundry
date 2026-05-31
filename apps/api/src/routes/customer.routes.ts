@@ -5,9 +5,9 @@ import type { Response } from "express";
 
 const router = Router();
 
-// All customer routes require admin or super_admin
+// All customer routes require admin, super_admin, or worker
 router.use(requireAuth);
-router.use(requireRole("admin", "super_admin"));
+router.use(requireRole("admin", "super_admin", "worker"));
 
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
