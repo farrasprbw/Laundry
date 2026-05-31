@@ -73,7 +73,7 @@ export function Scanner() {
         },
       );
     } catch (err: unknown) {
-      setError("Gagal mengakses kamera:");
+      setError("Gagal mengakses kamera");
     }
   };
 
