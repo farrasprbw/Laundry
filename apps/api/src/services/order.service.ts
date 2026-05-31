@@ -213,7 +213,7 @@ export const orderService = {
           paymentMethodId: input.paymentMethodId ?? null,
           paymentStatus: input.paymentStatus ?? "UNPAID",
           discount: discountAmount,
-          promotionId: input.promotionId ?? null,
+          promotionId: input.promotionId || null,
           pointsEarned,
           pointsUsed,
           parfume: input.parfume ?? null,
@@ -229,9 +229,9 @@ export const orderService = {
 
       // Update customer points
       if (pointsEarned > 0 || pointsUsed > 0) {
-        await tx.execute(
-          sql`UPDATE customers SET points = points + ${pointsEarned} - ${pointsUsed} WHERE id = ${input.customerId}`
-        );
+        await tx.update(customers)
+          .set({ points: sql`${customers.points} + ${pointsEarned} - ${pointsUsed}` })
+          .where(eq(customers.id, input.customerId));
       }
 
       return newOrder;

@@ -23,7 +23,7 @@ export const categoryService = {
     const [category] = await db
       .select()
       .from(categories)
-      .where(sql`${eq(categories.id, id)} AND ${isNull(categories.deletedAt)}`);
+      .where(and(eq(categories.id, id), isNull(categories.deletedAt)));
 
     return category ?? null;
   },
@@ -51,7 +51,7 @@ export const categoryService = {
         ...input,
         updatedAt: new Date(),
       })
-      .where(sql`${eq(categories.id, id)} AND ${isNull(categories.deletedAt)}`)
+      .where(and(eq(categories.id, id), isNull(categories.deletedAt)))
       .returning();
 
     return category ?? null;
@@ -62,7 +62,7 @@ export const categoryService = {
     const [category] = await db
       .update(categories)
       .set({ deletedAt: new Date(), isActive: false })
-      .where(sql`${eq(categories.id, id)} AND ${isNull(categories.deletedAt)}`)
+      .where(and(eq(categories.id, id), isNull(categories.deletedAt)))
       .returning();
 
     return category ?? null;
