@@ -12,6 +12,7 @@ import { PaymentMethods } from './pages/PaymentMethods';
 import { UserManagement } from './pages/UserManagement';
 import { Invoice } from './pages/Invoice';
 import { Settings } from './pages/Settings';
+import { Promotions } from './pages/Promotions';
 import { Receivables } from './pages/Receivables';
 import { WorkerDashboard } from './pages/worker/WorkerDashboard';
 import { Scanner } from './pages/worker/Scanner';
@@ -40,6 +41,7 @@ function App() {
             <Route path="/categories" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Categories /></RoleProtectedRoute>} />
             <Route path="/expenses" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Expenses /></RoleProtectedRoute>} />
             <Route path="/payment-methods" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><PaymentMethods /></RoleProtectedRoute>} />
+            <Route path="/promotions" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Promotions /></RoleProtectedRoute>} />
             <Route path="/receivables" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Receivables /></RoleProtectedRoute>} />
             <Route path="/reports" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Reports /></RoleProtectedRoute>} />
             <Route path="/settings" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Settings /></RoleProtectedRoute>} />

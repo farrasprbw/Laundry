@@ -39,6 +39,7 @@ export const customerService = {
           name: customers.name,
           phone: customers.phone,
           address: customers.address,
+          points: customers.points,
           createdAt: customers.createdAt,
           updatedAt: customers.updatedAt,
           deletedAt: customers.deletedAt,
@@ -55,8 +56,15 @@ export const customerService = {
         .where(where),
     ]);
 
+    const dataWithTier = data.map((c) => {
+      let tier = "Bronze";
+      if (c.orderCount >= 50) tier = "Gold";
+      else if (c.orderCount >= 10) tier = "Silver";
+      return { ...c, tier };
+    });
+
     return {
-      data,
+      data: dataWithTier,
       pagination: {
         page,
         limit,
@@ -82,7 +90,11 @@ export const customerService = {
         sql`${eq(orders.customerId, id)} AND ${isNull(orders.deletedAt)}`
       );
 
-    return { ...customer, orderCount: orderCount.count };
+    let tier = "Bronze";
+    if (orderCount.count >= 50) tier = "Gold";
+    else if (orderCount.count >= 10) tier = "Silver";
+
+    return { ...customer, orderCount: orderCount.count, tier };
   },
 
   async create(input: CreateCustomerInput) {

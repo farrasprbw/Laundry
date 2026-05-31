@@ -14,6 +14,8 @@ export interface Customer {
   updatedAt: string;
   deletedAt: string | null;
   orderCount?: number;
+  points?: number;
+  tier?: string;
 }
 
 export interface Category {
@@ -181,6 +183,8 @@ export interface CreateOrderInput {
   paymentMethodId?: string;
   paymentStatus?: "UNPAID" | "PAID";
   discount?: number;
+  promotionId?: string;
+  pointsUsed?: number;
   parfume?: string;
 }
 
