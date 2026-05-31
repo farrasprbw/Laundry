@@ -221,6 +221,8 @@ export function Orders() {
         totalPrice: fullOrder.totalPrice,
         paymentStatus: fullOrder.paymentStatus,
         discount: fullOrder.discount || 0,
+        pointsEarned: fullOrder.pointsEarned || 0,
+        pointsUsed: fullOrder.pointsUsed || 0,
         createdAt: fullOrder.createdAt,
         estimatedDurationDays: Math.max(...(fullOrder.items?.map((i: any) => i.category?.estimatedDurationDays || 1) || [1])),
         notes: fullOrder.notes,
@@ -234,6 +236,62 @@ export function Orders() {
       const err = error as { message?: string };
       showAlert("Gagal mencetak struk: " + (err.message || "Unknown error"), "danger");
     }
+  };
+
+  const handleExportCSV = () => {
+    if (!orders || orders.length === 0) {
+      showAlert("Tidak ada order untuk diexport", "warning");
+      return;
+    }
+    
+    const headers = [
+      "Invoice", 
+      "Pelanggan", 
+      "Layanan", 
+      "Total Berat/Qty", 
+      "Subtotal",
+      "Diskon (Rp)",
+      "Poin Digunakan",
+      "Poin Didapat",
+      "Total Bayar", 
+      "Tanggal", 
+      "Status Bayar", 
+      "Status Order"
+    ];
+    
+    const rows = orders.map((o: any) => {
+      const itemsStr = o.items?.map((i: any) => i.category?.name).join(", ") || "-";
+      const qtyStr = o.items?.map((i: any) => `${parseFloat(i.quantity)} ${i.category?.unit || "kg"}`).join(", ");
+      
+      const subtotal = o.totalPrice + (o.discount || 0); // basic back-calculation
+      
+      return [
+        `"${o.invoiceNumber}"`,
+        `"${o.customer?.name || 'Unknown'}"`,
+        `"${itemsStr}"`,
+        `"${qtyStr}"`,
+        subtotal,
+        o.discount || 0,
+        o.pointsUsed || 0,
+        o.pointsEarned || 0,
+        o.totalPrice,
+        `"${formatDate(o.createdAt)}"`,
+        o.paymentStatus,
+        o.status
+      ];
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Data_Orders_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showAlert("Data order berhasil diexport", "success");
   };
 
   const formatCurrency = (amount: number) => {
@@ -374,6 +432,17 @@ export function Orders() {
                   <span className="hidden sm:inline">{isConnecting ? "Menghubungkan..." : "Hubungkan Printer"}</span>
                 </Button>
               ))}
+              
+            <Button
+              variant="flat"
+              color="secondary"
+              onPress={handleExportCSV}
+              startContent={<span className="material-symbols-outlined text-[18px]">download</span>}
+              className="px-3 py-2 rounded-xl text-label-md font-label-md shadow-sm"
+              title="Export Data Order CSV"
+            >
+              <span className="hidden sm:inline">Export CSV</span>
+            </Button>
           </div>
         </div>
       </div>
@@ -399,6 +468,7 @@ export function Orders() {
             <label className="text-xs text-on-surface-variant font-medium mb-1 block">Dari Tanggal</label>
             <input
               type="date"
+              placeholder="Pilih Tanggal Awal"
               value={dateFromFilter}
               onChange={(e) => {
                 setDateFromFilter(e.target.value);
@@ -411,6 +481,7 @@ export function Orders() {
             <label className="text-xs text-on-surface-variant font-medium mb-1 block">Sampai Tanggal</label>
             <input
               type="date"
+              placeholder="Pilih Tanggal Akhir"
               value={dateToFilter}
               onChange={(e) => {
                 setDateToFilter(e.target.value);

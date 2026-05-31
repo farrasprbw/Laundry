@@ -31,6 +31,8 @@ interface Customer {
   name: string;
   phone: string;
   address: string | null;
+  points: number;
+  tier: string;
   createdAt: string;
   orderCount?: number;
 }
@@ -187,16 +189,18 @@ export function Customers() {
             Kelola data pelanggan dan riwayat transaksi.
           </p>
         </div>
-        <Button
-          color="primary"
-          onPress={openCreateModal}
-          startContent={
-            <span className="material-symbols-outlined text-[20px]">add</span>
-          }
-          className="px-6 py-6 rounded-xl text-label-md font-label-md shadow-sm whitespace-nowrap self-start sm:self-auto text-white"
-        >
-          Tambah Pelanggan
-        </Button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <Button
+            color="primary"
+            onPress={openCreateModal}
+            startContent={
+              <span className="material-symbols-outlined text-[20px]">add</span>
+            }
+            className="px-6 py-6 rounded-xl text-label-md font-label-md shadow-sm whitespace-nowrap text-white"
+          >
+            Tambah Pelanggan
+          </Button>
+        </div>
       </div>
 
       {/* Filters & Search Bar Section */}
@@ -223,7 +227,7 @@ export function Customers() {
             }
             variant={sortOrder === "asc" ? "flat" : "bordered"}
             color={sortOrder === "asc" ? "primary" : "default"}
-            className="rounded-lg text-label-md font-label-md whitespace-nowrap"
+            className="rounded-lg text-label-md font-label-md whitespace-nowrap w-full sm:w-auto"
             startContent={
               <span className="material-symbols-outlined text-[18px]">
                 {sortOrder === "desc" ? "arrow_downward" : "arrow_upward"}
@@ -258,6 +262,9 @@ export function Customers() {
               </TableColumn>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider hidden sm:table-cell">
                 Alamat
+              </TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-center">
+                Poin & Tier
               </TableColumn>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-center">
                 Total Order
@@ -340,6 +347,18 @@ export function Customers() {
                         - Belum ada alamat -
                       </span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-body-md font-bold text-primary">{customer.points || 0} pts</span>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={customer.tier === 'Gold' ? 'warning' : customer.tier === 'Silver' ? 'secondary' : 'default'}
+                      >
+                        {customer.tier || 'Bronze'}
+                      </Chip>
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <Chip

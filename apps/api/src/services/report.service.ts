@@ -118,7 +118,13 @@ export const reportService = {
     const data = await db
       .select({
         order: orders,
-        customer: { id: customers.id, name: customers.name, phone: customers.phone },
+        customer: { 
+          id: customers.id, 
+          name: customers.name, 
+          phone: customers.phone,
+          points: customers.points,
+          orderCount: sql<number>`(SELECT count(*)::int FROM orders o WHERE o.customer_id = customers.id AND o.deleted_at IS NULL)`
+        },
         paymentMethod: { id: paymentMethods.id, name: paymentMethods.name },
       })
       .from(orders)
@@ -144,9 +150,14 @@ export const reportService = {
       const items = itemsData
         .filter((i) => i.orderId === row.order.id)
         .map((i) => i.categoryName);
+        
+      let tier = "Bronze";
+      if (row.customer && row.customer.orderCount >= 50) tier = "Gold";
+      else if (row.customer && row.customer.orderCount >= 10) tier = "Silver";
+
       return {
         ...row.order,
-        customer: row.customer,
+        customer: row.customer ? { ...row.customer, tier } : null,
         paymentMethod: row.paymentMethod,
         category: { id: "", name: items.join(", "), unit: "" },
       };

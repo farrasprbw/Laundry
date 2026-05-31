@@ -35,11 +35,17 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
 
 router.post("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { customerId, items, notes, paymentMethodId, paymentStatus, discount, parfume } = req.body;
+    const { customerId, items, notes, paymentMethodId, paymentStatus, discount, parfume, promotionId, pointsUsed } = req.body;
     if (!customerId || !items || !Array.isArray(items) || items.length === 0) {
       res.status(400).json({ error: "customerId and at least one item are required" }); return;
     }
-    const order = await orderService.create({ customerId, items, notes, paymentMethodId, paymentStatus, discount: discount ? Number(discount) : 0, parfume }, req.user!.id);
+    const order = await orderService.create({ 
+      customerId, items, notes, paymentMethodId, paymentStatus, 
+      discount: discount ? Number(discount) : 0, 
+      promotionId,
+      pointsUsed: pointsUsed ? Number(pointsUsed) : 0,
+      parfume 
+    }, req.user!.id);
     res.status(201).json(order);
   } catch (error: unknown) {
     const err = error as Error;

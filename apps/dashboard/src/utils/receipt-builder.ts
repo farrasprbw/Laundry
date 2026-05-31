@@ -73,6 +73,8 @@ export interface ReceiptData {
   totalPrice: number;
   paymentStatus: string;
   discount?: number;
+  pointsEarned?: number;
+  pointsUsed?: number;
   createdAt: string;
   estimatedDurationDays?: number;
   notes?: string | null;
@@ -318,11 +320,22 @@ export function buildLaundryReceipt(data: ReceiptData, storeConfig: StoreConfig)
   rb.emptyLine();
 
   // ── Totals ──
-  rb.leftRight('Diskon', formatCurrency(discount));
+  if (discount > 0) {
+    rb.leftRight('Diskon', `-${formatCurrency(discount)}`);
+  }
+  
+  if (data.pointsUsed && data.pointsUsed > 0) {
+    rb.leftRight('Poin Dipakai', `-${data.pointsUsed} pts`);
+  }
 
   rb.bold(true);
-  rb.leftRight('Total', formatCurrency(total));
+  rb.leftRight('Total Bayar', formatCurrency(total));
   rb.bold(false);
+  
+  if (data.pointsEarned && data.pointsEarned > 0) {
+    rb.emptyLine();
+    rb.leftRight('Poin Didapat', `+${data.pointsEarned} pts`);
+  }
 
   rb.emptyLine();
 

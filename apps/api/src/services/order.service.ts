@@ -23,6 +23,8 @@ interface CreateOrderInput {
   paymentMethodId?: string;
   paymentStatus?: string;
   discount?: number;
+  promotionId?: string;
+  pointsUsed?: number;
   parfume?: string;
 }
 
@@ -196,6 +198,8 @@ export const orderService = {
 
     const discountAmount = input.discount ?? 0;
     const totalPrice = Math.max(0, totalSubtotal - discountAmount);
+    const pointsEarned = Math.floor(totalPrice / 10000);
+    const pointsUsed = input.pointsUsed ?? 0;
 
     const order = await db.transaction(async (tx) => {
       const [newOrder] = await tx
@@ -209,6 +213,9 @@ export const orderService = {
           paymentMethodId: input.paymentMethodId ?? null,
           paymentStatus: input.paymentStatus ?? "UNPAID",
           discount: discountAmount,
+          promotionId: input.promotionId ?? null,
+          pointsEarned,
+          pointsUsed,
           parfume: input.parfume ?? null,
         })
         .returning();
@@ -218,6 +225,13 @@ export const orderService = {
           orderId: newOrder.id,
           ...item,
         });
+      }
+
+      // Update customer points
+      if (pointsEarned > 0 || pointsUsed > 0) {
+        await tx.execute(
+          sql`UPDATE customers SET points = points + ${pointsEarned} - ${pointsUsed} WHERE id = ${input.customerId}`
+        );
       }
 
       return newOrder;

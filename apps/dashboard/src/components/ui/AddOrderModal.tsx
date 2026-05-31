@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Modal } from "./Modal";
 import { useAlert } from "../../contexts/AlertContext";
 import { useCustomers } from "../../hooks/use-customers";
@@ -15,8 +15,11 @@ import {
   Button,
   Autocomplete,
   AutocompleteItem,
+  Checkbox,
 } from "@nextui-org/react";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Percent } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "../../lib/api-client";
 
 interface AddOrderModalProps {
   isOpen: boolean;
@@ -25,22 +28,36 @@ interface AddOrderModalProps {
 
 export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   const [customerId, setCustomerId] = useState("");
-  const [items, setItems] = useState<{ categoryId: string; quantity: string }[]>([
-    { categoryId: "", quantity: "" },
-  ]);
+  const [items, setItems] = useState<
+    { categoryId: string; quantity: string }[]
+  >([{ categoryId: "", quantity: "" }]);
   const [notes, setNotes] = useState("");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"UNPAID" | "PAID">(
     "UNPAID",
   );
   const [parfume, setParfume] = useState("");
+  const [promotionId, setPromotionId] = useState("");
+  const [usePoints, setUsePoints] = useState(false);
+  
   const { showAlert } = useAlert();
+
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerPage, setCustomerPage] = useState(1);
+  const [customersList, setCustomersList] = useState<any[]>([]);
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
+  const scrollerRef = useRef<HTMLElement>(null);
 
   const {
     data: customersData,
     isLoading: isLoadingCustomers,
     refetch: refetchCustomers,
-  } = useCustomers({ limit: 1000 });
+  } = useCustomers({ 
+    search: customerSearch.length >= 3 ? customerSearch : "", 
+    page: customerPage, 
+    limit: 10 
+  });
+
   const {
     data: categoriesData,
     isLoading: isLoadingCategories,
@@ -52,6 +69,14 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     refetch: refetchPM,
   } = usePaymentMethods();
 
+  const { data: promotionsData, refetch: refetchPromos } = useQuery({
+    queryKey: ["promotions"],
+    queryFn: async () => {
+      const res = await apiClient.get("/promotions");
+      return res.data;
+    },
+  });
+
   const createOrder = useCreateOrder();
 
   useEffect(() => {
@@ -59,14 +84,96 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
       refetchCustomers();
       refetchCategories();
       refetchPM();
+      refetchPromos();
+    } else {
+      // reset when closed
+      setCustomerSearch("");
+      setCustomerPage(1);
+      setCustomerId("");
+      setItems([{ categoryId: "", quantity: "" }]);
+      setNotes("");
+      setPaymentMethodId("");
+      setPaymentStatus("UNPAID");
+      setParfume("");
+      setPromotionId("");
+      setUsePoints(false);
     }
-  }, [isOpen, refetchCustomers, refetchCategories, refetchPM]);
+  }, [isOpen, refetchCustomers, refetchCategories, refetchPM, refetchPromos]);
 
-  const customers = customersData?.data || [];
+  // Update customers list when data changes
+  useEffect(() => {
+    if (customersData?.data) {
+      if (customerPage === 1) {
+        setCustomersList((prev) => {
+          let newData = [...customersData.data];
+          // Ensure selected customer is always in the list so Autocomplete doesn't reset it (which causes infinite loop)
+          if (customerId) {
+            const selected = prev.find((c: any) => c.id === customerId);
+            if (selected && !newData.some((c: any) => c.id === customerId)) {
+              newData = [selected, ...newData];
+            }
+          }
+          return newData;
+        });
+      } else {
+        setCustomersList((prev) => {
+          const newItems = customersData.data.filter(
+            (c: any) => !prev.some((p) => p.id === c.id)
+          );
+          return [...prev, ...newItems];
+        });
+      }
+    }
+  }, [customersData, customerPage, customerId]);
+
+  // Handle scroll to load more manually via ref
+  useEffect(() => {
+    let attached = false;
+    let el: HTMLElement | null = null;
+    let interval: ReturnType<typeof setInterval>;
+
+    const handleScrollEvent = () => {
+      if (!el) return;
+      // toleransi 10px-20px dari bawah
+      const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 20;
+      
+      if (isAtBottom && !isLoadingCustomers && customersData && customersData.pagination.page < customersData.pagination.totalPages) {
+        setCustomerPage((prev) => prev + 1);
+      }
+    };
+
+    const attemptAttach = () => {
+      el = scrollerRef.current;
+      if (el && !attached) {
+        el.addEventListener("scroll", handleScrollEvent);
+        attached = true;
+        clearInterval(interval);
+      }
+    };
+
+    interval = setInterval(attemptAttach, 100);
+    attemptAttach();
+
+    return () => {
+      clearInterval(interval);
+      if (attached && el) {
+        el.removeEventListener("scroll", handleScrollEvent);
+      }
+    };
+  }, [isLoadingCustomers, customersData, isAutocompleteOpen]);
+
+  const handleInputChange = (val: string) => {
+    setCustomerSearch(val);
+    setCustomerPage(1);
+  };
+
   const categories = categoriesData || [];
   const paymentMethods = paymentMethodsData || [];
+  const promotions = promotionsData || [];
 
-  const totalPrice = items.reduce((acc, item) => {
+  const selectedCustomer = customersList.find((c: any) => c.id === customerId) || (customersData?.data || []).find((c: any) => c.id === customerId);
+
+  const totalSubtotal = items.reduce((acc, item) => {
     const category = categories.find((c) => c.id === item.categoryId);
     if (category && item.quantity) {
       return acc + category.pricePerUnit * Number(item.quantity);
@@ -74,9 +181,43 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     return acc;
   }, 0);
 
+  // Kalkulasi diskon promo
+  let promoDiscount = 0;
+  if (promotionId) {
+    const promo = promotions.find((p: any) => p.id === promotionId);
+    if (promo && promo.isActive && totalSubtotal >= promo.minOrderValue) {
+      if (promo.discountType === "PERCENTAGE") {
+        let calc = totalSubtotal * (promo.discountValue / 100);
+        if (promo.maxDiscount && calc > promo.maxDiscount) calc = promo.maxDiscount;
+        promoDiscount = calc;
+      } else {
+        promoDiscount = promo.discountValue;
+      }
+    }
+  }
+
+  // Kalkulasi points (1 poin = Rp 10.000 diskon misal. Tapi wait, logic default poin blm ditentukan nilainya)
+  // Misal 1 point = diskon Rp 1.000 jika digunakan
+  let pointsDiscount = 0;
+  let pointsToUse = 0;
+  if (usePoints && selectedCustomer?.points) {
+    pointsToUse = selectedCustomer.points;
+    pointsDiscount = pointsToUse * 1000; // Asumsi 1 poin = Rp 1.000
+    if (pointsDiscount > totalSubtotal - promoDiscount) {
+       // Cap poin diskon hingga tidak minus
+       pointsDiscount = totalSubtotal - promoDiscount;
+       pointsToUse = Math.ceil(pointsDiscount / 1000);
+    }
+  }
+
+  const totalDiscount = promoDiscount + pointsDiscount;
+  const grandTotal = Math.max(0, totalSubtotal - totalDiscount);
+
   const isFormIncomplete =
     !customerId ||
-    items.some((i) => !i.categoryId || !i.quantity || Number(i.quantity) <= 0) ||
+    items.some(
+      (i) => !i.categoryId || !i.quantity || Number(i.quantity) <= 0,
+    ) ||
     !paymentMethodId ||
     !paymentStatus;
 
@@ -84,7 +225,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     if (isFormIncomplete) {
       showAlert(
         "Mohon lengkapi semua data wajib (Pelanggan, Layanan, Berat/Jumlah, dan Metode Pembayaran) dengan benar.",
-        "warning"
+        "warning",
       );
       return;
     }
@@ -99,7 +240,9 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
         notes: notes || undefined,
         paymentMethodId: paymentMethodId || undefined,
         paymentStatus,
-        discount: 0,
+        discount: totalDiscount,
+        promotionId: promotionId || undefined,
+        pointsUsed: pointsToUse,
         parfume: parfume || undefined,
       },
       {
@@ -111,6 +254,8 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           setPaymentMethodId("");
           setPaymentStatus("UNPAID");
           setParfume("");
+          setPromotionId("");
+          setUsePoints(false);
           onClose();
         },
         onError: (error: unknown) => {
@@ -129,7 +274,11 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const updateItem = (index: number, field: "categoryId" | "quantity", value: string) => {
+  const updateItem = (
+    index: number,
+    field: "categoryId" | "quantity",
+    value: string,
+  ) => {
     const newItems = [...items];
     newItems[index][field] = value;
     setItems(newItems);
@@ -151,10 +300,15 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           placeholder="Cari pelanggan..."
           selectedKey={customerId}
           onSelectionChange={(key) => setCustomerId((key as string) || "")}
+          onInputChange={handleInputChange}
+          onOpenChange={setIsAutocompleteOpen}
+          defaultFilter={() => true}
           isLoading={isLoadingCustomers}
           variant="bordered"
+          scrollRef={scrollerRef as React.RefObject<HTMLElement>}
+          items={customersList}
         >
-          {customers.map((c) => (
+          {(c: any) => (
             <AutocompleteItem
               key={c.id}
               value={c.id}
@@ -162,19 +316,23 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
             >
               {c.name} ({c.phone})
             </AutocompleteItem>
-          ))}
+          )}
         </Autocomplete>
 
         <div className="flex flex-col gap-2">
           {items.map((item, index) => {
-            const selectedCategory = categories.find((c) => c.id === item.categoryId);
+            const selectedCategory = categories.find(
+              (c) => c.id === item.categoryId,
+            );
             return (
               <div key={index} className="flex gap-2 items-start">
                 <Select
                   label="Layanan"
                   placeholder="Pilih layanan..."
                   selectedKeys={item.categoryId ? [item.categoryId] : []}
-                  onChange={(e) => updateItem(index, "categoryId", e.target.value)}
+                  onChange={(e) =>
+                    updateItem(index, "categoryId", e.target.value)
+                  }
                   isLoading={isLoadingCategories}
                   variant="bordered"
                   className="flex-1"
@@ -185,7 +343,8 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
                       value={c.id}
                       textValue={`${c.name} (Rp ${c.pricePerUnit.toLocaleString("id-ID")}/${c.unit})`}
                     >
-                      {c.name} (Rp {c.pricePerUnit.toLocaleString("id-ID")}/{c.unit})
+                      {c.name} (Rp {c.pricePerUnit.toLocaleString("id-ID")}/
+                      {c.unit})
                     </SelectItem>
                   ))}
                 </Select>
@@ -197,7 +356,9 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
                   step="0.1"
                   min="0.1"
                   value={item.quantity}
-                  onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                  onChange={(e) =>
+                    updateItem(index, "quantity", e.target.value)
+                  }
                   variant="bordered"
                   className="w-32"
                 />
@@ -216,10 +377,10 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
               </div>
             );
           })}
-          
-          <Button 
-            variant="light" 
-            color="primary" 
+
+          <Button
+            variant="light"
+            color="primary"
             onPress={addItem}
             startContent={<Plus className="w-4 h-4" />}
             className="self-start"
@@ -228,19 +389,58 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           </Button>
         </div>
 
-        <Input
-          type="text"
-          label="Total Harga"
-          value={totalPrice.toLocaleString("id-ID")}
-          isReadOnly
-          startContent={
-            <div className="pointer-events-none flex items-center">
-              <span className="text-default-400 text-small">Rp</span>
+        <div className="flex flex-col gap-2">
+          <Input
+            type="text"
+            label="Subtotal"
+            value={totalSubtotal.toLocaleString("id-ID")}
+            isReadOnly
+            startContent={<span className="text-default-400 text-small">Rp</span>}
+            variant="bordered"
+          />
+
+          <Select
+            label="Promo / Kupon (Opsional)"
+            placeholder="Pilih promo yang tersedia"
+            selectedKeys={promotionId ? [promotionId] : []}
+            onChange={(e) => setPromotionId(e.target.value)}
+            variant="bordered"
+            startContent={<Percent className="w-4 h-4 text-default-400" />}
+          >
+            {promotions.filter((p: any) => p.isActive).map((p: any) => {
+              const isDisabled = totalSubtotal < p.minOrderValue;
+              return (
+                <SelectItem key={p.id} value={p.id} textValue={p.code} className={isDisabled ? "opacity-50" : ""}>
+                  <div className="flex flex-col">
+                    <span className="font-bold">{p.code}</span>
+                    <span className="text-xs text-default-400">
+                      Min. Order: Rp {p.minOrderValue.toLocaleString("id-ID")} {isDisabled && "(Subtotal kurang)"}
+                    </span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </Select>
+
+          {selectedCustomer && selectedCustomer.points > 0 && (
+            <div className="flex items-center gap-2 p-3 border border-default-200 rounded-xl bg-default-50">
+              <Checkbox isSelected={usePoints} onValueChange={setUsePoints} color="primary" />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">Gunakan Poin ({selectedCustomer.points} pts)</span>
+                <span className="text-xs text-default-500">
+                  Akan memotong Rp {(selectedCustomer.points * 1000).toLocaleString("id-ID")}
+                </span>
+              </div>
             </div>
-          }
-          variant="bordered"
-          className="font-bold"
-        />
+          )}
+
+          <div className="flex justify-between items-center p-4 bg-primary-50 rounded-xl border border-primary/20">
+            <span className="text-sm font-semibold text-primary-800">Total Bayar</span>
+            <span className="text-xl font-bold text-primary">
+              Rp {grandTotal.toLocaleString("id-ID")}
+            </span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <Select

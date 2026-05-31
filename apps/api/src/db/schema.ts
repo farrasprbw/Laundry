@@ -78,6 +78,7 @@ export const customers = pgTable("customers", {
   name: text("name").notNull(),
   phone: text("phone").notNull().unique(),
   address: text("address"),
+  points: integer("points").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"),
@@ -91,6 +92,22 @@ export const categories = pgTable("categories", {
   pricePerUnit: integer("price_per_unit").notNull(), // in Rupiah (e.g. 7000 = Rp 7.000)
   unit: text("unit").notNull().default("kg"), // kg | pcs | unit
   estimatedDurationDays: integer("estimated_duration_days").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+});
+
+export const promotions = pgTable("promotions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(), // e.g. LEBARAN20
+  description: text("description"),
+  discountType: text("discount_type").notNull(), // PERCENTAGE | FIXED
+  discountValue: integer("discount_value").notNull(),
+  minOrderValue: integer("min_order_value").notNull().default(0),
+  maxDiscount: integer("max_discount"), // Max discount amount for PERCENTAGE
+  validFrom: timestamp("valid_from"),
+  validUntil: timestamp("valid_until"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -112,7 +129,10 @@ export const orders = pgTable("orders", {
     .references(() => paymentMethods.id),
   paymentStatus: text("payment_status").notNull().default("UNPAID"), // UNPAID | PAID
   notes: text("notes"),
+  promotionId: uuid("promotion_id").references(() => promotions.id),
   discount: integer("discount").notNull().default(0), // Diskon dalam Rupiah
+  pointsEarned: integer("points_earned").notNull().default(0),
+  pointsUsed: integer("points_used").notNull().default(0),
   parfume: text("parfume"), // Pilihan parfum (opsional)
   finishedAt: timestamp("finished_at"),
   takenAt: timestamp("taken_at"),
@@ -166,6 +186,7 @@ export const paymentMethods = pgTable("payment_methods", {
 export type User = typeof user.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Category = typeof categories.$inferSelect;
+export type Promotion = typeof promotions.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;

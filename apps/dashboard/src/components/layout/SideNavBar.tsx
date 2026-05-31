@@ -17,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/categories', icon: 'category', label: 'Categories', roles: ['super_admin', 'admin'] },
   { to: '/expenses', icon: 'payments', label: 'Expenses', roles: ['super_admin', 'admin'] },
   { to: '/payment-methods', icon: 'account_balance_wallet', label: 'Payment Methods', roles: ['super_admin', 'admin'] },
+  { to: '/promotions', icon: 'local_offer', label: 'Promosi', roles: ['super_admin', 'admin'] },
   { to: '/receivables', icon: 'account_balance', label: 'Piutang', roles: ['super_admin', 'admin'] },
   { to: '/reports', icon: 'analytics', label: 'Reports', roles: ['super_admin', 'admin'] },
   { to: '/settings', icon: 'settings', label: 'Settings', roles: ['super_admin', 'admin'] },
