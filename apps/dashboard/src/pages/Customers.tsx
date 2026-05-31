@@ -247,6 +247,7 @@ export function Customers() {
             removeWrapper
             shadow="none"
             className="min-w-max w-full"
+            classNames={{ thead: isLoading ? "hidden" : "" }}
           >
             <TableHeader>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">

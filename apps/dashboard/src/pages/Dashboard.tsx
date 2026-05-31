@@ -664,6 +664,7 @@ export function Dashboard() {
             aria-label="Recent Orders Table"
             removeWrapper
             shadow="none"
+            classNames={{ thead: ordersLoading ? "hidden" : "" }}
             className="min-w-max w-full"
           >
             <TableHeader>

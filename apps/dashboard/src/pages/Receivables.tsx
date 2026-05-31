@@ -198,13 +198,27 @@ export function Receivables() {
             aria-label="Customer Receivables Table"
             removeWrapper
             shadow="none"
+            classNames={{ thead: loadingCustomers ? "hidden" : "" }}
           >
             <TableHeader>
-              <TableColumn>PELANGGAN</TableColumn>
-              <TableColumn>TOTAL PIUTANG</TableColumn>
-              <TableColumn>JUMLAH ORDER</TableColumn>
-              <TableColumn>ORDER TERTUA</TableColumn>
-              <TableColumn align="center">AKSI</TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                PELANGGAN
+              </TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                TOTAL PIUTANG
+              </TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                JUMLAH ORDER
+              </TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                ORDER TERTUA
+              </TableColumn>
+              <TableColumn
+                align="center"
+                className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-center"
+              >
+                AKSI
+              </TableColumn>
             </TableHeader>
             <TableBody
               isLoading={loadingCustomers}
