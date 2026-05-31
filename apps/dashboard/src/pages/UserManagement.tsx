@@ -4,6 +4,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useUsers, useCreateUser, useUpdateUserRole, useUpdateUser, useDeleteUser } from '../hooks/use-users';
 import type { UserRole, UserInfo } from '../types/api';
 import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Tooltip } from '@nextui-org/react';
+import { useAlert } from '../contexts/AlertContext';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   super_admin: 'Super Admin',
@@ -41,6 +42,7 @@ export function UserManagement() {
   const updateRoleMutation = useUpdateUserRole();
   const updateUserMutation = useUpdateUser();
   const deleteMutation = useDeleteUser();
+  const { showAlert } = useAlert();
 
   const handleCreateUser = async () => {
     if (!formName.trim() || !formUsername.trim() || !formPassword.trim()) return;
@@ -60,7 +62,7 @@ export function UserManagement() {
       setIsCreateModalOpen(false);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
-      alert(err?.response?.data?.error || 'Gagal membuat user');
+      showAlert(err?.response?.data?.error || 'Gagal membuat user', "danger");
     }
   };
 
@@ -94,7 +96,7 @@ export function UserManagement() {
       setEditUserId(null);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
-      alert(err?.response?.data?.error || 'Gagal memperbarui user');
+      showAlert(err?.response?.data?.error || 'Gagal memperbarui user', "danger");
     }
   };
 
@@ -112,7 +114,7 @@ export function UserManagement() {
       setSelectedUserId(null);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
-      alert(err?.response?.data?.error || 'Gagal mengubah role');
+      showAlert(err?.response?.data?.error || 'Gagal mengubah role', "danger");
     }
   };
 
@@ -127,7 +129,7 @@ export function UserManagement() {
       setConfirmState({ open: false, data: null });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
-      alert(err?.response?.data?.error || 'Gagal menghapus user');
+      showAlert(err?.response?.data?.error || 'Gagal menghapus user', "danger");
     }
   };
 

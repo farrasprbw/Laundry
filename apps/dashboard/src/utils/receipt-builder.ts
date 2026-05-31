@@ -281,6 +281,11 @@ export function buildLaundryReceipt(data: ReceiptData, storeConfig: StoreConfig)
     .bold(false)
     .emptyLine();
 
+  // ── Invoice Barcode / QR ──
+  rb.align('center')
+    .qrCode(data.invoiceNumber, 5) // Slightly smaller QR code for the invoice number
+    .emptyLine();
+
   // ── Order Info ──
   rb.align('left')
     .keyValue('No. Invoice', data.invoiceNumber)

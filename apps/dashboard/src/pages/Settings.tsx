@@ -6,10 +6,12 @@ import {
   Textarea,
   Spinner,
 } from "@nextui-org/react";
+import { useAlert } from "../contexts/AlertContext";
 
 export function Settings() {
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
+  const { showAlert } = useAlert();
 
   const [formData, setFormData] = useState<Record<string, string>>({
     store_name: "",
@@ -44,10 +46,10 @@ export function Settings() {
   const handleSave = async () => {
     try {
       await updateSettings.mutateAsync(formData);
-      alert("Pengaturan berhasil disimpan!");
+      showAlert("Pengaturan berhasil disimpan!", "success");
     } catch (error) {
       console.error("Failed to save settings:", error);
-      alert("Gagal menyimpan pengaturan.");
+      showAlert("Gagal menyimpan pengaturan.", "danger");
     }
   };
 

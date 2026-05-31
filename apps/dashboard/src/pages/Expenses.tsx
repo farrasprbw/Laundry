@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { useAlert } from '../contexts/AlertContext';
 import {
   useExpenses,
   useCreateExpense,
@@ -80,6 +81,7 @@ export function Expenses() {
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
+  const { showAlert } = useAlert();
 
   // Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,7 +132,7 @@ export function Expenses() {
       setConfirmState({ open: false, data: null });
     } catch (err) {
       console.error(err);
-      alert("Failed to delete expense.");
+      showAlert("Failed to delete expense.", "danger");
     }
   };
 
@@ -154,7 +156,7 @@ export function Expenses() {
       setIsModalOpen(false);
     } catch (error) {
       console.error("Failed to save expense:", error);
-      alert("Failed to save expense. Please try again.");
+      showAlert("Failed to save expense. Please try again.", "danger");
     } finally {
       setIsSubmitting(false);
     }

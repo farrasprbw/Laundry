@@ -30,6 +30,7 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@nextui-org/react";
+import { useAlert } from "../contexts/AlertContext";
 
 export function Orders() {
   const [statusFilter, setStatusFilter] = useState("");
@@ -42,6 +43,8 @@ export function Orders() {
     open: boolean;
     data: string | null;
   }>({ open: false, data: null });
+
+  const { showAlert } = useAlert();
   const [editOrder, setEditOrder] = useState<Order | null>(null);
 
   const { data, isLoading, refetch } = useOrders(
@@ -93,7 +96,7 @@ export function Orders() {
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
-      alert(err.response?.data?.error || "Gagal mengubah status");
+      showAlert(err.response?.data?.error || "Gagal mengubah status", "danger");
     }
   };
 
@@ -102,7 +105,7 @@ export function Orders() {
       await updatePaymentStatus.mutateAsync({ id, paymentStatus: newStatus });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
-      alert(err.response?.data?.error || "Gagal mengubah status pembayaran");
+      showAlert(err.response?.data?.error || "Gagal mengubah status pembayaran", "danger");
     }
   };
 
@@ -177,23 +180,24 @@ export function Orders() {
       setConfirmState({ open: false, data: null });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
-      alert(err.response?.data?.error || "Gagal menghapus order");
+      showAlert(err.response?.data?.error || "Gagal menghapus order", "danger");
     }
   };
 
   const handleSendWA = async (id: string, silent = false) => {
     try {
       await apiClient.post(`/orders/${id}/wa-send`);
-      if (!silent) alert("Pesan WhatsApp berhasil dikirim di latar belakang!");
+      if (!silent) showAlert("Pesan WhatsApp berhasil dikirim di latar belakang!", "success");
     } catch (error: unknown) {
-      if (!silent) alert("Gagal mengirim notifikasi WhatsApp otomatis.");
+      if (!silent) showAlert("Gagal mengirim notifikasi WhatsApp otomatis.", "danger");
     }
   };
 
   const handlePrint = async (order: Order) => {
     if (!isPrinterConnected) {
-      alert(
+      showAlert(
         'Printer belum terhubung. Klik "Hubungkan Printer" terlebih dahulu.',
+        "warning"
       );
       return;
     }
@@ -224,7 +228,7 @@ export function Orders() {
       }
     } catch (error: unknown) {
       const err = error as { message?: string };
-      alert("Gagal mencetak struk: " + (err.message || "Unknown error"));
+      showAlert("Gagal mencetak struk: " + (err.message || "Unknown error"), "danger");
     }
   };
 
@@ -496,7 +500,7 @@ export function Orders() {
                 for (const order of unnotifiedOrders) {
                   await handleSendWA(order.id, true);
                 }
-                alert(`Berhasil mengirim ${unnotifiedOrders.length} pesan WhatsApp!`);
+                showAlert(`Berhasil mengirim ${unnotifiedOrders.length} pesan WhatsApp!`, "success");
                 refetch();
               }}
             >

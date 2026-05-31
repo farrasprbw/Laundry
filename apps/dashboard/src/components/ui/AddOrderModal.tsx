@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Modal } from "./Modal";
+import { useAlert } from "../../contexts/AlertContext";
 import { useCustomers } from "../../hooks/use-customers";
 import { useCategories } from "../../hooks/use-categories";
 import { useCreateOrder } from "../../hooks/use-orders";
@@ -28,6 +29,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
     "UNPAID",
   );
   const [parfume, setParfume] = useState("");
+  const { showAlert } = useAlert();
 
   const {
     data: customersData,
@@ -76,8 +78,9 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
       !paymentMethodId ||
       !paymentStatus
     ) {
-      alert(
+      showAlert(
         "Mohon lengkapi semua data wajib (Pelanggan, Layanan, Berat/Jumlah, dan Metode Pembayaran) dengan benar.",
+        "warning"
       );
       return;
     }
@@ -108,7 +111,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
         },
         onError: (error: unknown) => {
           const err = error as { message?: string };
-          alert(err?.message || "Gagal membuat order");
+          showAlert(err?.message || "Gagal membuat order", "danger");
         },
       },
     );

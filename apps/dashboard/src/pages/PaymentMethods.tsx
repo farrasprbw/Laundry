@@ -3,6 +3,7 @@ import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from '../hooks/use-payment-methods';
 import { Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Tooltip } from '@nextui-org/react';
+import { useAlert } from '../contexts/AlertContext';
 
 export function PaymentMethods() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,6 +15,7 @@ export function PaymentMethods() {
   const createMutation = useCreatePaymentMethod();
   const updateMutation = useUpdatePaymentMethod();
   const deleteMutation = useDeletePaymentMethod();
+  const { showAlert } = useAlert();
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -32,7 +34,7 @@ export function PaymentMethods() {
         closeModal();
       } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
-        alert(err?.response?.data?.error || `Gagal ${editingMethod ? 'mengubah' : 'menambahkan'} metode pembayaran`);
+        showAlert(err?.response?.data?.error || `Gagal ${editingMethod ? 'mengubah' : 'menambahkan'} metode pembayaran`, "danger");
       }
     }
   };
@@ -47,7 +49,7 @@ export function PaymentMethods() {
       await updateMutation.mutateAsync({ id, isActive: !currentActive });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
-      alert(err?.response?.data?.error || 'Gagal mengubah status');
+      showAlert(err?.response?.data?.error || 'Gagal mengubah status', "danger");
     }
   };
 
@@ -62,7 +64,7 @@ export function PaymentMethods() {
       setConfirmState({ open: false, data: null });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
-      alert(err?.response?.data?.error || 'Gagal menghapus metode pembayaran');
+      showAlert(err?.response?.data?.error || 'Gagal menghapus metode pembayaran', "danger");
     }
   };
 

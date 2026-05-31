@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Modal } from "./Modal";
+import { useAlert } from "../../contexts/AlertContext";
 import { useCategories } from "../../hooks/use-categories";
 import { useUpdateOrder } from "../../hooks/use-orders";
 import { usePaymentMethods } from "../../hooks/use-payment-methods";
@@ -33,6 +34,8 @@ export function EditOrderModal({
   const [parfume, setParfume] = useState("");
   const [discount, setDiscount] = useState("");
 
+  const { showAlert } = useAlert();
+
   const { data: categoriesData } = useCategories();
 
   const { data: paymentMethodsData, isLoading: isLoadingPM } =
@@ -64,8 +67,9 @@ export function EditOrderModal({
 
   const handleSubmit = () => {
     if (!order || !quantity || Number(quantity) <= 0 || !paymentStatus) {
-      alert(
+      showAlert(
         "Mohon lengkapi data wajib (Berat/Jumlah, Status Pembayaran) dengan benar.",
+        "warning"
       );
       return;
     }
@@ -86,7 +90,7 @@ export function EditOrderModal({
         },
         onError: (error: unknown) => {
           const err = error as { message?: string };
-          alert(err?.message || "Gagal mengupdate order");
+          showAlert(err?.message || "Gagal mengupdate order", "danger");
         },
       },
     );

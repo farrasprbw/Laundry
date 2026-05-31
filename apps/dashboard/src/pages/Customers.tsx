@@ -22,6 +22,7 @@ import {
   Tooltip,
   Textarea,
 } from "@nextui-org/react";
+import { useAlert } from "../contexts/AlertContext";
 
 interface Customer {
   id: string;
@@ -37,6 +38,7 @@ export function Customers() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
+  const { showAlert } = useAlert();
 
   // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,7 +105,7 @@ export function Customers() {
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
       console.error("Failed to save customer:", error);
-      alert(err.response?.data?.error || "Gagal menyimpan data pelanggan");
+      showAlert(err.response?.data?.error || "Gagal menyimpan data pelanggan", "danger");
     }
   };
 
@@ -120,7 +122,7 @@ export function Customers() {
       setConfirmState({ open: false, data: null });
     } catch (error) {
       console.error("Failed to delete customer:", error);
-      alert("Gagal menghapus data pelanggan");
+      showAlert("Gagal menghapus data pelanggan", "danger");
     } finally {
       setDeletingId(null);
     }
