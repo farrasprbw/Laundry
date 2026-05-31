@@ -79,4 +79,34 @@ router.get("/export", requireRole("admin", "super_admin"), async (req: AuthReque
   }
 });
 
+router.get("/category-breakdown", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    const data = await reportService.getCategoryBreakdown(dateFrom as string | undefined, dateTo as string | undefined);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get category breakdown" });
+  }
+});
+
+router.get("/payment-breakdown", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    const data = await reportService.getPaymentBreakdown(dateFrom as string | undefined, dateTo as string | undefined);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get payment breakdown" });
+  }
+});
+
+router.get("/monthly-comparison", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
+  try {
+    const months = req.query.months ? parseInt(req.query.months as string) : 6;
+    const data = await reportService.getMonthlyComparison(months);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get monthly comparison" });
+  }
+});
+
 export default router;

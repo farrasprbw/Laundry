@@ -133,4 +133,94 @@ export const reportService = {
       netProfit: summary.netProfit, reportTitle: `Report ${dateFrom} - ${dateTo}`,
     });
   },
+
+  async getCategoryBreakdown(dateFrom?: string, dateTo?: string) {
+    let filter = and(isNull(orders.deletedAt), sql`${orders.categoryId} IS NOT NULL`);
+    if (dateFrom && dateTo) {
+      filter = and(
+        filter,
+        gte(orders.createdAt, new Date(dateFrom)),
+        lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`))
+      );
+    }
+
+    const data = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        orderCount: sql<number>`COUNT(${orders.id})`.mapWith(Number),
+        totalRevenue: sql<number>`SUM(${orders.totalPrice})`.mapWith(Number),
+      })
+      .from(orders)
+      .leftJoin(categories, eq(orders.categoryId, categories.id))
+      .where(filter)
+      .groupBy(categories.id, categories.name)
+      .orderBy(desc(sql`SUM(${orders.totalPrice})`));
+
+    return data;
+  },
+
+  async getPaymentBreakdown(dateFrom?: string, dateTo?: string) {
+    let filter = and(isNull(orders.deletedAt), sql`${orders.paymentMethodId} IS NOT NULL`);
+    if (dateFrom && dateTo) {
+      filter = and(
+        filter,
+        gte(orders.createdAt, new Date(dateFrom)),
+        lte(orders.createdAt, new Date(`${dateTo}T23:59:59.999Z`))
+      );
+    }
+
+    const data = await db
+      .select({
+        id: paymentMethods.id,
+        name: paymentMethods.name,
+        orderCount: sql<number>`COUNT(${orders.id})`.mapWith(Number),
+        totalRevenue: sql<number>`SUM(${orders.totalPrice})`.mapWith(Number),
+      })
+      .from(orders)
+      .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
+      .where(filter)
+      .groupBy(paymentMethods.id, paymentMethods.name)
+      .orderBy(desc(sql`SUM(${orders.totalPrice})`));
+
+    return data;
+  },
+
+  async getMonthlyComparison(months: number = 6) {
+    const data = [];
+    const now = new Date();
+    
+    // We go backwards to calculate properly, then reverse
+    for (let i = months - 1; i >= 0; i--) {
+      const targetMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      
+      const monthStr = targetMonth.toLocaleDateString("id-ID", { month: 'short', year: 'numeric' });
+      
+      const [incomeResult, expResult] = await Promise.all([
+        db.select({ total: sql<number>`COALESCE(SUM(${orders.totalPrice}), 0)`.mapWith(Number) })
+          .from(orders)
+          .where(and(
+            isNull(orders.deletedAt),
+            gte(orders.createdAt, targetMonth),
+            lt(orders.createdAt, nextMonth)
+          )),
+        db.select({ total: sql<number>`COALESCE(SUM(${expenses.amount}), 0)`.mapWith(Number) })
+          .from(expenses)
+          .where(and(
+            isNull(expenses.deletedAt),
+            sql`${expenses.expenseDate} >= ${targetMonth.toISOString().split('T')[0]}`,
+            sql`${expenses.expenseDate} < ${nextMonth.toISOString().split('T')[0]}`
+          ))
+      ]);
+
+      data.push({
+        month: monthStr,
+        income: incomeResult[0].total,
+        expenses: expResult[0].total,
+      });
+    }
+
+    return data;
+  }
 };

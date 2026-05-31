@@ -71,3 +71,27 @@ export function useExportReport() {
     },
   });
 }
+
+/** Fetch category breakdown. */
+export function useCategoryBreakdown(dateFrom?: string, dateTo?: string) {
+  return useQuery({
+    queryKey: [...REPORTS_KEY, "category-breakdown", dateFrom, dateTo],
+    queryFn: () => reportService.getCategoryBreakdown(dateFrom, dateTo),
+  });
+}
+
+/** Fetch payment method breakdown. */
+export function usePaymentBreakdown(dateFrom?: string, dateTo?: string) {
+  return useQuery({
+    queryKey: [...REPORTS_KEY, "payment-breakdown", dateFrom, dateTo],
+    queryFn: () => reportService.getPaymentBreakdown(dateFrom, dateTo),
+  });
+}
+
+/** Fetch monthly comparison. */
+export function useMonthlyComparison(months = 6) {
+  return useQuery({
+    queryKey: [...REPORTS_KEY, "monthly-comparison", months],
+    queryFn: () => reportService.getMonthlyComparison(months),
+  });
+}

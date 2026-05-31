@@ -293,6 +293,53 @@ export interface DashboardAnalytics {
   ordersByHour: OrdersByHour[];
 }
 
+// ── Receivables Types ──
+
+export interface ReceivableSummary {
+  totalAmount: number;
+  unpaidCount: number;
+  customerCount: number;
+}
+
+export interface AgingBucket {
+  label: string;
+  count: number;
+  amount: number;
+}
+
+export interface CustomerReceivable {
+  id: string;
+  name: string;
+  phone: string | null;
+  totalAmount: number;
+  orderCount: number;
+  oldestOrderDate: string;
+}
+
+// ── Enhanced Report Types ──
+
+export interface CategoryBreakdown {
+  id: string;
+  name: string;
+  color?: string;
+  orderCount: number;
+  totalRevenue: number;
+}
+
+export interface PaymentBreakdown {
+  id: string;
+  name: string;
+  provider?: string;
+  orderCount: number;
+  totalRevenue: number;
+}
+
+export interface MonthlyComparison {
+  month: string;
+  income: number;
+  expenses: number;
+}
+
 // ── API Error ──
 
 export interface ApiError {
