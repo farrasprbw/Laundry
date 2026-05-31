@@ -11,7 +11,9 @@ import {
   TableCell,
   Spinner,
   Alert,
+  Skeleton,
 } from "@nextui-org/react";
+import { ChartSkeleton } from "../components/ui/ChartSkeleton";
 import {
   useCategoryBreakdown,
   usePaymentBreakdown,
@@ -213,7 +215,11 @@ export function Reports() {
             </h3>
           </div>
           <div className="text-display-lg font-display-lg text-on-surface mb-2">
-            {isLoadingSummary ? "..." : formatRupiah(summary.totalIncome)}
+            {isLoadingSummary ? (
+              <Skeleton className="h-12 w-48 rounded-lg" />
+            ) : (
+              formatRupiah(summary.totalIncome)
+            )}
           </div>
           <div className="flex items-center gap-2 text-label-sm font-label-sm">
             <span className="text-on-surface-variant">
@@ -240,7 +246,11 @@ export function Reports() {
             </h3>
           </div>
           <div className="text-display-lg font-display-lg text-on-surface mb-2">
-            {isLoadingSummary ? "..." : formatRupiah(summary.totalExpenses)}
+            {isLoadingSummary ? (
+              <Skeleton className="h-12 w-48 rounded-lg" />
+            ) : (
+              formatRupiah(summary.totalExpenses)
+            )}
           </div>
           <div className="flex items-center gap-2 text-label-sm font-label-sm">
             <span className="text-on-surface-variant">
@@ -262,8 +272,12 @@ export function Reports() {
               Net Profit
             </h3>
           </div>
-          <div className="text-display-lg font-display-lg text-on-primary mb-2 relative z-10">
-            {isLoadingSummary ? "..." : formatRupiah(summary.netProfit)}
+          <div className="text-display-lg font-display-lg text-white mb-2">
+            {isLoadingSummary ? (
+              <Skeleton className="h-12 w-48 rounded-lg bg-white/20" />
+            ) : (
+              formatRupiah(summary.netProfit)
+            )}
           </div>
           <div className="flex items-center gap-2 text-label-sm font-label-sm relative z-10">
             <span className="text-primary-fixed-dim">Periode yang dipilih</span>
@@ -341,9 +355,7 @@ export function Reports() {
           </h3>
           <div className="h-[300px] w-full min-w-0">
             {loadingCategory ? (
-              <div className="flex justify-center items-center h-full">
-                <Spinner />
-              </div>
+              <ChartSkeleton height="h-[300px]" />
             ) : (
               <ResponsiveContainer
                 width="100%"
@@ -395,9 +407,7 @@ export function Reports() {
           </h3>
           <div className="h-[300px] w-full min-w-0">
             {loadingPayment ? (
-              <div className="flex justify-center items-center h-full">
-                <Spinner />
-              </div>
+              <ChartSkeleton height="h-[300px]" />
             ) : (
               <ResponsiveContainer
                 width="100%"
@@ -439,9 +449,7 @@ export function Reports() {
         </h3>
         <div className="h-[350px] w-full min-w-0">
           {loadingMonthly ? (
-            <div className="flex justify-center items-center h-full">
-              <Spinner />
-            </div>
+            <ChartSkeleton height="h-[300px]" />
           ) : (
             <ResponsiveContainer
               width="100%"

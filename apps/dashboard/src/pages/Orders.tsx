@@ -23,13 +23,15 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Spinner,
   Pagination,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
 } from "@nextui-org/react";
+import { TableSkeleton } from "../components/ui/TableSkeleton";
+import { EmptyState } from "../components/ui/EmptyState";
+import { QueryErrorState } from "../components/ui/QueryErrorState";
 import { useAlert } from "../contexts/AlertContext";
 
 export function Orders() {
@@ -47,7 +49,7 @@ export function Orders() {
   const { showAlert } = useAlert();
   const [editOrder, setEditOrder] = useState<Order | null>(null);
 
-  const { data, isLoading, refetch } = useOrders(
+  const { data, isLoading, error, refetch } = useOrders(
     {
       status: statusFilter || undefined,
       paymentStatus: paymentStatusFilter || undefined,
@@ -516,6 +518,10 @@ export function Orders() {
         );
       })()}
 
+      {error && (
+        <QueryErrorState error={error as Error} onRetry={() => window.location.reload()} compact />
+      )}
+
       {/* Data Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col p-6">
         <div className="overflow-x-auto w-full">
@@ -556,8 +562,14 @@ export function Orders() {
             </TableHeader>
             <TableBody
               isLoading={isLoading}
-              loadingContent={<Spinner label="Memuat order..." />}
-              emptyContent="Tidak ada order ditemukan."
+              loadingContent={<TableSkeleton rows={6} columns={7} />}
+              emptyContent={
+                <EmptyState
+                  icon="local_laundry_service"
+                  title="Tidak ada order"
+                  description="Belum ada pesanan yang sesuai dengan filter."
+                />
+              }
             >
               {orders.map((order: Order, index: number) => (
                 <TableRow

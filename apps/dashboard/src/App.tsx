@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute, RoleProtectedRoute, PublicOnlyRoute } from './routes/ProtectedRoute';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { Dashboard } from './pages/Dashboard';
 import { Orders } from './pages/Orders';
 import { Customers } from './pages/Customers';
@@ -19,6 +20,7 @@ import { AlertProvider } from './contexts/AlertContext';
 
 function App() {
   return (
+    <ErrorBoundary>
     <AlertProvider>
       <BrowserRouter>
         <Routes>
@@ -55,6 +57,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AlertProvider>
+    </ErrorBoundary>
   );
 }
 

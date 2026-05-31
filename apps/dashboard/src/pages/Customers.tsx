@@ -17,11 +17,13 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Spinner,
   Pagination,
   Tooltip,
   Textarea,
 } from "@nextui-org/react";
+import { TableSkeleton } from "../components/ui/TableSkeleton";
+import { EmptyState } from "../components/ui/EmptyState";
+import { QueryErrorState } from "../components/ui/QueryErrorState";
 import { useAlert } from "../contexts/AlertContext";
 
 interface Customer {
@@ -67,7 +69,7 @@ export function Customers() {
   }, [searchQuery]);
 
   // React Query hooks
-  const { data: customersData, isLoading } = useCustomers({
+  const { data: customersData, isLoading, error } = useCustomers({
     search: debouncedSearch || undefined,
     page,
     limit: 10,
@@ -233,6 +235,10 @@ export function Customers() {
         </div>
       </div>
 
+      {error && (
+        <QueryErrorState error={error as Error} onRetry={() => window.location.reload()} compact />
+      )}
+
       {/* Data Table */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-outline-variant/20 overflow-hidden flex flex-col p-6">
         <div className="overflow-x-auto w-full">
@@ -261,22 +267,15 @@ export function Customers() {
             </TableHeader>
             <TableBody
               isLoading={isLoading}
-              loadingContent={<Spinner label="Memuat pelanggan..." />}
+              loadingContent={<TableSkeleton rows={5} columns={5} />}
               emptyContent={
-                <div
-                  className="flex flex-col items-center justify-center gap-2 text-on-surface-variant cursor-pointer group"
-                  onClick={openCreateModal}
-                >
-                  <span className="material-symbols-outlined text-[32px] opacity-70 group-hover:text-primary transition-colors">
-                    person_add
-                  </span>
-                  <p className="text-body-md font-body-md font-medium group-hover:text-primary transition-colors">
-                    Belum menemukan pelanggan?
-                  </p>
-                  <span className="text-label-sm font-label-sm text-primary">
-                    Tambah pelanggan baru sekarang
-                  </span>
-                </div>
+                <EmptyState
+                  icon="person_add"
+                  title="Belum ada pelanggan"
+                  description="Tambah pelanggan baru untuk memulai."
+                  actionLabel="Tambah Pelanggan"
+                  onAction={openCreateModal}
+                />
               }
             >
               {customers.map((customer, index) => (

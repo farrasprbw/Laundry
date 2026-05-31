@@ -19,6 +19,11 @@ import {
   Avatar,
   ButtonGroup,
 } from "@nextui-org/react";
+import { StatCardSkeleton } from "../components/ui/StatCardSkeleton";
+import { ChartSkeleton } from "../components/ui/ChartSkeleton";
+import { CardSkeleton } from "../components/ui/CardSkeleton";
+import { TableSkeleton } from "../components/ui/TableSkeleton";
+import { EmptyState } from "../components/ui/EmptyState";
 import {
   AreaChart,
   Area,
@@ -158,169 +163,155 @@ export function Dashboard() {
 
       {/* Stats Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-gutter mb-gutter">
-        {/* Stat Card 1 - Income */}
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <p className="text-label-md font-label-md text-on-surface-variant">
-              Income Today
-            </p>
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-[18px]">
-                trending_up
-              </span>
+        {statsLoading ? (
+          <StatCardSkeleton count={5} />
+        ) : (
+          <>
+            {/* Stat Card 1 - Income */}
+            <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-label-md font-label-md text-on-surface-variant">
+                  Income Today
+                </p>
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[18px]">
+                    trending_up
+                  </span>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-headline-md font-headline-md text-on-background">
+                  {formatRupiah(stats?.todayIncome ?? 0)}
+                </h3>
+                <div className="mt-1 flex items-center">
+                  <p className="text-label-sm font-label-sm text-secondary flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">
+                      today
+                    </span>
+                    Today
+                  </p>
+                  {analytics && (
+                    <ChangeBadge
+                      percent={analytics.monthComparison.incomeChangePercent}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            {statsLoading ? (
-              <div className="h-8 w-24 bg-surface-variant/50 rounded animate-pulse" />
-            ) : (
-              <h3 className="text-headline-md font-headline-md text-on-background">
-                {formatRupiah(stats?.todayIncome ?? 0)}
-              </h3>
-            )}
-            <div className="mt-1 flex items-center">
-              <p className="text-label-sm font-label-sm text-secondary flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">
-                  today
-                </span>
-                Today
-              </p>
-              {analytics && (
-                <ChangeBadge
-                  percent={analytics.monthComparison.incomeChangePercent}
-                />
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Stat Card 2 - Expenses */}
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <p className="text-label-md font-label-md text-on-surface-variant">
-              Expenses Today
-            </p>
-            <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-error text-[18px]">
-                trending_down
-              </span>
+            {/* Stat Card 2 - Expenses */}
+            <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-label-md font-label-md text-on-surface-variant">
+                  Expenses Today
+                </p>
+                <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-error text-[18px]">
+                    trending_down
+                  </span>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-headline-md font-headline-md text-on-background">
+                  {formatRupiah(stats?.todayExpenses ?? 0)}
+                </h3>
+                <div className="mt-1 flex items-center">
+                  <p className="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">
+                      today
+                    </span>
+                    Today
+                  </p>
+                  {analytics && (
+                    <ChangeBadge
+                      percent={analytics.monthComparison.expenseChangePercent}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            {statsLoading ? (
-              <div className="h-8 w-24 bg-surface-variant/50 rounded animate-pulse" />
-            ) : (
-              <h3 className="text-headline-md font-headline-md text-on-background">
-                {formatRupiah(stats?.todayExpenses ?? 0)}
-              </h3>
-            )}
-            <div className="mt-1 flex items-center">
-              <p className="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">
-                  today
-                </span>
-                Today
-              </p>
-              {analytics && (
-                <ChangeBadge
-                  percent={analytics.monthComparison.expenseChangePercent}
-                />
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Stat Card 3 - Net Profit */}
-        <div className="bg-primary text-on-primary border border-primary/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,88,190,0.15)] flex flex-col justify-between hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <p className="text-label-md font-label-md text-primary-fixed">
-              Net Profit
-            </p>
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-              <span className="material-symbols-outlined text-white text-[18px]">
-                account_balance_wallet
-              </span>
+            {/* Stat Card 3 - Net Profit */}
+            <div className="bg-primary text-on-primary border border-primary/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,88,190,0.15)] flex flex-col justify-between hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+              <div className="flex justify-between items-start mb-4 relative z-10">
+                <p className="text-label-md font-label-md text-primary-fixed">
+                  Net Profit
+                </p>
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                  <span className="material-symbols-outlined text-white text-[18px]">
+                    account_balance_wallet
+                  </span>
+                </div>
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-headline-md font-headline-md text-white">
+                  {formatRupiah(stats?.todayProfit ?? 0)}
+                </h3>
+                <p className="text-label-sm font-label-sm text-primary-fixed mt-1">
+                  Today's Earnings
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="relative z-10">
-            {statsLoading ? (
-              <div className="h-8 w-24 bg-white/20 rounded animate-pulse" />
-            ) : (
-              <h3 className="text-headline-md font-headline-md text-white">
-                {formatRupiah(stats?.todayProfit ?? 0)}
-              </h3>
-            )}
-            <p className="text-label-sm font-label-sm text-primary-fixed mt-1">
-              Today's Earnings
-            </p>
-          </div>
-        </div>
 
-        {/* Stat Card 4 - Total Orders */}
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <p className="text-label-md font-label-md text-on-surface-variant">
-              Total Orders
-            </p>
-            <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-surface text-[18px]">
-                local_laundry_service
-              </span>
+            {/* Stat Card 4 - Total Orders */}
+            <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-label-md font-label-md text-on-surface-variant">
+                  Total Orders
+                </p>
+                <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+                  <span className="material-symbols-outlined text-on-surface text-[18px]">
+                    local_laundry_service
+                  </span>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-headline-md font-headline-md text-on-background">
+                  {stats?.todayOrderCount ?? 0}
+                </h3>
+                <div className="mt-1 flex items-center">
+                  <p className="text-label-sm font-label-sm text-secondary flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">
+                      today
+                    </span>
+                    Today
+                  </p>
+                  {analytics && (
+                    <ChangeBadge
+                      percent={analytics.monthComparison.orderChangePercent}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            {statsLoading ? (
-              <div className="h-8 w-12 bg-surface-variant/50 rounded animate-pulse" />
-            ) : (
-              <h3 className="text-headline-md font-headline-md text-on-background">
-                {stats?.todayOrderCount ?? 0}
-              </h3>
-            )}
-            <div className="mt-1 flex items-center">
-              <p className="text-label-sm font-label-sm text-secondary flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">
-                  today
-                </span>
-                Today
-              </p>
-              {analytics && (
-                <ChangeBadge
-                  percent={analytics.monthComparison.orderChangePercent}
-                />
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Stat Card 5 - Pending Pickups */}
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <p className="text-label-md font-label-md text-on-surface-variant">
-              Pending Pickups
-            </p>
-            <div className="w-8 h-8 rounded-full bg-[#fef08a]/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[#854d0e] text-[18px]">
-                directions_car
-              </span>
+            {/* Stat Card 5 - Pending Pickups */}
+            <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-stack-md shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300">
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-label-md font-label-md text-on-surface-variant">
+                  Pending Pickups
+                </p>
+                <div className="w-8 h-8 rounded-full bg-[#fef08a]/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#854d0e] text-[18px]">
+                    directions_car
+                  </span>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-headline-md font-headline-md text-on-background">
+                  {stats?.pendingPickups ?? 0}
+                </h3>
+                <p className="text-label-sm font-label-sm text-[#854d0e] mt-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">
+                    schedule
+                  </span>
+                  Needs Action
+                </p>
+              </div>
             </div>
-          </div>
-          <div>
-            {statsLoading ? (
-              <div className="h-8 w-12 bg-surface-variant/50 rounded animate-pulse" />
-            ) : (
-              <h3 className="text-headline-md font-headline-md text-on-background">
-                {stats?.pendingPickups ?? 0}
-              </h3>
-            )}
-            <p className="text-label-sm font-label-sm text-[#854d0e] mt-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">
-                schedule
-              </span>
-              Needs Action
-            </p>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {/* Main Content Area: Charts & Monthly Summary */}
@@ -360,9 +351,7 @@ export function Dashboard() {
 
           <div className="flex-1 min-h-[300px] relative w-full bg-surface-bright rounded-lg overflow-hidden border border-outline-variant/10 p-4">
             {trendLoading ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Spinner label="Memuat grafik..." />
-              </div>
+              <ChartSkeleton height="h-[300px]" />
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart
@@ -502,13 +491,13 @@ export function Dashboard() {
             Top 5 Pelanggan Bulan Ini
           </h3>
           {analyticsLoading ? (
-            <div className="flex justify-center p-8">
-              <Spinner />
-            </div>
+            <CardSkeleton count={5} layout="horizontal" />
           ) : analytics?.topCustomers?.length === 0 ? (
-            <p className="text-on-surface-variant italic text-center p-8">
-              Belum ada pelanggan bulan ini.
-            </p>
+            <EmptyState
+              icon="groups"
+              title="Belum ada pelanggan"
+              description="Belum ada data pelanggan bulan ini."
+            />
           ) : (
             <div className="flex flex-col gap-4">
               {analytics?.topCustomers.map((customer, idx) => (
@@ -545,13 +534,13 @@ export function Dashboard() {
             Kategori Terlaris Bulan Ini
           </h3>
           {analyticsLoading ? (
-            <div className="flex justify-center p-8">
-              <Spinner />
-            </div>
+            <CardSkeleton count={5} layout="horizontal" />
           ) : analytics?.topCategories?.length === 0 ? (
-            <p className="text-on-surface-variant italic text-center p-8">
-              Belum ada order bulan ini.
-            </p>
+            <EmptyState
+              icon="category"
+              title="Belum ada order"
+              description="Belum ada data kategori bulan ini."
+            />
           ) : (
             <div className="flex flex-col gap-4">
               {analytics?.topCategories.slice(0, 5).map((category) => (
@@ -603,9 +592,7 @@ export function Dashboard() {
 
         <div className="h-[250px] w-full">
           {analyticsLoading ? (
-            <div className="flex justify-center items-center h-full">
-              <Spinner />
-            </div>
+            <ChartSkeleton height="h-[250px]" />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -701,7 +688,7 @@ export function Dashboard() {
             </TableHeader>
             <TableBody
               isLoading={ordersLoading}
-              loadingContent={<Spinner label="Memuat order..." />}
+              loadingContent={<TableSkeleton rows={5} columns={5} />}
               emptyContent="Belum ada order"
             >
               {recentOrders.map((order) => (
@@ -716,10 +703,16 @@ export function Dashboard() {
                     {order.customer?.name ?? "-"}
                   </TableCell>
                   <TableCell className="py-4">
-                    {order.items?.map(i => i.category?.name).join(", ") ?? "-"}
+                    {order.items?.map((i) => i.category?.name).join(", ") ??
+                      "-"}
                   </TableCell>
                   <TableCell className="py-4 text-on-surface-variant">
-                    {order.items?.map(i => `${parseFloat(i.quantity)} ${i.category?.unit ?? ""}`).join(", ")}
+                    {order.items
+                      ?.map(
+                        (i) =>
+                          `${parseFloat(i.quantity)} ${i.category?.unit ?? ""}`,
+                      )
+                      .join(", ")}
                   </TableCell>
                   <TableCell className="py-4">
                     <Chip

@@ -3,7 +3,10 @@ import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useUsers, useCreateUser, useUpdateUserRole, useUpdateUser, useDeleteUser } from '../hooks/use-users';
 import type { UserRole, UserInfo } from '../types/api';
-import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Tooltip } from '@nextui-org/react';
+import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tooltip } from '@nextui-org/react';
+import { TableSkeleton } from '../components/ui/TableSkeleton';
+import { EmptyState } from '../components/ui/EmptyState';
+import { QueryErrorState } from '../components/ui/QueryErrorState';
 import { useAlert } from '../contexts/AlertContext';
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -188,15 +191,13 @@ export function UserManagement() {
 
       {/* Loading / Error */}
       {isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <Spinner label="Memuat data..." />
+        <div className="p-6">
+          <TableSkeleton rows={4} columns={5} />
         </div>
       )}
 
       {error && (
-        <div className="bg-error-container/30 border border-error/30 rounded-xl p-6 text-center">
-          <p className="text-error font-label-md">Gagal memuat data users</p>
-        </div>
+        <QueryErrorState error={error as Error} onRetry={() => window.location.reload()} compact />
       )}
 
       {!isLoading && !error && (
@@ -210,7 +211,9 @@ export function UserManagement() {
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Dibuat</TableColumn>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</TableColumn>
             </TableHeader>
-            <TableBody emptyContent="Belum ada user.">
+            <TableBody emptyContent={
+              <EmptyState icon="group_add" title="Belum ada user" description="Tambah user baru untuk memulai." />
+            }>
               {users.map((u) => (
                 <TableRow key={u.id} className="hover:bg-surface-container-lowest transition-colors group">
                   <TableCell>

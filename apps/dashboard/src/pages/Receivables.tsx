@@ -7,11 +7,13 @@ import {
   TableRow,
   TableCell,
   Button,
-  Spinner,
   Avatar,
   Alert,
   Chip,
+  Skeleton,
 } from "@nextui-org/react";
+import { TableSkeleton } from "../components/ui/TableSkeleton";
+import { EmptyState } from "../components/ui/EmptyState";
 import {
   useReceivableSummary,
   useReceivableAging,
@@ -96,7 +98,11 @@ export function Receivables() {
             </h3>
           </div>
           <div className="text-display-sm font-display-sm text-on-surface mb-2">
-            {loadingSummary ? "..." : formatRupiah(summary?.totalAmount ?? 0)}
+            {loadingSummary ? (
+              <Skeleton className="h-10 w-32 rounded-lg" />
+            ) : (
+              formatRupiah(summary?.totalAmount ?? 0)
+            )}
           </div>
         </div>
 
@@ -112,7 +118,11 @@ export function Receivables() {
             </h3>
           </div>
           <div className="text-display-sm font-display-sm text-on-surface mb-2">
-            {loadingSummary ? "..." : `${summary?.unpaidCount ?? 0} Order`}
+            {loadingSummary ? (
+              <Skeleton className="h-10 w-24 rounded-lg" />
+            ) : (
+              `${summary?.unpaidCount ?? 0} Order`
+            )}
           </div>
         </div>
 
@@ -128,7 +138,11 @@ export function Receivables() {
             </h3>
           </div>
           <div className="text-display-sm font-display-sm text-on-surface mb-2">
-            {loadingSummary ? "..." : `${summary?.customerCount ?? 0} Orang`}
+            {loadingSummary ? (
+              <Skeleton className="h-10 w-24 rounded-lg" />
+            ) : (
+              `${summary?.customerCount ?? 0} Orang`
+            )}
           </div>
         </div>
       </div>
@@ -139,8 +153,10 @@ export function Receivables() {
           Aging Analysis (Umur Piutang)
         </h3>
         {loadingAging ? (
-          <div className="flex justify-center p-8">
-            <Spinner />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[120px] rounded-lg" />
+            ))}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -192,8 +208,14 @@ export function Receivables() {
             </TableHeader>
             <TableBody
               isLoading={loadingCustomers}
-              loadingContent={<Spinner />}
-              emptyContent="Tidak ada pelanggan dengan piutang."
+              loadingContent={<TableSkeleton rows={5} columns={5} />}
+              emptyContent={
+                <EmptyState
+                  icon="receipt_long"
+                  title="Tidak ada piutang"
+                  description="Semua pelanggan sudah melunasi pembayaran."
+                />
+              }
             >
               {(customers ?? []).map((customer) => (
                 <TableRow

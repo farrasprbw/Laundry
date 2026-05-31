@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from '../hooks/use-payment-methods';
-import { Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Tooltip } from '@nextui-org/react';
+import { Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tooltip } from '@nextui-org/react';
+import { TableSkeleton } from '../components/ui/TableSkeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import { useAlert } from '../contexts/AlertContext';
 
 export function PaymentMethods() {
@@ -97,8 +99,8 @@ export function PaymentMethods() {
 
       {/* Loading / Error states */}
       {isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <Spinner label="Memuat metode pembayaran..." />
+        <div className="p-6">
+          <TableSkeleton rows={4} columns={4} />
         </div>
       )}
 
@@ -118,7 +120,13 @@ export function PaymentMethods() {
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Status</TableColumn>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</TableColumn>
             </TableHeader>
-            <TableBody emptyContent="Belum ada metode pembayaran.">
+            <TableBody emptyContent={
+              <EmptyState
+                icon="account_balance_wallet"
+                title="Belum ada metode pembayaran"
+                description="Tambah metode pembayaran untuk memulai."
+              />
+            }>
               {methods.map((method) => (
                 <TableRow key={method.id} className="hover:bg-surface-container-lowest transition-colors group">
                   <TableCell className="font-medium text-on-background">
