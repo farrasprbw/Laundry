@@ -78,6 +78,13 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   });
 
   const createOrder = useCreateOrder();
+  const createCustomer = useCreateCustomer();
+
+  // Quick New Customer State
+  const [showNewCustModal, setShowNewCustModal] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustPhone, setNewCustPhone] = useState("");
+  const [newCustAddress, setNewCustAddress] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -97,8 +104,51 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
       setParfume("");
       setPromotionId("");
       setUsePoints(false);
+      setShowNewCustModal(false);
+      setNewCustName("");
+      setNewCustPhone("");
+      setNewCustAddress("");
     }
   }, [isOpen, refetchCustomers, refetchCategories, refetchPM, refetchPromos]);
+
+  const handleQuickCreateCustomer = () => {
+    if (!newCustName.trim()) {
+      showAlert("Nama pelanggan wajib diisi", "warning");
+      return;
+    }
+    let formattedPhone = newCustPhone.trim().replace(/\D/g, "");
+    if (!formattedPhone) {
+      showAlert("Nomor telepon wajib diisi", "warning");
+      return;
+    }
+    if (formattedPhone.startsWith("0")) {
+      formattedPhone = "62" + formattedPhone.slice(1);
+    }
+
+    createCustomer.mutate(
+      {
+        name: newCustName.trim(),
+        phone: formattedPhone,
+        address: newCustAddress.trim() || undefined,
+      },
+      {
+        onSuccess: (newCust) => {
+          showAlert("Pelanggan berhasil ditambahkan!", "success");
+          setCustomersList((prev) => [newCust, ...prev]);
+          setCustomerId(newCust.id);
+          setShowNewCustModal(false);
+          setNewCustName("");
+          setNewCustPhone("");
+          setNewCustAddress("");
+          refetchCustomers();
+        },
+        onError: (err: unknown) => {
+          const error = err as { message?: string };
+          showAlert(error?.message || "Gagal menambahkan pelanggan", "danger");
+        },
+      }
+    );
+  };
 
   // Update customers list when data changes
   useEffect(() => {
@@ -295,6 +345,19 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
       isLoading={createOrder.isPending}
     >
       <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Pelanggan <span className="text-danger">*</span></span>
+          <Button
+            size="sm"
+            variant="light"
+            color="primary"
+            className="font-bold h-7 px-2 text-xs"
+            startContent={<span className="material-symbols-outlined text-[16px]">person_add</span>}
+            onPress={() => setShowNewCustModal(true)}
+          >
+            + Pelanggan Baru
+          </Button>
+        </div>
         <Autocomplete
           label="Pilih Pelanggan"
           placeholder="Cari pelanggan..."
