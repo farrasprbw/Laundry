@@ -19,7 +19,18 @@ import { usePaymentMethods } from '../hooks/use-payment-methods';
 import { useCreateOrder } from '../hooks/use-orders';
 import { useAlert } from '../contexts/AlertContext';
 import type { Category, Customer, Order } from '../types/api';
-import { buildLaundryReceipt, DEFAULT_STORE_CONFIG } from '../utils/receipt-builder';
+import { buildLaundryReceipt, type StoreConfig } from '../utils/receipt-builder';
+
+const DEFAULT_STORE_CONFIG: StoreConfig = {
+  name: 'CleanFold Laundry',
+  address: 'Jl. Raya Laundry No. 1',
+  phone: '0812-3456-7890',
+  disclaimer: [
+    'Pengambilan barang wajib menunjukkan nota.',
+    'Barang tidak diambil >30 hari di luar tanggung jawab.',
+  ],
+  qrCodeUrl: 'https://example.com/invoice/',
+};
 
 interface CartItem {
   category: Category;
@@ -181,19 +192,17 @@ export function PosPage() {
       const receiptData = {
         invoiceNumber: order.invoiceNumber,
         customerName: order.customer?.name || selectedCustomer?.name || 'Pelanggan',
-        customerPhone: order.customer?.phone || selectedCustomer?.phone || '-',
         items: cart.map((i) => ({
-          name: i.category.name,
+          categoryName: i.category.name,
           quantity: i.quantity,
           unit: i.category.unit,
           pricePerUnit: Number(i.category.pricePerUnit),
           subtotal: i.quantity * Number(i.category.pricePerUnit),
         })),
         totalPrice: totalAmount,
-        status: order.status || 'PROCESS',
         paymentStatus: paymentStatus,
         createdAt: new Date().toISOString(),
-        estimatedFinish: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        estimatedDurationDays: 2,
       };
 
       const bytes = buildLaundryReceipt(receiptData, DEFAULT_STORE_CONFIG);
