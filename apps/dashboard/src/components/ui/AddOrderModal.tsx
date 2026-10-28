@@ -341,7 +341,8 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
         onClose={onClose}
         title="Buat Order Baru"
         onSubmit={handleSubmit}
-        submitText="Simpan Order"
+        submitText="Buat Order"
+        isSubmitDisabled={isFormIncomplete || createOrder.isPending}
         isLoading={createOrder.isPending}
         size="2xl"
         isDismissable={false}

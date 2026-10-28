@@ -11,6 +11,8 @@ interface ModalProps {
   cancelText?: string;
   isSubmitDisabled?: boolean;
   isLoading?: boolean;
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "full";
+  isDismissable?: boolean;
 }
 
 export function Modal({ 
@@ -22,10 +24,19 @@ export function Modal({
   submitText = 'Simpan', 
   cancelText = 'Batal', 
   isSubmitDisabled, 
-  isLoading 
+  isLoading,
+  size = "xl",
+  isDismissable = true,
 }: ModalProps) {
   return (
-    <NextUIModal isOpen={isOpen} onOpenChange={(open) => !open && onClose()} placement="center" scrollBehavior="inside" size="xl">
+    <NextUIModal
+      isOpen={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      placement="center"
+      scrollBehavior="inside"
+      size={size}
+      isDismissable={isDismissable}
+    >
       <ModalContent>
         {() => (
           <>
