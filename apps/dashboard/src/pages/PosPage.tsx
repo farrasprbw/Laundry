@@ -42,6 +42,18 @@ const formatRupiah = (num: number) => {
   }).format(num);
 };
 
+const getCategoryIcon = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes('setrika')) return 'iron';
+  if (n.includes('bed') || n.includes('sprei') || n.includes('selimut')) return 'bed';
+  if (n.includes('kilat') || n.includes('cepat') || n.includes('express')) return 'bolt';
+  if (n.includes('kilo')) return 'scale';
+  if (n.includes('sepatu')) return 'footwear';
+  if (n.includes('tas')) return 'shopping_bag';
+  if (n.includes('jas') || n.includes('gaun')) return 'dry_cleaning';
+  return 'local_laundry_service';
+};
+
 export function PosPage() {
   const { showAlert } = useAlert();
 
@@ -77,6 +89,15 @@ export function PosPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<'all' | 'kiloan' | 'satuan'>('all');
   const [searchItemQuery, setSearchItemQuery] = useState('');
+
+  const kiloanCount = useMemo(
+    () => categories.filter((c) => c.unit.toUpperCase() === 'KG').length,
+    [categories]
+  );
+  const satuanCount = useMemo(
+    () => categories.filter((c) => c.unit.toUpperCase() !== 'KG').length,
+    [categories]
+  );
 
   // Simple 3 Payment Choices
   const [paymentChoice, setPaymentChoice] = useState<'unpaid' | 'cash' | 'qris'>('unpaid');
@@ -336,10 +357,10 @@ export function PosPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 pt-20 md:pt-24 max-w-7xl mx-auto w-full pb-16">
-      {/* Page Header (Matching Dashboard, Orders, & Customers) */}
+      {/* Page Header (Matching Dashboard, Orders, & Categories with point_of_sale icon) */}
       <div>
-        <h1 className="text-headline-md font-headline-md text-on-surface tracking-tight flex items-center gap-2.5">
-          <span className="w-3 h-3 rounded-full bg-primary inline-block"></span>
+        <h1 className="text-headline-lg font-headline-lg text-on-background tracking-tight flex items-center gap-3">
+          <span className="material-symbols-outlined text-primary text-3xl fill-icon">point_of_sale</span>
           Kasir Laundry (POS)
         </h1>
         <p className="text-body-md text-on-surface-variant mt-1">
@@ -466,40 +487,58 @@ export function PosPage() {
           {/* 2. KATALOG LAYANAN (DENGAN KONTROL LANGSUNG DI CARD UNTUK LANSIA/OPERATOR) */}
           <div className="bg-white rounded-2xl p-4 lg:p-5 shadow-sm border border-slate-200/80 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              {/* Segmented Filter Tabs */}
-              <div className="inline-flex p-1 bg-slate-100 rounded-xl">
+              {/* Segmented Filter Tabs with Icons & Counts for Senior Ease */}
+              <div className="inline-flex p-1 bg-slate-100 rounded-xl gap-1">
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryTab('all')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
                     selectedCategoryTab === 'all'
                       ? 'bg-primary text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  Semua Layanan
+                  <span className="material-symbols-outlined text-[18px]">apps</span>
+                  <span>Semua</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    selectedCategoryTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {categories.length}
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryTab('kiloan')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
                     selectedCategoryTab === 'kiloan'
                       ? 'bg-primary text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  Kiloan (KG)
+                  <span className="material-symbols-outlined text-[18px]">scale</span>
+                  <span>Kiloan (KG)</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    selectedCategoryTab === 'kiloan' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {kiloanCount}
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryTab('satuan')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
                     selectedCategoryTab === 'satuan'
                       ? 'bg-primary text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  Satuan (PCS)
+                  <span className="material-symbols-outlined text-[18px]">checkroom</span>
+                  <span>Satuan (PCS)</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    selectedCategoryTab === 'satuan' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {satuanCount}
+                  </span>
                 </button>
               </div>
 
@@ -511,7 +550,7 @@ export function PosPage() {
                   placeholder="Cari layanan..."
                   value={searchItemQuery}
                   onChange={(e) => setSearchItemQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
@@ -530,67 +569,96 @@ export function PosPage() {
                 {filteredCategories.map((cat) => {
                   const currentQty = cartQuantityMap.get(cat.id) || 0;
                   const isSelected = currentQty > 0;
+                  const isKiloan = cat.unit.toUpperCase() === 'KG';
+                  const catIcon = cat.icon || getCategoryIcon(cat.name);
 
                   return (
                     <div
                       key={cat.id}
-                      className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                      className={`p-4 md:p-5 rounded-2xl border transition-all flex flex-col justify-between ${
                         isSelected
-                          ? 'bg-primary/5 border-primary shadow-xs ring-1 ring-primary/20'
-                          : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
+                          ? 'bg-primary/5 border-2 border-primary shadow-sm ring-2 ring-primary/20'
+                          : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs hover:shadow-xs'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className={`inline-block text-[11px] font-black uppercase px-2 py-0.5 rounded-md mb-1.5 ${
-                            cat.unit.toUpperCase() === 'KG' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {cat.unit.toUpperCase() === 'KG' ? 'Kiloan' : 'Satuan'}
+                      <div className="flex items-start gap-3">
+                        {/* Visual Icon Avatar for Quick Senior Recognition */}
+                        <div
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${
+                            isKiloan
+                              ? 'bg-amber-100/90 text-amber-800'
+                              : 'bg-blue-100/90 text-blue-800'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-2xl">
+                            {catIcon}
                           </span>
-                          <h4 className="font-bold text-slate-800 text-sm md:text-base leading-snug">
+                        </div>
+
+                        {/* Title & Duration */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span
+                              className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-md ${
+                                isKiloan
+                                  ? 'bg-amber-100 text-amber-900'
+                                  : 'bg-blue-100 text-blue-900'
+                              }`}
+                            >
+                              {isKiloan ? 'Kiloan' : 'Satuan'}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              ⏱️ {cat.estimatedDurationDays || 2} hari
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-slate-900 text-base md:text-lg leading-snug line-clamp-2">
                             {cat.name}
                           </h4>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            Estimasi: {cat.estimatedDurationDays || 2} hari
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="font-black text-primary text-base md:text-lg">
-                            {formatRupiah(cat.pricePerUnit)}
-                          </p>
-                          <p className="text-[11px] text-slate-400 font-semibold">per {cat.unit}</p>
+                          <div className="mt-1 flex items-baseline gap-1">
+                            <span className="font-black text-primary text-base md:text-lg">
+                              {formatRupiah(cat.pricePerUnit)}
+                            </span>
+                            <span className="text-xs text-slate-500 font-semibold">
+                              / {cat.unit}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* IN-CARD CONTROLS: Lansia/Operator can directly ADD/MINUS right here without scrolling! */}
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                      {/* In-Card Stepper: 40px Touch Targets for Senior Hands */}
+                      <div className="mt-4 pt-3 border-t border-slate-100">
                         {isSelected ? (
-                          <div className="flex items-center justify-between w-full bg-white p-1 rounded-xl border border-primary/30 shadow-2xs">
+                          <div className="flex items-center justify-between w-full bg-white p-1 rounded-xl border border-primary/40 shadow-2xs">
                             <button
                               type="button"
                               onClick={() => handleMinusFromCart(cat.id)}
-                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center font-bold text-slate-700 transition-colors"
+                              className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center font-bold text-slate-700 transition-colors"
                               title="Kurang 1"
                             >
-                              <Minus className="w-4 h-4" />
+                              <Minus className="w-5 h-5" />
                             </button>
-                            <span className="font-black text-primary text-sm px-3">
-                              {currentQty} {cat.unit}
-                            </span>
+                            <div className="text-center px-2">
+                              <span className="block font-black text-primary text-base leading-none">
+                                {currentQty} {cat.unit}
+                              </span>
+                              <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">
+                                ✓ Dalam Keranjang
+                              </span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => handleAddToCart(cat)}
-                              className="w-8 h-8 rounded-lg bg-primary hover:bg-primary-hover text-white flex items-center justify-center font-bold transition-colors shadow-2xs"
+                              className="w-10 h-10 rounded-lg bg-primary hover:bg-primary-hover text-white flex items-center justify-center font-bold transition-colors shadow-2xs"
                               title="Tambah 1"
                             >
-                              <Plus className="w-4 h-4" />
+                              <Plus className="w-5 h-5" />
                             </button>
                           </div>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleAddToCart(cat)}
-                            className="w-full py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-primary hover:text-white border border-slate-200 hover:border-primary text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+                            className="w-full py-3 px-3 rounded-xl bg-slate-50 hover:bg-primary hover:text-white border border-slate-200 hover:border-primary text-slate-800 font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-2xs active:scale-[0.98]"
                           >
                             <Plus className="w-4 h-4" /> Tambah ke Keranjang
                           </button>
