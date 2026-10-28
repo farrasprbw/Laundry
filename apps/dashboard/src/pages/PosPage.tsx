@@ -22,12 +22,7 @@ import { usePaymentMethods } from '../hooks/use-payment-methods';
 import { useCreateOrder } from '../hooks/use-orders';
 import { useAlert } from '../contexts/AlertContext';
 import type { Category, Customer, Order } from '../types/api';
-import {
-  formatRupiah,
-  type ReceiptData,
-  type StoreConfig,
-  printReceiptRaw,
-} from '../utils/receipt-builder';
+import { buildLaundryReceipt, type StoreConfig } from '../utils/receipt-builder';
 
 interface CartItem {
   category: Category;
@@ -41,6 +36,14 @@ const DEFAULT_STORE_CONFIG: StoreConfig = {
   phone: '0812-3456-7890',
   disclaimer: ['Terima kasih atas kepercayaan Anda!'],
   qrCodeUrl: '',
+};
+
+const formatRupiah = (num: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(num);
 };
 
 export function PosPage() {
@@ -118,11 +121,15 @@ export function PosPage() {
   // Auto select default payment method when choice changes
   useEffect(() => {
     if (paymentChoice === 'cash') {
-      const cashMethod = paymentMethods.find((m) => m.type === 'CASH');
+      const cashMethod = paymentMethods.find(
+        (m) => m.name.toLowerCase().includes('cash') || m.name.toLowerCase().includes('tunai')
+      );
       if (cashMethod) setSelectedPaymentMethodId(cashMethod.id);
       else if (paymentMethods[0]) setSelectedPaymentMethodId(paymentMethods[0].id);
     } else if (paymentChoice === 'qris') {
-      const qrisMethod = paymentMethods.find((m) => m.type === 'QRIS' || m.type === 'TRANSFER');
+      const qrisMethod = paymentMethods.find(
+        (m) => m.name.toLowerCase().includes('qris') || m.name.toLowerCase().includes('transfer')
+      );
       if (qrisMethod) setSelectedPaymentMethodId(qrisMethod.id);
       else if (paymentMethods[0]) setSelectedPaymentMethodId(paymentMethods[0].id);
     } else {
@@ -148,8 +155,8 @@ export function PosPage() {
     return categories.filter((c) => {
       const matchTab =
         selectedCategoryTab === 'all' ||
-        (selectedCategoryTab === 'kiloan' && c.unit === 'KG') ||
-        (selectedCategoryTab === 'satuan' && c.unit === 'PCS');
+        (selectedCategoryTab === 'kiloan' && c.unit.toUpperCase() === 'KG') ||
+        (selectedCategoryTab === 'satuan' && c.unit.toUpperCase() !== 'KG');
       const matchSearch =
         !searchItemQuery.trim() ||
         c.name.toLowerCase().includes(searchItemQuery.toLowerCase());
@@ -168,7 +175,7 @@ export function PosPage() {
 
   // Cart Calculations
   const subtotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.category.basePrice * item.quantity, 0);
+    return cart.reduce((sum, item) => sum + item.category.pricePerUnit * item.quantity, 0);
   }, [cart]);
 
   const totalItemsCount = useMemo(() => {
@@ -179,7 +186,7 @@ export function PosPage() {
   const handleAddToCart = (category: Category) => {
     setCart((prev) => {
       const idx = prev.findIndex((i) => i.category.id === category.id);
-      const defaultStep = category.unit === 'KG' ? 1 : 1;
+      const defaultStep = category.unit.toUpperCase() === 'KG' ? 1 : 1;
       if (idx >= 0) {
         const updated = [...prev];
         updated[idx] = {
@@ -197,7 +204,7 @@ export function PosPage() {
       const idx = prev.findIndex((i) => i.category.id === categoryId);
       if (idx === -1) return prev;
       const item = prev[idx];
-      const step = item.category.unit === 'KG' ? 1 : 1;
+      const step = item.category.unit.toUpperCase() === 'KG' ? 1 : 1;
       const newQty = Number((item.quantity - step).toFixed(2));
       if (newQty <= 0) {
         return prev.filter((_, i) => i !== idx);
@@ -239,7 +246,7 @@ export function PosPage() {
   const handleQuickCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustName.trim()) {
-      showAlert('warning', 'Nama pelanggan wajib diisi');
+      showAlert('Nama pelanggan wajib diisi', 'warning');
       return;
     }
     try {
@@ -254,9 +261,9 @@ export function PosPage() {
       setNewCustPhone('');
       setNewCustAddress('');
       setIsCustomerDropdownOpen(false);
-      showAlert('success', `Pelanggan ${created.name} berhasil dibuat & dipilih!`);
+      showAlert(`Pelanggan ${created.name} berhasil dibuat & dipilih!`, 'success');
     } catch (err: any) {
-      showAlert('error', err?.response?.data?.message || 'Gagal menambahkan pelanggan');
+      showAlert(err?.response?.data?.message || 'Gagal menambahkan pelanggan', 'danger');
     }
   };
 
@@ -269,11 +276,11 @@ export function PosPage() {
 
   const handleCheckout = async () => {
     if (!selectedCustomerId) {
-      showAlert('warning', 'Pilih atau cari pelanggan terlebih dahulu');
+      showAlert('Pilih atau cari pelanggan terlebih dahulu', 'warning');
       return;
     }
     if (cart.length === 0) {
-      showAlert('warning', 'Keranjang masih kosong, pilih layanan cucian');
+      showAlert('Keranjang masih kosong, pilih layanan cucian', 'warning');
       return;
     }
 
@@ -297,9 +304,9 @@ export function PosPage() {
 
       const res = await createOrder.mutateAsync(payload as any);
       setCompletedOrder(res);
-      showAlert('success', 'Transaksi berhasil disimpan!');
+      showAlert('Transaksi berhasil disimpan!', 'success');
     } catch (err: any) {
-      showAlert('error', err?.response?.data?.message || 'Gagal memproses transaksi kasir');
+      showAlert(err?.response?.data?.message || 'Gagal memproses transaksi kasir', 'danger');
     } finally {
       setIsSubmitting(false);
     }
@@ -307,26 +314,29 @@ export function PosPage() {
 
   const handlePrintReceipt = () => {
     if (!completedOrder) return;
-    const receiptData: ReceiptData = {
-      orderNumber: completedOrder.orderNumber,
-      date: new Date(completedOrder.createdAt),
-      customerName: completedOrder.customer?.name || selectedCustomer?.name || 'Pelanggan Umum',
-      customerPhone: completedOrder.customer?.phone || selectedCustomer?.phone || '-',
-      cashierName: 'Kasir',
-      items: (completedOrder.items || []).map((it) => ({
-        name: it.category?.name || 'Layanan Laundry',
-        quantity: it.quantity,
-        unit: it.category?.unit || 'KG',
-        price: it.pricePerUnit,
-        total: it.totalPrice,
-      })),
-      totalAmount: completedOrder.totalAmount,
-      paymentStatus: completedOrder.paymentStatus,
-      paymentMethodName: paymentChoice === 'cash' ? 'Tunai' : paymentChoice === 'qris' ? 'QRIS' : 'Belum Bayar',
-      notes: completedOrder.notes || undefined,
-    };
+    try {
+      const receiptData = {
+        invoiceNumber: completedOrder.invoiceNumber,
+        customerName: completedOrder.customer?.name || selectedCustomer?.name || 'Pelanggan Umum',
+        items: (completedOrder.items || []).map((it) => ({
+          categoryName: it.category?.name || 'Layanan Laundry',
+          quantity: typeof it.quantity === 'string' ? parseFloat(it.quantity) : it.quantity,
+          unit: it.category?.unit || 'KG',
+          pricePerUnit: it.pricePerUnit,
+          subtotal: it.subtotal,
+        })),
+        totalPrice: completedOrder.totalPrice,
+        paymentStatus: completedOrder.paymentStatus,
+        createdAt: completedOrder.createdAt || new Date().toISOString(),
+        notes: completedOrder.notes || null,
+      };
 
-    printReceiptRaw(receiptData, DEFAULT_STORE_CONFIG);
+      const commands = buildLaundryReceipt(receiptData, DEFAULT_STORE_CONFIG);
+      showAlert(`Struk thermal siap cetak (${commands.length} bytes)`, 'success');
+      window.print();
+    } catch {
+      showAlert('Gagal membuat format struk thermal', 'danger');
+    }
   };
 
   return (
@@ -564,20 +574,20 @@ export function PosPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <span className={`inline-block text-[11px] font-black uppercase px-2 py-0.5 rounded-md mb-1.5 ${
-                            cat.unit === 'KG' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                            cat.unit.toUpperCase() === 'KG' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                           }`}>
-                            {cat.unit === 'KG' ? 'Kiloan' : 'Satuan'}
+                            {cat.unit.toUpperCase() === 'KG' ? 'Kiloan' : 'Satuan'}
                           </span>
                           <h4 className="font-bold text-slate-800 text-sm md:text-base leading-snug">
                             {cat.name}
                           </h4>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            Estimasi: {cat.estimatedDays || 2} hari
+                            Estimasi: {cat.estimatedDurationDays || 2} hari
                           </p>
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-black text-primary text-base md:text-lg">
-                            {formatRupiah(cat.basePrice)}
+                            {formatRupiah(cat.pricePerUnit)}
                           </p>
                           <p className="text-[11px] text-slate-400 font-semibold">per {cat.unit}</p>
                         </div>
@@ -665,12 +675,12 @@ export function PosPage() {
                           {item.category.name}
                         </p>
                         <p className="text-xs text-slate-400 font-medium">
-                          {formatRupiah(item.category.basePrice)} / {item.category.unit}
+                          {formatRupiah(item.category.pricePerUnit)} / {item.category.unit}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-black text-slate-900 text-sm">
-                          {formatRupiah(item.category.basePrice * item.quantity)}
+                          {formatRupiah(item.category.pricePerUnit * item.quantity)}
                         </p>
                       </div>
                     </div>
@@ -687,7 +697,7 @@ export function PosPage() {
                         </button>
                         <input
                           type="number"
-                          step={item.category.unit === 'KG' ? '0.1' : '1'}
+                          step={item.category.unit.toUpperCase() === 'KG' ? '0.1' : '1'}
                           min="0.1"
                           value={item.quantity}
                           onChange={(e) => handleUpdateQuantity(idx, parseFloat(e.target.value) || 0)}
@@ -706,7 +716,7 @@ export function PosPage() {
                       </div>
 
                       {/* Quick Weight Chips for Kiloan */}
-                      {item.category.unit === 'KG' && (
+                      {item.category.unit.toUpperCase() === 'KG' && (
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -898,10 +908,10 @@ export function PosPage() {
             <div>
               <h3 className="text-lg font-black text-slate-800">Transaksi Berhasil!</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Nomor Pesanan: <span className="font-bold text-slate-800">{completedOrder.orderNumber}</span>
+                Nomor Pesanan: <span className="font-bold text-slate-800">{completedOrder.invoiceNumber}</span>
               </p>
               <p className="text-lg font-black text-primary mt-1">
-                {formatRupiah(completedOrder.totalAmount)}
+                {formatRupiah(completedOrder.totalPrice)}
               </p>
             </div>
 
