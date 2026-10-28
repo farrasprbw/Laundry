@@ -36,6 +36,7 @@ interface ListOrdersParams {
   limit?: number;
   dateFrom?: string;
   dateTo?: string;
+  branchId?: string | null;
 }
 
 export const orderService = {
@@ -47,12 +48,17 @@ export const orderService = {
     limit = 20,
     dateFrom,
     dateTo,
+    branchId,
   }: ListOrdersParams) {
     const offset = (page - 1) * limit;
 
     const conditions: ReturnType<typeof sql>[] = [
       sql`${isNull(orders.deletedAt)}`,
     ];
+
+    if (branchId) {
+      conditions.push(sql`${orders.branchId} = ${branchId}`);
+    }
 
     if (status) {
       conditions.push(sql`${eq(orders.status, status)}`);
@@ -305,8 +311,8 @@ export const orderService = {
     return await this.getById(id);
   },
 
-  async updateStatus(id: string, newStatus: string) {
-    const existing = await this.getById(id);
+  async updateStatus(id: string, newStatus: string, branchId?: string | null) {
+    const existing = await this.getById(id, branchId);
     if (!existing) return null;
 
     // Validate transition
@@ -335,7 +341,7 @@ export const orderService = {
     const [order] = await db
       .update(orders)
       .set(updateData)
-      .where(eq(orders.id, id))
+      .where(and(eq(orders.id, id), isNull(orders.deletedAt)))
       .returning();
 
     // Auto-send WhatsApp notification if status changed to FINISHED
@@ -349,24 +355,29 @@ export const orderService = {
     return order;
   },
 
-  async updatePayment(id: string, paymentStatus: string) {
-    const existing = await this.getById(id);
+  async updatePayment(id: string, paymentStatus: string, branchId?: string | null) {
+    const existing = await this.getById(id, branchId);
     if (!existing) return null;
 
     const [order] = await db
       .update(orders)
       .set({ paymentStatus, updatedAt: new Date() })
-      .where(eq(orders.id, id))
+      .where(and(eq(orders.id, id), isNull(orders.deletedAt)))
       .returning();
 
     return order;
   },
 
-  async delete(id: string) {
+  async delete(id: string, branchId?: string | null) {
+    const conditions = [eq(orders.id, id), isNull(orders.deletedAt)];
+    if (branchId) {
+      conditions.push(eq(orders.branchId, branchId));
+    }
+
     const [order] = await db
       .update(orders)
       .set({ deletedAt: new Date() })
-      .where(and(eq(orders.id, id), isNull(orders.deletedAt)))
+      .where(and(...conditions))
       .returning();
 
     return order ?? null;

@@ -4,42 +4,66 @@ import { orderService } from "../services/order.service.js";
 import type { Response } from "express";
 
 const router = Router();
+
+// Helper: get branch scope based on user role
+function getBranchScope(req: AuthRequest): string | null | undefined {
+  if (req.user?.role === "super_admin") {
+    return (req.query.branchId as string) || null;
+  }
+  return req.user?.branchId || null;
+}
+
 router.use(requireAuth);
 
+// GET /api/orders — list orders with pagination & filters (isolated per branch)
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
+    const branchId = getBranchScope(req);
+    if (req.user?.role !== "super_admin" && !branchId) {
+      return res.status(403).json({ error: "User is not assigned to any branch" });
+    }
+
     const { status, paymentStatus, search, page, limit, dateFrom, dateTo } = req.query;
     const result = await orderService.list({
-      status: status as string, 
+      status: status as string,
       paymentStatus: paymentStatus as string,
       search: search as string,
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
-      dateFrom: dateFrom as string, dateTo: dateTo as string,
+      dateFrom: dateFrom as string,
+      dateTo: dateTo as string,
+      branchId,
     });
     res.json(result);
   } catch (err) {
+    console.error("[Order List Error]", { userId: req.user?.id, error: err });
     res.status(500).json({ error: "Failed to list orders" });
   }
 });
 
+// GET /api/orders/:id — order detail (prevent IDOR)
 router.get("/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const order = await orderService.getById(req.params.id as string);
-    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    const branchId = getBranchScope(req);
+    const order = await orderService.getById(req.params.id as string, branchId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
     res.json(order);
   } catch (err) {
+    console.error("[Order Detail Error]", { orderId: req.params.id, userId: req.user?.id, error: err });
     res.status(500).json({ error: "Failed to get order" });
   }
 });
 
+// POST /api/orders — create new order
 router.post("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { customerId, items, notes, paymentMethodId, paymentStatus, discount, parfume, promotionId, pointsUsed } = req.body;
-    if (!customerId || !items || !Array.isArray(items) || items.length === 0) {
-      res.status(400).json({ error: "customerId and at least one item are required" }); return;
+    const { customerId, items, notes, paymentMethodId, paymentStatus, discount, promotionId, pointsUsed, parfume } = req.body;
+    if (!customerId || !items || !items.length) {
+      return res.status(400).json({ error: "customerId and items are required" });
     }
-    const userBranchId = (req.user as any)?.branchId || null;
+    const userBranchId = req.user?.branchId || null;
     const order = await orderService.create({ 
       customerId, items, notes, paymentMethodId, paymentStatus, 
       discount: discount ? Number(discount) : 0, 
@@ -54,24 +78,33 @@ router.post("/", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// PUT /api/orders/:id — edit order (admin only, verified branch)
 router.put("/:id", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
     const { items, notes, paymentMethodId, paymentStatus, discount, parfume } = req.body;
+    const branchId = getBranchScope(req);
+    const existing = await orderService.getById(req.params.id as string, branchId);
+    if (!existing) {
+      return res.status(404).json({ error: "Order not found" });
+    }
     const order = await orderService.update(req.params.id as string, { items, notes, paymentMethodId, paymentStatus, discount: discount ? Number(discount) : 0, parfume });
-    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
     res.json(order);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to update order" });
+  } catch (error: unknown) {
+    const err = error as Error;
+    res.status(400).json({ error: err.message || "Failed to update order" });
   }
 });
 
-// Status transition — all authenticated users can advance status
+// PATCH /api/orders/:id/status — advance status (verified branch)
 router.patch("/:id/status", async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
-    if (!status) { res.status(400).json({ error: "status is required" }); return; }
-    const order = await orderService.updateStatus(req.params.id as string, status);
-    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    if (!status) return res.status(400).json({ error: "status is required" });
+
+    const branchId = getBranchScope(req);
+    const order = await orderService.updateStatus(req.params.id as string, status, branchId);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
     res.json(order);
   } catch (error: unknown) {
     const err = error as Error;
@@ -79,13 +112,16 @@ router.patch("/:id/status", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Update payment status — authenticated users (workers) can update payment status
+// PATCH /api/orders/:id/payment — update payment status (verified branch)
 router.patch("/:id/payment", async (req: AuthRequest, res: Response) => {
   try {
     const { paymentStatus } = req.body;
-    if (!paymentStatus) { res.status(400).json({ error: "paymentStatus is required" }); return; }
-    const order = await orderService.updatePayment(req.params.id as string, paymentStatus);
-    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    if (!paymentStatus) return res.status(400).json({ error: "paymentStatus is required" });
+
+    const branchId = getBranchScope(req);
+    const order = await orderService.updatePayment(req.params.id as string, paymentStatus, branchId);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
     res.json(order);
   } catch (error: unknown) {
     const err = error as Error;
@@ -93,24 +129,16 @@ router.patch("/:id/payment", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// DELETE /api/orders/:id — soft delete (admin only, verified branch)
 router.delete("/:id", requireRole("admin", "super_admin"), async (req: AuthRequest, res: Response) => {
   try {
-    const order = await orderService.delete(req.params.id as string);
-    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    const branchId = getBranchScope(req);
+    const order = await orderService.delete(req.params.id as string, branchId);
+    if (!order) return res.status(404).json({ error: "Order not found" });
     res.json({ message: "Order deleted", order });
   } catch (err) {
+    console.error("[Order Delete Error]", { orderId: req.params.id, userId: req.user?.id, error: err });
     res.status(500).json({ error: "Failed to delete order" });
-  }
-});
-
-// WhatsApp notification send via Fonnte
-router.post("/:id/wa-send", async (req: AuthRequest, res: Response) => {
-  try {
-    const success = await orderService.sendWhatsAppNotification(req.params.id as string);
-    if (!success) { res.status(404).json({ error: "Failed to send or order not found" }); return; }
-    res.json({ message: "WhatsApp notification sent successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to send WhatsApp notification" });
   }
 });
 
