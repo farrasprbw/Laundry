@@ -559,5 +559,42 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
         />
       </div>
     </Modal>
+
+    <Modal
+      isOpen={showNewCustModal}
+      onClose={() => setShowNewCustModal(false)}
+      title="Tambah Pelanggan Baru"
+      onSubmit={handleQuickCreateCustomer}
+      submitText="Simpan & Pilih"
+      isLoading={createCustomer.isPending}
+    >
+      <div className="flex flex-col gap-3">
+        <Input
+          label="Nama Pelanggan"
+          placeholder="Contoh: Budi Santoso"
+          value={newCustName}
+          onChange={(e) => setNewCustName(e.target.value)}
+          variant="bordered"
+          isRequired
+          autoFocus
+        />
+        <Input
+          label="Nomor WhatsApp / HP"
+          placeholder="Contoh: 08123456789"
+          value={newCustPhone}
+          onChange={(e) => setNewCustPhone(e.target.value)}
+          variant="bordered"
+          isRequired
+        />
+        <Textarea
+          label="Alamat (Opsional)"
+          placeholder="Contoh: Jl. Melati No. 12"
+          value={newCustAddress}
+          onChange={(e) => setNewCustAddress(e.target.value)}
+          variant="bordered"
+          minRows={2}
+        />
+      </div>
+    </Modal>
   );
 }
