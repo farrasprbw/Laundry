@@ -145,7 +145,12 @@ export const orderService = {
     };
   },
 
-  async getById(id: string) {
+  async getById(id: string, branchId?: string | null) {
+    const conditions = [eq(orders.id, id), isNull(orders.deletedAt)];
+    if (branchId) {
+      conditions.push(eq(orders.branchId, branchId));
+    }
+
     const [result] = await db
       .select({
         order: orders,
@@ -155,7 +160,7 @@ export const orderService = {
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .leftJoin(paymentMethods, eq(orders.paymentMethodId, paymentMethods.id))
-      .where(and(eq(orders.id, id), isNull(orders.deletedAt)));
+      .where(and(...conditions));
 
     if (!result) return null;
 
