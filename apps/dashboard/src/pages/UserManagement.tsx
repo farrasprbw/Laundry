@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useUsers, useCreateUser, useUpdateUserRole, useUpdateUser, useDeleteUser } from '../hooks/use-users';
+import { useBranches } from '../hooks/use-branches';
 import type { UserRole, UserInfo } from '../types/api';
 import { Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tooltip } from '@nextui-org/react';
 import { TableSkeleton } from '../components/ui/TableSkeleton';
@@ -28,6 +29,7 @@ export function UserManagement() {
   const [formPhone, setFormPhone] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('worker');
+  const [formBranchId, setFormBranchId] = useState('');
 
   // Edit form state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -35,12 +37,14 @@ export function UserManagement() {
   const [editName, setEditName] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editBranchId, setEditBranchId] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [editPassword, setEditPassword] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [confirmState, setConfirmState] = useState<{ open: boolean, data: { id: string, name: string } | null }>({ open: false, data: null });
 
   const { data: users = [], isLoading, error } = useUsers();
+  const { data: branches = [] } = useBranches();
   const createMutation = useCreateUser();
   const updateRoleMutation = useUpdateUserRole();
   const updateUserMutation = useUpdateUser();
@@ -56,12 +60,14 @@ export function UserManagement() {
         phone: formPhone.trim(),
         password: formPassword,
         role: formRole,
+        branchId: formRole === 'worker' ? (formBranchId || null) : null,
       });
       setFormName('');
       setFormUsername('');
       setFormPhone('');
       setFormPassword('');
       setFormRole('worker');
+      setFormBranchId('');
       showAlert('Berhasil membuat user baru', 'success');
       setIsCreateModalOpen(false);
     } catch (error: unknown) {
@@ -75,6 +81,7 @@ export function UserManagement() {
     setEditName(user.name);
     setEditUsername(user.username);
     setEditPhone(user.phone || '');
+    setEditBranchId(user.branchId || '');
     setEditPassword('');
     setShowEditPassword(false);
     setIsEditModalOpen(true);
@@ -83,13 +90,17 @@ export function UserManagement() {
   const handleUpdateUser = async () => {
     if (!editUserId || !editName.trim() || !editUsername.trim()) return;
     try {
-      const input: Record<string, string | undefined> = {
+      const currentUser = users.find(u => u.id === editUserId);
+      const input: Record<string, string | null | undefined> = {
         name: editName.trim(),
         username: editUsername.trim(),
         phone: editPhone.trim(),
       };
       if (editPassword) {
         input.password = editPassword;
+      }
+      if (currentUser?.role === 'worker') {
+        input.branchId = editBranchId || null;
       }
 
       await updateUserMutation.mutateAsync({
@@ -208,6 +219,7 @@ export function UserManagement() {
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">User</TableColumn>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Username</TableColumn>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Role</TableColumn>
+              <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Cabang / Outlet</TableColumn>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Dibuat</TableColumn>
               <TableColumn className="bg-surface-container-low text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider text-right">Aksi</TableColumn>
             </TableHeader>
@@ -242,6 +254,20 @@ export function UserManagement() {
                     >
                       {ROLE_LABELS[u.role]}
                     </Chip>
+                  </TableCell>
+                  <TableCell className="text-on-surface text-body-sm font-medium">
+                    {u.role === 'worker' ? (
+                      u.branchName ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-secondary/10 text-secondary font-medium text-label-sm">
+                          <span className="material-symbols-outlined text-[15px]">store</span>
+                          {u.branchName}
+                        </span>
+                      ) : (
+                        <span className="text-on-surface-variant/50 italic text-label-sm">Belum diassign</span>
+                      )
+                    ) : (
+                      <span className="text-on-surface-variant/50 text-label-sm">Semua Cabang</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-on-surface-variant text-body-sm">
                     {new Date(u.createdAt).toLocaleDateString('id-ID', {
@@ -371,6 +397,22 @@ export function UserManagement() {
             <SelectItem key="admin" value="admin">Admin</SelectItem>
             <SelectItem key="super_admin" value="super_admin">Super Admin</SelectItem>
           </Select>
+
+          {formRole === 'worker' && (
+            <Select
+              label="Cabang / Outlet Penugasan"
+              placeholder="Pilih Outlet Cabang"
+              selectedKeys={formBranchId ? [formBranchId] : []}
+              onChange={(e) => setFormBranchId(e.target.value)}
+              variant="bordered"
+            >
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  {b.name} ({b.code})
+                </SelectItem>
+              ))}
+            </Select>
+          )}
         </div>
       </Modal>
 
@@ -472,6 +514,21 @@ export function UserManagement() {
               </Button>
             }
           />
+          {users.find(u => u.id === editUserId)?.role === 'worker' && (
+            <Select
+              label="Cabang / Outlet Penugasan"
+              placeholder="Pilih Outlet Cabang"
+              selectedKeys={editBranchId ? [editBranchId] : []}
+              onChange={(e) => setEditBranchId(e.target.value)}
+              variant="bordered"
+            >
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  {b.name} ({b.code})
+                </SelectItem>
+              ))}
+            </Select>
+          )}
         </div>
       </Modal>
 

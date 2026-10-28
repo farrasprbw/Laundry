@@ -219,12 +219,25 @@ export interface UpdatePaymentMethodInput {
 
 export type UserRole = "super_admin" | "admin" | "worker";
 
+export interface Branch {
+  id: string;
+  name: string;
+  code: string;
+  address?: string | null;
+  phone?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UserInfo {
   id: string;
   username: string;
   name: string;
   phone?: string | null;
   role: UserRole;
+  branchId?: string | null;
+  branchName?: string | null;
   image: string | null;
   createdAt: string;
   updatedAt: string;
@@ -236,6 +249,7 @@ export interface CreateUserInput {
   phone?: string;
   password: string;
   role: UserRole;
+  branchId?: string | null;
 }
 
 // ── Dashboard Types ──

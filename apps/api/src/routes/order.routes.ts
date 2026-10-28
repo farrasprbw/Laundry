@@ -39,13 +39,14 @@ router.post("/", async (req: AuthRequest, res: Response) => {
     if (!customerId || !items || !Array.isArray(items) || items.length === 0) {
       res.status(400).json({ error: "customerId and at least one item are required" }); return;
     }
+    const userBranchId = (req.user as any)?.branchId || null;
     const order = await orderService.create({ 
       customerId, items, notes, paymentMethodId, paymentStatus, 
       discount: discount ? Number(discount) : 0, 
       promotionId,
       pointsUsed: pointsUsed ? Number(pointsUsed) : 0,
       parfume 
-    }, req.user!.id);
+    }, req.user!.id, userBranchId);
     res.status(201).json(order);
   } catch (error: unknown) {
     const err = error as Error;

@@ -1,5 +1,5 @@
 import { db } from "../db/index.js";
-import { user, account, session } from "../db/schema.js";
+import { user, account, session, branches } from "../db/schema.js";
 import { eq, isNull, and } from "drizzle-orm";
 import { auth } from "../auth/auth.js";
 import { hashPassword } from "better-auth/crypto";
@@ -21,11 +21,14 @@ export const userService = {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        branchId: user.branchId,
+        branchName: branches.name,
         image: user.image,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       })
       .from(user)
+      .leftJoin(branches, eq(user.branchId, branches.id))
       .where(isNull(user.deletedAt))
       .orderBy(user.createdAt);
 
@@ -44,11 +47,14 @@ export const userService = {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        branchId: user.branchId,
+        branchName: branches.name,
         image: user.image,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       })
       .from(user)
+      .leftJoin(branches, eq(user.branchId, branches.id))
       .where(and(eq(user.id, id), isNull(user.deletedAt)));
 
     return result ?? null;
@@ -65,6 +71,7 @@ export const userService = {
     phone?: string;
     password: string;
     role: UserRole;
+    branchId?: string | null;
   }) {
     if (!VALID_ROLES.includes(input.role)) {
       throw new Error(`Invalid role: ${input.role}. Must be one of: ${VALID_ROLES.join(", ")}`);
@@ -90,19 +97,15 @@ export const userService = {
 
     const userData = result.user as { username?: string; role?: string };
 
-    if (input.phone) {
-      await db.update(user).set({ phone: input.phone }).where(eq(user.id, result.user.id));
+    const updateFields: Record<string, unknown> = {};
+    if (input.phone) updateFields.phone = input.phone;
+    if (input.branchId !== undefined) updateFields.branchId = input.branchId || null;
+
+    if (Object.keys(updateFields).length > 0) {
+      await db.update(user).set(updateFields).where(eq(user.id, result.user.id));
     }
 
-    return {
-      id: result.user.id,
-      username: userData.username ?? input.username,
-      name: result.user.name,
-      email: result.user.email,
-      phone: input.phone,
-      role: userData.role ?? input.role,
-      createdAt: result.user.createdAt,
-    };
+    return this.getUserById(result.user.id);
   },
 
   /**
@@ -132,31 +135,19 @@ export const userService = {
   /**
    * Update a user's profile (name, email).
    */
-  async updateUser(id: string, input: { name?: string; email?: string; username?: string; phone?: string; password?: string }) {
+  async updateUser(id: string, input: { name?: string; email?: string; username?: string; phone?: string; password?: string; branchId?: string | null }) {
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (input.name !== undefined) updateData.name = input.name;
     if (input.email !== undefined) updateData.email = input.email;
     if (input.username !== undefined) updateData.username = input.username;
     if (input.phone !== undefined) updateData.phone = input.phone;
-
-    let updatedUser = null;
+    if (input.branchId !== undefined) updateData.branchId = input.branchId || null;
 
     if (Object.keys(updateData).length > 1) { // more than just updatedAt
-      const [updated] = await db
+      await db
         .update(user)
         .set(updateData)
-        .where(eq(user.id, id))
-        .returning({
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          updatedAt: user.updatedAt,
-        });
-      updatedUser = updated;
-    } else {
-      updatedUser = await this.getUserById(id);
+        .where(eq(user.id, id));
     }
 
     if (input.password) {
@@ -166,7 +157,7 @@ export const userService = {
         .where(eq(account.userId, id));
     }
 
-    return updatedUser ?? null;
+    return this.getUserById(id);
   },
 
   /**

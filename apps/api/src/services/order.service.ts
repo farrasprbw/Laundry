@@ -176,7 +176,7 @@ export const orderService = {
     };
   },
 
-  async create(input: CreateOrderInput, createdById: string) {
+  async create(input: CreateOrderInput, createdById: string, branchId?: string | null) {
     const invoiceNumber = await generateInvoiceNumber();
     let totalSubtotal = 0;
     const itemsToInsert: { categoryId: string; quantity: string; pricePerUnit: number; subtotal: number }[] = [];
@@ -208,6 +208,7 @@ export const orderService = {
           invoiceNumber,
           customerId: input.customerId,
           createdById,
+          branchId: branchId || null,
           totalPrice,
           notes: input.notes ?? null,
           paymentMethodId: input.paymentMethodId ?? null,

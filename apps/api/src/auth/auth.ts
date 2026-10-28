@@ -23,6 +23,11 @@ export const auth = betterAuth({
         defaultValue: "worker",
         input: true,
       },
+      branchId: {
+        type: "string",
+        required: false,
+        input: true,
+      },
     },
   },
   session: {
