@@ -36,6 +36,7 @@ export function Modal({
       scrollBehavior="inside"
       size={size}
       isDismissable={isDismissable}
+      isKeyboardDismissDisabled={!isDismissable}
     >
       <ModalContent>
         {() => (
