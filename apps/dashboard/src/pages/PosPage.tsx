@@ -311,50 +311,52 @@ export function PosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
-      {/* Clean Top Navigation Bar — Not cut off */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm px-4 lg:px-8 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/orders')}
-            className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-            title="Kembali ke Pesanan"
-          >
-            <RotateCcw className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-cyan-600 inline-block"></span>
-              Kasir Laundry (POS)
-            </h1>
-            <p className="text-xs text-slate-500 font-medium">Mode Transaksi Cepat & Ramah Sentuh</p>
+    <div className="min-h-screen bg-slate-100 flex flex-col font-sans pt-4 md:pt-6">
+      {/* Clean Top Navigation Bar with safe spacing and rounded container */}
+      <div className="max-w-[1600px] w-full mx-auto px-4 md:px-6 lg:px-8 mb-4">
+        <header className="bg-white border border-slate-200/80 rounded-2xl shadow-sm px-4 lg:px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/orders')}
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              title="Kembali ke Pesanan"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                <span className="w-3.5 h-3.5 rounded-full bg-primary inline-block"></span>
+                Kasir Laundry (POS)
+              </h1>
+              <p className="text-xs text-slate-500 font-medium">Mode Transaksi Cepat & Ramah Sentuh</p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleResetPos}
-            className="px-4 py-2 text-xs md:text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-          >
-            Transaksi Baru
-          </button>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-4 py-2 text-xs md:text-sm font-bold text-white bg-cyan-700 hover:bg-cyan-800 rounded-xl shadow-sm transition-all"
-          >
-            Dashboard
-          </button>
-        </div>
-      </header>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleResetPos}
+              className="px-4 py-2 text-xs md:text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+            >
+              Transaksi Baru
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="px-4 py-2 text-xs md:text-sm font-bold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-sm transition-all"
+            >
+              Dashboard
+            </button>
+          </div>
+        </header>
+      </div>
 
       {/* Main Split Layout */}
-      <div className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="flex-1 px-4 md:px-6 lg:px-8 pb-8 max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT COLUMN: Customer Selection & Services Catalog (7 Cols) */}
         <div className="lg:col-span-7 space-y-6">
           {/* 1. Customer Selection Card */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-cyan-800 bg-cyan-50 px-3 py-1 rounded-full">
+              <span className="text-xs font-black uppercase tracking-wider text-primary bg-primary-container/30 px-3 py-1 rounded-full">
                 Langkah 1 • Data Pelanggan
               </span>
               {selectedCustomer && (
@@ -383,12 +385,12 @@ export function PosPage() {
                       setIsCustomerDropdownOpen(true);
                     }}
                     onFocus={() => setIsCustomerDropdownOpen(true)}
-                    className="w-full pl-12 pr-4 py-3.5 text-base font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-600 transition-all"
+                    className="w-full pl-12 pr-4 py-3.5 text-base font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                   />
                 </div>
                 <button
                   onClick={() => setShowNewCustModal(true)}
-                  className="px-4 py-3 bg-cyan-700 hover:bg-cyan-800 text-white font-bold rounded-xl flex items-center gap-2 shadow-sm transition-all flex-shrink-0 text-sm"
+                  className="px-4 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl flex items-center gap-2 shadow-sm transition-all flex-shrink-0 text-sm"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>+ Baru</span>
@@ -409,7 +411,7 @@ export function PosPage() {
                           setShowNewCustModal(true);
                           setIsCustomerDropdownOpen(false);
                         }}
-                        className="px-4 py-2 text-xs font-bold text-cyan-800 bg-cyan-50 hover:bg-cyan-100 rounded-lg"
+                        className="px-4 py-2 text-xs font-bold text-primary bg-primary-container/30 hover:bg-cyan-100 rounded-lg"
                       >
                         + Tambah "{customerSearch}" Sebagai Pelanggan Baru
                       </button>
@@ -424,7 +426,7 @@ export function PosPage() {
                           setCustomerSearch(c.name);
                           setIsCustomerDropdownOpen(false);
                         }}
-                        className="w-full px-4 py-3 text-left hover:bg-cyan-50/60 flex items-center justify-between transition-colors"
+                        className="w-full px-4 py-3 text-left hover:bg-primary-container/30/60 flex items-center justify-between transition-colors"
                       >
                         <div>
                           <p className="font-bold text-slate-800 text-base">{c.name}</p>
@@ -443,15 +445,15 @@ export function PosPage() {
             </div>
 
             {selectedCustomer && (
-              <div className="bg-cyan-50/70 border border-cyan-200 rounded-xl p-3 flex items-center justify-between">
+              <div className="bg-primary-container/30/70 border border-primary-container rounded-xl p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-base font-bold text-cyan-950">{selectedCustomer.name}</p>
-                  <p className="text-xs text-cyan-800">{selectedCustomer.phone || 'No HP Belum ada'} • {selectedCustomer.address || 'Alamat Belum ada'}</p>
+                  <p className="text-base font-bold text-slate-900">{selectedCustomer.name}</p>
+                  <p className="text-xs text-primary">{selectedCustomer.phone || 'No HP Belum ada'} • {selectedCustomer.address || 'Alamat Belum ada'}</p>
                 </div>
                 {selectedCustomer.points && selectedCustomer.points > 0 ? (
                   <div className="text-right">
-                    <p className="text-xs text-cyan-700 font-semibold">Poin Tersedia</p>
-                    <p className="text-sm font-black text-cyan-900">{selectedCustomer.points} Poin</p>
+                    <p className="text-xs text-primary font-semibold">Poin Tersedia</p>
+                    <p className="text-sm font-black text-primary">{selectedCustomer.points} Poin</p>
                   </div>
                 ) : null}
               </div>
@@ -461,7 +463,7 @@ export function PosPage() {
           {/* 2. Service Catalog Card with Lazy Load & Filter */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="text-xs font-black uppercase tracking-wider text-cyan-800 bg-cyan-50 px-3 py-1 rounded-full">
+              <span className="text-xs font-black uppercase tracking-wider text-primary bg-primary-container/30 px-3 py-1 rounded-full">
                 Langkah 2 • Pilih Layanan Laundry
               </span>
               
@@ -471,7 +473,7 @@ export function PosPage() {
                   onClick={() => { setSelectedCategoryTab('all'); setVisibleCount(PAGE_SIZE); }}
                   className={`px-3 py-1.5 rounded-lg transition-all ${
                     selectedCategoryTab === 'all'
-                      ? 'bg-cyan-700 text-white shadow-sm'
+                      ? 'bg-primary text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -481,7 +483,7 @@ export function PosPage() {
                   onClick={() => { setSelectedCategoryTab('kiloan'); setVisibleCount(PAGE_SIZE); }}
                   className={`px-3 py-1.5 rounded-lg transition-all ${
                     selectedCategoryTab === 'kiloan'
-                      ? 'bg-cyan-700 text-white shadow-sm'
+                      ? 'bg-primary text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -491,7 +493,7 @@ export function PosPage() {
                   onClick={() => { setSelectedCategoryTab('satuan'); setVisibleCount(PAGE_SIZE); }}
                   className={`px-3 py-1.5 rounded-lg transition-all ${
                     selectedCategoryTab === 'satuan'
-                      ? 'bg-cyan-700 text-white shadow-sm'
+                      ? 'bg-primary text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -508,7 +510,7 @@ export function PosPage() {
                 placeholder="Cari nama layanan (misal: Komplit, Setrika, Bedcover)..."
                 value={searchCategory}
                 onChange={(e) => { setSearchCategory(e.target.value); setVisibleCount(PAGE_SIZE); }}
-                className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-600 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               />
             </div>
 
@@ -527,13 +529,13 @@ export function PosPage() {
                       onClick={() => handleAddToCart(cat)}
                       className={`p-4 rounded-xl border text-left flex flex-col justify-between transition-all group ${
                         inCartItem
-                          ? 'border-cyan-600 bg-cyan-50/50 ring-2 ring-cyan-600/20'
-                          : 'border-slate-200 hover:border-cyan-400 hover:bg-slate-50'
+                          ? 'border-primary bg-primary-container/30/50 ring-2 ring-primary/20'
+                          : 'border-slate-200 hover:border-primary hover:bg-slate-50'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div>
-                          <h3 className="font-black text-slate-900 text-base group-hover:text-cyan-800 transition-colors">
+                          <h3 className="font-black text-slate-900 text-base group-hover:text-primary transition-colors">
                             {cat.name}
                           </h3>
                           <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
@@ -546,15 +548,15 @@ export function PosPage() {
                       </div>
 
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                        <span className="text-lg font-black text-cyan-800">
+                        <span className="text-lg font-black text-primary">
                           {formatRupiah(cat.pricePerUnit)}
                         </span>
                         {inCartItem ? (
-                          <span className="text-xs font-black text-white bg-cyan-700 px-2.5 py-1 rounded-lg">
+                          <span className="text-xs font-black text-white bg-primary px-2.5 py-1 rounded-lg">
                             ✓ {inCartItem.quantity} {inCartItem.unit}
                           </span>
                         ) : (
-                          <span className="text-xs font-bold text-cyan-700 group-hover:underline">
+                          <span className="text-xs font-bold text-primary group-hover:underline">
                             + Tambah
                           </span>
                         )}
@@ -585,7 +587,7 @@ export function PosPage() {
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-5 sticky top-20">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <span className="text-xs font-black uppercase tracking-wider text-cyan-800 bg-cyan-50 px-3 py-1 rounded-full">
+              <span className="text-xs font-black uppercase tracking-wider text-primary bg-primary-container/30 px-3 py-1 rounded-full">
                 Langkah 3 • Keranjang & Bayar
               </span>
               {cart.length > 0 && (
@@ -639,7 +641,7 @@ export function PosPage() {
                           step="0.1"
                           value={item.quantity === 0 ? '' : item.quantity}
                           onChange={(e) => handleDirectQuantityChange(idx, e.target.value)}
-                          className="w-16 h-8 text-center text-sm font-black bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                          className="w-16 h-8 text-center text-sm font-black bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <button
                           type="button"
@@ -673,7 +675,7 @@ export function PosPage() {
                     id="usePointsCheck"
                     checked={usePoints}
                     onChange={(e) => setUsePoints(e.target.checked)}
-                    className="w-4 h-4 rounded text-cyan-700 focus:ring-cyan-600 border-slate-300"
+                    className="w-4 h-4 rounded text-primary focus:ring-primary border-slate-300"
                   />
                   <label htmlFor="usePointsCheck" className="text-xs font-bold text-emerald-900 cursor-pointer">
                     Gunakan {pointsToUse} Poin Loyalitas
@@ -694,7 +696,7 @@ export function PosPage() {
                   onClick={() => setPaymentChoice('cash')}
                   className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 ${
                     paymentChoice === 'cash'
-                      ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm'
+                      ? 'bg-primary text-white border-cyan-700 shadow-sm'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -707,7 +709,7 @@ export function PosPage() {
                   onClick={() => setPaymentChoice('qris')}
                   className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 ${
                     paymentChoice === 'qris'
-                      ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm'
+                      ? 'bg-primary text-white border-cyan-700 shadow-sm'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -735,35 +737,35 @@ export function PosPage() {
               <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-slate-600">Uang Diterima:</span>
-                  <span className="font-black text-cyan-800 text-sm">{formatRupiah(cashGiven)}</span>
+                  <span className="font-black text-primary text-sm">{formatRupiah(cashGiven)}</span>
                 </div>
 
                 <div className="grid grid-cols-4 gap-1.5 pt-1">
                   <button
                     type="button"
                     onClick={() => setCashGiven(grandTotal)}
-                    className="py-2 px-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-cyan-50 hover:text-cyan-800 hover:border-cyan-300"
+                    className="py-2 px-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-primary-container/30 hover:text-primary hover:border-cyan-300"
                   >
                     Uang Pas
                   </button>
                   <button
                     type="button"
                     onClick={() => setCashGiven(20000)}
-                    className="py-2 px-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-cyan-50 hover:text-cyan-800 hover:border-cyan-300"
+                    className="py-2 px-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-primary-container/30 hover:text-primary hover:border-cyan-300"
                   >
                     20rb
                   </button>
                   <button
                     type="button"
                     onClick={() => setCashGiven(50000)}
-                    className="py-2 px-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-cyan-50 hover:text-cyan-800 hover:border-cyan-300"
+                    className="py-2 px-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-primary-container/30 hover:text-primary hover:border-cyan-300"
                   >
                     50rb
                   </button>
                   <button
                     type="button"
                     onClick={() => setCashGiven(100000)}
-                    className="py-2 px-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-cyan-50 hover:text-cyan-800 hover:border-cyan-300"
+                    className="py-2 px-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-primary-container/30 hover:text-primary hover:border-cyan-300"
                   >
                     100rb
                   </button>
@@ -797,7 +799,7 @@ export function PosPage() {
                 className={`w-full py-4 px-6 rounded-xl font-black text-base shadow-sm flex items-center justify-center gap-2 transition-all ${
                   isSubmitting || cart.length === 0 || !selectedCustomerId
                     ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                    : 'bg-cyan-700 hover:bg-cyan-800 text-white shadow-cyan-900/10'
+                    : 'bg-primary hover:bg-primary-hover text-white shadow-cyan-900/10'
                 }`}
               >
                 <CheckCircle2 className="w-5 h-5" />
@@ -831,7 +833,7 @@ export function PosPage() {
                   placeholder="Nama pelanggan..."
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -842,7 +844,7 @@ export function PosPage() {
                   placeholder="0812xxxx (opsional)..."
                   value={newCustPhone}
                   onChange={(e) => setNewCustPhone(e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -853,7 +855,7 @@ export function PosPage() {
                   placeholder="Alamat / patokan (opsional)..."
                   value={newCustAddress}
                   onChange={(e) => setNewCustAddress(e.target.value)}
-                  className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                  className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -868,7 +870,7 @@ export function PosPage() {
                 <button
                   type="submit"
                   disabled={createCustomer.isPending}
-                  className="flex-1 py-2.5 text-sm font-black text-white bg-cyan-700 hover:bg-cyan-800 rounded-xl shadow-sm transition-all"
+                  className="flex-1 py-2.5 text-sm font-black text-white bg-primary hover:bg-primary-hover rounded-xl shadow-sm transition-all"
                 >
                   {createCustomer.isPending ? 'Menyimpan...' : 'Simpan'}
                 </button>
@@ -915,7 +917,7 @@ export function PosPage() {
               <button
                 type="button"
                 onClick={handlePrintReceipt}
-                className="w-full py-3.5 px-4 bg-cyan-700 hover:bg-cyan-800 text-white font-black rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all text-sm"
+                className="w-full py-3.5 px-4 bg-primary hover:bg-primary-hover text-white font-black rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all text-sm"
               >
                 <Printer className="w-4 h-4" />
                 <span>Cetak Struk Thermal</span>
