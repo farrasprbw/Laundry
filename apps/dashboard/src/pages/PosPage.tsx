@@ -20,7 +20,7 @@ import { useCustomers, useCreateCustomer } from '../hooks/use-customers';
 import { usePaymentMethods } from '../hooks/use-payment-methods';
 import { useCreateOrder } from '../hooks/use-orders';
 import { useAlert } from '../contexts/AlertContext';
-import type { Category, Order } from '../types/api';
+import type { Category, Customer, Order, PaymentStatus } from '../types/api';
 import { buildLaundryReceipt, type StoreConfig } from '../utils/receipt-builder';
 
 const DEFAULT_STORE_CONFIG: StoreConfig = {
@@ -46,7 +46,9 @@ export function PosPage() {
 
   // Data Queries
   const { data: categories = [], isLoading: loadingCats } = useCategories();
-  const { data: customers = [], isLoading: loadingCust } = useCustomers();
+  const { data: customerResponse, isLoading: loadingCust } = useCustomers({ limit: 100 });
+  const customers: Customer[] = useMemo(() => customerResponse?.data || [], [customerResponse]);
+
   const { data: paymentMethods = [] } = usePaymentMethods();
   const createOrder = useCreateOrder();
   const createCustomer = useCreateCustomer();
@@ -81,7 +83,7 @@ export function PosPage() {
 
   // Selected Customer detail
   const selectedCustomer = useMemo(() => {
-    return customers.find((c) => c.id === selectedCustomerId);
+    return customers.find((c: Customer) => c.id === selectedCustomerId);
   }, [customers, selectedCustomerId]);
 
   // Filtered Customers
@@ -89,7 +91,7 @@ export function PosPage() {
     if (!customerSearch.trim()) return customers.slice(0, 8);
     const q = customerSearch.toLowerCase();
     return customers.filter(
-      (c) =>
+      (c: Customer) =>
         c.name.toLowerCase().includes(q) ||
         (c.phone && c.phone.includes(q))
     );
@@ -99,13 +101,13 @@ export function PosPage() {
   const filteredCategories = useMemo(() => {
     let list = categories;
     if (selectedCategoryTab === 'kiloan') {
-      list = list.filter((c) => c.unit.toLowerCase() === 'kg');
+      list = list.filter((c: Category) => c.unit.toLowerCase() === 'kg');
     } else if (selectedCategoryTab === 'satuan') {
-      list = list.filter((c) => c.unit.toLowerCase() !== 'kg');
+      list = list.filter((c: Category) => c.unit.toLowerCase() !== 'kg');
     }
     if (searchCategory.trim()) {
       const q = searchCategory.toLowerCase();
-      list = list.filter((c) => c.name.toLowerCase().includes(q));
+      list = list.filter((c: Category) => c.name.toLowerCase().includes(q));
     }
     return list;
   }, [categories, selectedCategoryTab, searchCategory]);
@@ -117,7 +119,7 @@ export function PosPage() {
 
   // Cart Calculations
   const subtotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.quantity * item.category.price, 0);
+    return cart.reduce((sum, item) => sum + item.quantity * item.category.pricePerUnit, 0);
   }, [cart]);
 
   let pointsDiscount = 0;
@@ -165,7 +167,7 @@ export function PosPage() {
         ...prev,
         {
           category,
-          quantity: category.unit.toLowerCase() === 'kg' ? 1 : 1,
+          quantity: 1,
           unit: category.unit,
           notes: '',
         },
@@ -245,22 +247,16 @@ export function PosPage() {
 
     setIsSubmitting(true);
     try {
-      const isPaid = paymentChoice !== 'unpaid';
+      const payStatus: PaymentStatus = paymentChoice === 'unpaid' ? 'UNPAID' : 'PAID';
       const newOrder = await createOrder.mutateAsync({
         customerId: selectedCustomerId,
         items: cart.map((i) => ({
           categoryId: i.category.id,
           quantity: i.quantity,
-          unit: i.unit,
-          pricePerUnit: i.category.price,
-          subtotal: i.quantity * i.category.price,
           notes: i.notes || undefined,
         })),
-        paymentMethodId: isPaid ? (resolvedPaymentMethodId || undefined) : undefined,
-        status: 'pending',
-        paymentStatus: isPaid ? 'paid' : 'unpaid',
-        totalAmount: grandTotal,
-        pointsUsed: pointsToUse || undefined,
+        paymentMethodId: resolvedPaymentMethodId || undefined,
+        paymentStatus: payStatus,
         notes: notes || undefined,
       });
 
@@ -284,25 +280,21 @@ export function PosPage() {
           categoryName: i.category.name,
           quantity: i.quantity,
           unit: i.unit,
-          pricePerUnit: i.category.price,
-          subtotal: i.quantity * i.category.price,
+          pricePerUnit: i.category.pricePerUnit,
+          subtotal: i.quantity * i.category.pricePerUnit,
         })),
-        subtotal,
+        totalPrice: grandTotal,
         discount: pointsDiscount,
-        totalAmount: grandTotal,
         paymentStatus: completedOrder.paymentStatus,
-        paymentMethod: paymentChoice === 'unpaid' ? 'Belum Bayar' : (paymentChoice === 'qris' ? 'QRIS' : 'Tunai'),
-        cashReceived: paymentChoice === 'cash' ? cashGiven : undefined,
-        change: paymentChoice === 'cash' ? change : undefined,
         createdAt: completedOrder.createdAt || new Date().toISOString(),
-        estimatedCompletion: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        notes: notes || null,
       };
 
       const commands = buildLaundryReceipt(receiptData, DEFAULT_STORE_CONFIG);
-      showAlert(`Struk berhasil dibuat (${commands.length} bytes)! Siap cetak ke thermal printer.`, 'success');
+      showAlert(`Struk berhasil dibuat (${commands.length} bytes)! Siap cetak ke printer thermal.`, 'success');
       window.print();
     } catch {
-      showAlert('Format cetak siap dikirim ke thermal printer Bluetooth 58mm', 'info');
+      showAlert('Format cetak siap dikirim ke thermal printer Bluetooth 58mm', 'primary');
     }
   };
 
@@ -423,7 +415,7 @@ export function PosPage() {
                       </button>
                     </div>
                   ) : (
-                    filteredCustomers.map((c) => (
+                    filteredCustomers.map((c: Customer) => (
                       <button
                         key={c.id}
                         type="button"
@@ -438,11 +430,11 @@ export function PosPage() {
                           <p className="font-bold text-slate-800 text-base">{c.name}</p>
                           <p className="text-xs text-slate-500">{c.phone || 'Tanpa No. HP'}</p>
                         </div>
-                        {c.points > 0 && (
+                        {c.points && c.points > 0 ? (
                           <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">
                             {c.points} Poin
                           </span>
-                        )}
+                        ) : null}
                       </button>
                     ))
                   )}
@@ -456,12 +448,12 @@ export function PosPage() {
                   <p className="text-base font-bold text-cyan-950">{selectedCustomer.name}</p>
                   <p className="text-xs text-cyan-800">{selectedCustomer.phone || 'No HP Belum ada'} • {selectedCustomer.address || 'Alamat Belum ada'}</p>
                 </div>
-                {selectedCustomer.points > 0 && (
+                {selectedCustomer.points && selectedCustomer.points > 0 ? (
                   <div className="text-right">
                     <p className="text-xs text-cyan-700 font-semibold">Poin Tersedia</p>
                     <p className="text-sm font-black text-cyan-900">{selectedCustomer.points} Poin</p>
                   </div>
-                )}
+                ) : null}
               </div>
             )}
           </div>
@@ -527,7 +519,7 @@ export function PosPage() {
               <div className="py-12 text-center text-slate-500 font-medium">Layanan tidak ditemukan</div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {displayedCategories.map((cat) => {
+                {displayedCategories.map((cat: Category) => {
                   const inCartItem = cart.find((i) => i.category.id === cat.id);
                   return (
                     <button
@@ -555,7 +547,7 @@ export function PosPage() {
 
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                         <span className="text-lg font-black text-cyan-800">
-                          {formatRupiah(cat.price)}
+                          {formatRupiah(cat.pricePerUnit)}
                         </span>
                         {inCartItem ? (
                           <span className="text-xs font-black text-white bg-cyan-700 px-2.5 py-1 rounded-lg">
@@ -622,12 +614,12 @@ export function PosPage() {
                       <div>
                         <h4 className="font-bold text-slate-900 text-sm">{item.category.name}</h4>
                         <p className="text-xs text-slate-500">
-                          {formatRupiah(item.category.price)} / {item.unit}
+                          {formatRupiah(item.category.pricePerUnit)} / {item.unit}
                         </p>
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-black text-slate-900">
-                          {formatRupiah(item.quantity * item.category.price)}
+                          {formatRupiah(item.quantity * item.category.pricePerUnit)}
                         </span>
                       </div>
                     </div>
@@ -673,7 +665,7 @@ export function PosPage() {
             )}
 
             {/* Loyalty Points checkbox */}
-            {selectedCustomer && selectedCustomer.points > 0 && (
+            {selectedCustomer && selectedCustomer.points && selectedCustomer.points > 0 ? (
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <input
@@ -689,7 +681,7 @@ export function PosPage() {
                 </div>
                 <span className="text-xs font-black text-emerald-700">-{formatRupiah(pointsDiscount)}</span>
               </div>
-            )}
+            ) : null}
 
             {/* Simple Clean 3 Payment Choices: Cash, QRIS, Unpaid */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
@@ -911,10 +903,10 @@ export function PosPage() {
               <div className="flex justify-between">
                 <span className="text-slate-500 font-medium">Status Bayar:</span>
                 <span className={`font-bold uppercase ${
-                  completedOrder.paymentStatus === 'paid' ? 'text-emerald-700' : 'text-amber-600'
+                  completedOrder.paymentStatus === 'PAID' ? 'text-emerald-700' : 'text-amber-600'
                 }`}
                 >
-                  {completedOrder.paymentStatus === 'paid' ? 'LUNAS' : 'BELUM BAYAR'}
+                  {completedOrder.paymentStatus === 'PAID' ? 'LUNAS' : 'BELUM BAYAR'}
                 </span>
               </div>
             </div>
