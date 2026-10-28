@@ -358,7 +358,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
             startContent={<span className="material-symbols-outlined text-[16px]">person_add</span>}
             onPress={() => setShowNewCustModal(true)}
           >
-            + Pelanggan Baru
+            Pelanggan Baru
           </Button>
         </div>
         <Autocomplete
