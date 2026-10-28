@@ -1,20 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Search,
-  UserPlus,
   Plus,
   Minus,
   Trash2,
   Printer,
   CheckCircle2,
-  RotateCcw,
   Banknote,
   QrCode,
   Clock,
   Shirt,
   X,
-  UserCheck,
 } from 'lucide-react';
 import { useCategories } from '../hooks/use-categories';
 import { useCustomers, useCreateCustomer } from '../hooks/use-customers';
@@ -47,7 +43,6 @@ const formatRupiah = (num: number) => {
 };
 
 export function PosPage() {
-  const navigate = useNavigate();
   const { showAlert } = useAlert();
 
   // Data Queries
