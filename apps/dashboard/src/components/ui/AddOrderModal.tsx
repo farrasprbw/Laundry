@@ -335,7 +335,8 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   };
 
   return (
-    <Modal
+    <>
+      <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Buat Order Baru"
@@ -595,6 +596,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           minRows={2}
         />
       </div>
-    </Modal>
-  );
-}
+      </Modal>
+      </>
+      );
+      }
