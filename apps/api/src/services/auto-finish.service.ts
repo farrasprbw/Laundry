@@ -44,34 +44,9 @@ export const autoFinishService = {
       return 0;
     }
 
-    const orderIds = overdueOrders.map((o) => o.orderId);
-    const now = new Date();
-
-    // Batch update all overdue orders to FINISHED using inArray + returning
-    const updated = await db
-      .update(orders)
-      .set({
-        status: "FINISHED",
-        finishedAt: now,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          inArray(orders.id, orderIds),
-          eq(orders.status, "PROCESS") // safety check
-        )
-      )
-      .returning({ id: orders.id });
-
-    console.log(`[AUTO-FINISH] Updated ${updated.length} orders to FINISHED:`, updated.map((o) => o.id));
-
-    // Send WhatsApp notification for each auto-finished order asynchronously
-    for (const o of updated) {
-      orderService.sendWhatsAppNotification(o.id).catch(err => 
-        console.error(`[AUTO-FINISH] Failed to send WA for order ${o.id}:`, err)
-      );
-    }
-
-    return updated.length;
+    // AMAN: Jangan otomatis ubah status ke FINISHED dan jangan kirim WA prematur.
+    // Cukup log audit keterlambatan agar admin & worker waspada.
+    console.log(`[OVERDUE-AUDIT] Ditemukan ${overdueOrders.length} order melewati estimasi waktu.`);
+    return overdueOrders.length;
   },
 };

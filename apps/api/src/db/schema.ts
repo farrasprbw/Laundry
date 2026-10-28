@@ -10,6 +10,22 @@ import {
 } from "drizzle-orm/pg-core";
 
 // ============================================================
+// Multi-Branch Table
+// ============================================================
+
+export const branches = pgTable("branches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  code: text("code").notNull().unique(), // e.g. "PUSAT", "CB-01"
+  address: text("address"),
+  phone: text("phone"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+});
+
+// ============================================================
 // Better Auth tables (managed by better-auth, defined here for
 // Drizzle schema awareness and relation queries)
 // ============================================================
@@ -24,6 +40,7 @@ export const user = pgTable("user", {
   displayUsername: text("display_username"),
   phone: text("phone"),
   role: text("role").notNull().default("worker"), // worker | admin | super_admin
+  branchId: uuid("branch_id").references(() => branches.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"),
@@ -86,6 +103,7 @@ export const customers = pgTable("customers", {
 
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
+  branchId: uuid("branch_id").references(() => branches.id),
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon").notNull().default("styler"), // Material Symbol name
@@ -117,6 +135,7 @@ export const promotions = pgTable("promotions", {
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
   invoiceNumber: text("invoice_number").notNull().unique(), // #L260510-001
+  branchId: uuid("branch_id").references(() => branches.id),
   customerId: uuid("customer_id")
     .notNull()
     .references(() => customers.id),
@@ -158,6 +177,7 @@ export const orderItems = pgTable("order_items", {
 
 export const expenses = pgTable("expenses", {
   id: uuid("id").primaryKey().defaultRandom(),
+  branchId: uuid("branch_id").references(() => branches.id),
   category: text("category").notNull(), // deterjen | listrik | air | gaji | transport | sewa | perlengkapan | lainnya
   description: text("description"),
   amount: integer("amount").notNull(), // in Rupiah
@@ -183,6 +203,8 @@ export const paymentMethods = pgTable("payment_methods", {
 // Type exports for use in services
 // ============================================================
 
+export type Branch = typeof branches.$inferSelect;
+export type NewBranch = typeof branches.$inferInsert;
 export type User = typeof user.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Category = typeof categories.$inferSelect;
