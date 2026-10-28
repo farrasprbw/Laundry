@@ -356,7 +356,7 @@ export function PosPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6 pt-20 md:pt-24 max-w-7xl mx-auto w-full pb-16">
+    <div className="flex flex-col gap-6">
       {/* Page Header (Matching Dashboard, Orders, & Categories with point_of_sale icon) */}
       <div>
         <h1 className="text-headline-lg font-headline-lg text-on-background tracking-tight flex items-center gap-3">
