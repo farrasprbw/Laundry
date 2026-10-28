@@ -27,7 +27,8 @@ const DEFAULT_STORE_CONFIG: StoreConfig = {
   name: 'CleanFold Laundry',
   address: 'Jl. Raya Laundry No. 1',
   phone: '0812-3456-7890',
-  terms: ['Terima kasih atas kepercayaan Anda!'],
+  disclaimer: ['Terima kasih atas kepercayaan Anda!'],
+  qrCodeUrl: '',
 };
 
 interface CartItem {

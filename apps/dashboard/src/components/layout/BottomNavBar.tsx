@@ -14,6 +14,11 @@ interface BottomNavItem {
 
 const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   { to: '/dashboard', icon: 'home', label: 'Home', roles: ['super_admin', 'admin'] },
+  { to: '/orders', icon: 'list_alt', label: 'Orders', roles: ['super_admin', 'admin', 'worker'] },
+  { to: '/customers', icon: 'people', label: 'Customers', roles: ['super_admin', 'admin'] },
+  { to: '/reports', icon: 'bar_chart', label: 'Stats', roles: ['super_admin', 'admin'] },
+];
+
 export function BottomNavBar() {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const { data: session } = useSession();
