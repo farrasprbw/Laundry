@@ -356,7 +356,7 @@ export function PosPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-12 md:pb-0">
       {/* Page Header (Matching Dashboard, Orders, & Categories with point_of_sale icon) */}
       <div>
         <h1 className="text-headline-lg font-headline-lg text-on-background tracking-tight flex items-center gap-3">
@@ -488,17 +488,17 @@ export function PosPage() {
           <div className="bg-white rounded-2xl p-4 lg:p-5 shadow-sm border border-slate-200/80 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               {/* Segmented Filter Tabs with Icons & Counts for Senior Ease */}
-              <div className="inline-flex p-1 bg-slate-100 rounded-xl gap-1">
+              <div className="w-full sm:w-auto grid grid-cols-3 sm:flex p-1 bg-slate-100 rounded-xl gap-1">
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryTab('all')}
-                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                  className={`px-2 sm:px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                     selectedCategoryTab === 'all'
                       ? 'bg-primary text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">apps</span>
+                  <span className="material-symbols-outlined text-[16px] sm:text-[18px]">apps</span>
                   <span>Semua</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                     selectedCategoryTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
@@ -509,14 +509,15 @@ export function PosPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryTab('kiloan')}
-                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                  className={`px-2 sm:px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                     selectedCategoryTab === 'kiloan'
                       ? 'bg-primary text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">scale</span>
-                  <span>Kiloan (KG)</span>
+                  <span className="material-symbols-outlined text-[16px] sm:text-[18px]">scale</span>
+                  <span className="sm:hidden">Kiloan</span>
+                  <span className="hidden sm:inline">Kiloan (KG)</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                     selectedCategoryTab === 'kiloan' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
                   }`}>
@@ -526,14 +527,15 @@ export function PosPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryTab('satuan')}
-                  className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                  className={`px-2 sm:px-3.5 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                     selectedCategoryTab === 'satuan'
                       ? 'bg-primary text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">checkroom</span>
-                  <span>Satuan (PCS)</span>
+                  <span className="material-symbols-outlined text-[16px] sm:text-[18px]">checkroom</span>
+                  <span className="sm:hidden">Satuan</span>
+                  <span className="hidden sm:inline">Satuan (PCS)</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                     selectedCategoryTab === 'satuan' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
                   }`}>
