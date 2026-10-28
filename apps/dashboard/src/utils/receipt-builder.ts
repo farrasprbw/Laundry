@@ -373,7 +373,7 @@ export function buildLaundryReceipt(data: ReceiptData, storeConfig: StoreConfig)
 
   // ── QR Code ──
   rb.align('center')
-    .qrCode(data.invoiceNumber, 6)
+    .qrCode(storeConfig.qrCodeUrl, 6)
     .emptyLine();
 
   // Feed and cut

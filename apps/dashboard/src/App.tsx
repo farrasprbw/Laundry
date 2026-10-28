@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute, RoleProtectedRoute, PublicOnlyRoute } from './routes/ProtectedRoute';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { Dashboard } from './pages/Dashboard';
+import { PosPage } from './pages/PosPage';
 import { Orders } from './pages/Orders';
 import { Customers } from './pages/Customers';
 import { Categories } from './pages/Categories';
@@ -34,6 +35,7 @@ function App() {
             {/* All authenticated users */}
             {/* Admin & Super Admin only */}
             <Route path="/dashboard" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><Dashboard /></RoleProtectedRoute>} />
+            <Route path="/pos" element={<RoleProtectedRoute roles={['admin', 'super_admin']}><PosPage /></RoleProtectedRoute>} />
             <Route path="/orders" element={<Orders />} />
 
             {/* Admin & Super Admin only */}
