@@ -20,7 +20,7 @@ import { useCustomers, useCreateCustomer } from '../hooks/use-customers';
 import { usePaymentMethods } from '../hooks/use-payment-methods';
 import { useCreateOrder } from '../hooks/use-orders';
 import { useAlert } from '../contexts/AlertContext';
-import type { Category, Customer, Order, PaymentStatus } from '../types/api';
+import type { Category, Customer, Order } from '../types/api';
 import { buildLaundryReceipt, type StoreConfig } from '../utils/receipt-builder';
 
 const DEFAULT_STORE_CONFIG: StoreConfig = {
@@ -211,7 +211,7 @@ export function PosPage() {
     try {
       const created = await createCustomer.mutateAsync({
         name: newCustName.trim(),
-        phone: newCustPhone.trim() || undefined,
+        phone: newCustPhone.trim() || '-',
         address: newCustAddress.trim() || undefined,
       });
       setSelectedCustomerId(created.id);
@@ -247,7 +247,7 @@ export function PosPage() {
 
     setIsSubmitting(true);
     try {
-      const payStatus: PaymentStatus = paymentChoice === 'unpaid' ? 'UNPAID' : 'PAID';
+      const payStatus = paymentChoice === 'unpaid' ? ('UNPAID' as const) : ('PAID' as const);
       const newOrder = await createOrder.mutateAsync({
         customerId: selectedCustomerId,
         items: cart.map((i) => ({
