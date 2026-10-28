@@ -20,14 +20,14 @@ import { useCustomers, useCreateCustomer } from '../hooks/use-customers';
 import { usePaymentMethods } from '../hooks/use-payment-methods';
 import { useCreateOrder } from '../hooks/use-orders';
 import { useAlert } from '../contexts/AlertContext';
-import type { Category, Customer, Order } from '../types/api';
+import type { Category, Order } from '../types/api';
 import { buildLaundryReceipt, type StoreConfig } from '../utils/receipt-builder';
 
 const DEFAULT_STORE_CONFIG: StoreConfig = {
   name: 'CleanFold Laundry',
   address: 'Jl. Raya Laundry No. 1',
   phone: '0812-3456-7890',
-  receiptFooter: 'Terima kasih atas kepercayaan Anda!',
+  terms: ['Terima kasih atas kepercayaan Anda!'],
 };
 
 interface CartItem {
