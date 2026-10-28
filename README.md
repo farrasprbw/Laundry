@@ -38,7 +38,8 @@ Aplikasi manajemen laundry berbasis web dengan **dashboard admin**, **worker pan
 - 🖨️ **Thermal Printing** — Cetak struk via printer Bluetooth 58mm (ESC/POS)
 - 📱 **Notifikasi WhatsApp** — Kirim notifikasi status pesanan dan order baru ke pelanggan
 - ⏱️ **Auto-Finish** — Pesanan otomatis selesai berdasarkan estimasi waktu kategori
-- 👤 **Manajemen User** — Kelola akun staff dengan role-based access (super_admin, admin, worker)
+- 👤 **Manajemen User & Multi-Cabang** — Kelola akun staff dengan role-based access (super_admin, admin, worker) serta penugasan worker ke outlet cabang (order otomatis terikat ke branch)
+- 🏢 **Multi-Branch Ready** — Dukungan penugasan cabang untuk kasir dan pemisahan data transaksi per outlet
 - ⚙️ **Pengaturan Toko** — Konfigurasi nama, alamat, telepon, disclaimer, dan rekening toko
 - 📱 **Responsive** — Tampilan optimal di desktop dan mobile
 
