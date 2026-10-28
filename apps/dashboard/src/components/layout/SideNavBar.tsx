@@ -12,8 +12,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', icon: 'dashboard', label: 'Dashboard', roles: ['super_admin', 'admin'] },
-  { to: '/pos', icon: 'point_of_sale', label: 'Kasir (POS)', roles: ['super_admin', 'admin'] },
-  { to: '/orders', icon: 'receipt_long', label: 'Orders', roles: ['super_admin', 'admin'] },
+  { to: '/orders', icon: 'inventory_2', label: 'Orders', roles: ['super_admin', 'admin', 'worker'] },
   { to: '/customers', icon: 'group', label: 'Customers', roles: ['super_admin', 'admin'] },
   { to: '/categories', icon: 'category', label: 'Categories', roles: ['super_admin', 'admin'] },
   { to: '/expenses', icon: 'payments', label: 'Expenses', roles: ['super_admin', 'admin'] },

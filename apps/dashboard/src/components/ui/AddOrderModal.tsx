@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Modal } from "./Modal";
 import { useAlert } from "../../contexts/AlertContext";
-import { useCustomers } from "../../hooks/use-customers";
+import { useCustomers, useCreateCustomer } from "../../hooks/use-customers";
 import { useCategories } from "../../hooks/use-categories";
 import { useCreateOrder } from "../../hooks/use-orders";
 import { usePaymentMethods } from "../../hooks/use-payment-methods";

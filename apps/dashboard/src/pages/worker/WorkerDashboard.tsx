@@ -203,6 +203,8 @@ export function WorkerDashboard() {
           </div>
         </Tab>
       </Tabs>
+      {/* Add Order Modal */}
+      <AddOrderModal isOpen={isAddOrderOpen} onClose={() => setIsAddOrderOpen(false)} />
     </div>
   );
 }
