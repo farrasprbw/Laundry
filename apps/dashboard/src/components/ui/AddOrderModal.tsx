@@ -596,7 +596,7 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
           minRows={2}
         />
       </div>
-      </Modal>
-      </>
-      );
-      }
+    </Modal>
+  </>
+);
+}
