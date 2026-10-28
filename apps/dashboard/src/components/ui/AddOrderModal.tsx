@@ -337,14 +337,15 @@ export function AddOrderModal({ isOpen, onClose }: AddOrderModalProps) {
   return (
     <>
       <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Buat Order Baru"
-      onSubmit={handleSubmit}
-      submitText="Buat Order"
-      isSubmitDisabled={isFormIncomplete || createOrder.isPending}
-      isLoading={createOrder.isPending}
-    >
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Buat Order Baru"
+        onSubmit={handleSubmit}
+        submitText="Simpan Order"
+        isLoading={createOrder.isPending}
+        size="2xl"
+        isDismissable={false}
+      >
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Pelanggan <span className="text-danger">*</span></span>
